@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -282,7 +282,42 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    // === Inicialização do Firebase (já com seu firebaseConfig) ===
+    const firebaseConfig = {
+      apiKey: "AIzaSyCGSDjIf8pRP_IE0xqjLii4Qeuc6_bhE50",
+      authDomain: "gestao-switches.firebaseapp.com",
+      databaseURL: "https://gestao-switches-default-rtdb.firebaseio.com",
+      projectId: "gestao-switches",
+      storageBucket: "gestao-switches.firebasestorage.app",
+      messagingSenderId: "499639422553",
+      appId: "1:499639422553:web:b2964704013a95ee666b48",
+      measurementId: "G-EVK2QKJL4Y"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getDatabase } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    const fbApp = initializeApp(firebaseConfig);
+    const fbAuth = getAuth(fbApp);
+    const fbDb = getDatabase(fbApp);
+
+    // Faça login anônimo (necessário para operações que exigem auth)
+    signInAnonymously(fbAuth).catch(err => {
+      // se ocorrer erro na autenticação anônima, mostramos no console (não expõe nada)
+      console.warn('Erro ao autenticar anon:', err);
+    });
+
+    onAuthStateChanged(fbAuth, user => {
+      if (user) {
+        console.log('Autenticado anonimamente (uid):', user.uid);
+      } else {
+        console.log('Usuário deslogado');
+      }
+    });
+    // ===============================================================
+
     const LS_SWITCHES_KEY = 'networkSwitches';
     const LS_POPS_KEY = 'networkPops';
 
