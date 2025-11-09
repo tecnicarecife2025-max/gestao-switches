@@ -213,6 +213,19 @@
 
     .hide { display:none !important }
 
+    /* ===== Loading barra / spinner ===== */
+    .loading-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px; min-height:140px; }
+    .progress { width:100%; max-width:420px; height:10px; background:#e8eef6; border-radius:999px; overflow:hidden; position:relative; }
+    .progress .indeterminate {
+      position:absolute; left:-40%; top:0; bottom:0; width:40%; background:linear-gradient(90deg,#3498db,#6fb3ff);
+      animation: indeterminate 1.2s infinite linear;
+    }
+    @keyframes indeterminate {
+      0% { left:-40%; width:40%; }
+      50% { left:30%; width:30%; }
+      100% { left:100%; width:40%; }
+    }
+
     @media (max-width: 768px) {
       .main-content { flex-direction:column }
       .hover-preview { left:50%; right:auto; bottom:calc(100% + 8px); transform:translate(-50%,0) scale(.98); max-width:95vw }
@@ -283,7 +296,11 @@
         <section class="switches-section">
           <h2>POPs Cadastrados</h2>
           <div id="estadoContainer">
-            <div class="no-pops">Nenhum POP cadastrado ainda. Use “Novo cadastro”.</div>
+            <!-- agora mostramos um loading até os dados chegarem -->
+            <div id="estadoLoading" class="loading-wrap" role="status" aria-live="polite" aria-busy="true">
+              <div class="progress" aria-hidden="true"><div class="indeterminate"></div></div>
+              <div class="muted" style="text-align:center;margin-top:12px">Carregando POPs…</div>
+            </div>
           </div>
         </section>
       </div>
@@ -475,6 +492,10 @@
     let pops = [];
     let pendingPopEdits = [];
 
+    let popsLoaded = false;
+    let switchesLoaded = false;
+    let loadFallbackTimer = null;
+
     const byId = (id) => document.getElementById(id);
     const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
 
@@ -601,8 +622,15 @@
         const data = snapshot.val();
         pops = data ? Object.values(data) : [];
         if (!pops || pops.length === 0) { pops = [...POPS_PADRAO]; savePops(); }
-        renderPopOptions(); renderEstadosComPops();
-      }, (error) => console.error("Erro ao carregar POPs:", error));
+        // preenche select de pops imediatamente (útil no formulário)
+        renderPopOptions();
+        popsLoaded = true;
+        renderWhenReady();
+      }, (error) => {
+        console.error("Erro ao carregar POPs:", error);
+        popsLoaded = true; // evitar loading infinito — trataremos no renderWhenReady
+        renderWhenReady();
+      });
     }
 
     function savePops(){
@@ -616,8 +644,13 @@
       onValue(dbRef, (snapshot) => {
         const data = snapshot.val();
         switches = data ? Object.values(data) : [];
-        renderEstadosComPops();
-      }, (error) => console.error("Erro ao carregar switches:", error));
+        switchesLoaded = true;
+        renderWhenReady();
+      }, (error) => {
+        console.error("Erro ao carregar switches:", error);
+        switchesLoaded = true;
+        renderWhenReady();
+      });
     }
 
     function saveSwitches(){
@@ -626,7 +659,48 @@
       set(dbRef, switchesObj).catch(err => { console.error("Erro ao salvar switches:", err); alert("Falha ao salvar switches."); });
     }
 
-    /* ========= Render ========= */
+    /* ========= Loading / Render control ========= */
+    function showLoading(show){
+      const loading = byId('estadoLoading');
+      const container = byId('estadoContainer');
+      if (!loading || !container) return;
+      if (show){
+        loading.style.display = 'flex';
+        // garante que container mantém o loading (limpa conteúdo antigo)
+        // (quando show é true, colocamos apenas o loading)
+        // container.innerHTML = ''; // não necessário, carregamento inicial já tem loading
+      } else {
+        loading.style.display = 'none';
+      }
+    }
+
+    function renderWhenReady(){
+      // quando ambos os conjuntos de dados forem carregados, escondemos o loading e renderizamos a UI
+      if (popsLoaded && switchesLoaded){
+        clearTimeout(loadFallbackTimer);
+        showLoading(false);
+        renderEstadosComPops();
+      } else {
+        // se pelo menos pops já chegou, atualizamos opções do select (feito em loadPops)
+        // mantemos loading visível até ambos finalizarem
+      }
+    }
+
+    // fallback para evitar loading infinito se Firebase falhar
+    function startLoadFallbackTimer(timeoutMs = 8000){
+      clearTimeout(loadFallbackTimer);
+      loadFallbackTimer = setTimeout(()=>{
+        if (!(popsLoaded && switchesLoaded)){
+          showLoading(false);
+          const wrap = byId('estadoContainer');
+          if (wrap) {
+            wrap.innerHTML = '<div class="no-pops">Não foi possível carregar os POPs. Verifique sua conexão ou tente novamente. Use “Novo cadastro” para adicionar um POP localmente.</div>';
+          }
+        }
+      }, timeoutMs);
+    }
+
+    /* ========= Render (sem alteração funcional além do loading) ========= */
     function popsByEstado(){
       const groups = {};
       pops.forEach(p=>{
@@ -957,6 +1031,9 @@
       // Sincroniza estado inicial e agenda auto-hide se já estiver aberta
       setCollapsed(document.body.classList.contains('sidebar-collapsed'));
       if (isSidebarOpen()) scheduleAutoHide();
+
+      // start fallback timer para evitar loading infinito
+      startLoadFallbackTimer(8000);
     });
   </script>
 </body>
