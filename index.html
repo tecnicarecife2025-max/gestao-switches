@@ -532,32 +532,51 @@
       });
     }
 
-    function loadPops(){
-      const stored = localStorage.getItem(LS_POPS_KEY);
-      if (stored){
-        try{ pops = migrateOldPops(JSON.parse(stored)||[]); } catch{ pops=[]; }
-      }
-      if(!pops || pops.length===0){
-        pops=[...POPS_PADRAO]; savePops();
-      } else {
-        const seen=new Set();
-        pops=pops.filter(p=>{
-          if(!p.id) p.id=slugify(p.nome||'');
-          if(!p.estado) p.estado='__';
-          if(seen.has(p.id)) return false; seen.add(p.id); return true;
-        });
-        savePops();
-      }
-    }
-    function savePops(){ trySaveLocalStorage(LS_POPS_KEY, JSON.stringify(pops)); }
+    function loadPops() {  
+  const dbRef = ref(fbDb, 'pops');  
+  onValue(dbRef, (snapshot) => {  
+    const data = snapshot.val();  
+    pops = data ? Object.values(data) : [];  
+    renderPopOptions();  
+    renderEstadosComPops();  
+  }, (error) => {  
+    console.error("Erro ao carregar POPs:", error);  
+  });  
+}
+    function savePops() {  
+  const dbRef = ref(fbDb, 'pops');  
+  const popsObj = {};  
+  pops.forEach(pop => {  
+    popsObj[pop.id] = pop;  
+  });  
+  set(dbRef, popsObj).catch(err => {  
+    console.error("Erro ao salvar POPs:", err);  
+    alert("Falha ao salvar POPs.");  
+  });  
+}
 
-    function loadSwitches(){ const stored=localStorage.getItem(LS_SWITCHES_KEY); if(stored){ try{ switches=JSON.parse(stored)||[]; } catch{ switches=[]; } } }
-    function saveSwitches(){
-      const ok = trySaveLocalStorage(LS_SWITCHES_KEY, JSON.stringify(switches));
-      if (!ok) {
-        alert('Não foi possível salvar os dados (limite de armazenamento do navegador atingido). Tente usar uma imagem menor ou deixe sem imagem.');
-      }
-    }
+    fufunction loadSwitches() {  
+  const dbRef = ref(fbDb, 'switches');  
+  onValue(dbRef, (snapshot) => {  
+    const data = snapshot.val();  
+    switches = data ? Object.values(data) : [];  
+    renderEstadosComPops();  
+  }, (error) => {  
+    console.error("Erro ao carregar switches:", error);  
+  });  
+}
+    nction loadSwitches(){ const stored=localStorage.getItem(LS_SWITCHES_KEY); if(stored){ try{ switches=JSON.parse(stored)||[]; } catch{ switches=[]; } } }
+    function saveSwitches() {  
+  const dbRef = ref(fbDb, 'switches');  
+  const switchesObj = {};  
+  switches.forEach(sw => {  
+    switchesObj[sw.id] = sw;  
+  });  
+  set(dbRef, switchesObj).catch(err => {  
+    console.error("Erro ao salvar switches:", err);  
+    alert("Falha ao salvar switches.");  
+  });  
+}
 
     function popsByEstado(){
       const groups = {};
