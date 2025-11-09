@@ -12,27 +12,13 @@
 
   <!-- Anti-flicker: inicia colapsado via variáveis e sem animações até .js-ready -->
   <style>
-    /* 1) Primeiro paint SEM animações/transições */
     html:not(.js-ready) * { transition: none !important; animation: none !important; }
-
-    /* 2) Variáveis iniciam COLAPSADAS (52px). Nada "salta" na 1ª pintura */
-    html {
-      --sbw: 52px;           /* Largura efetiva inicial da sidebar (colapsada) */
-      --sbw-collapsed: 52px; /* Largura colapsada */
-    }
-
-    /* 3) Quando o JS sinaliza "pronto", passamos a largura real de aberta */
-    html.js-ready {
-      --sbw: 260px;          /* Largura ABERTA passa a valer depois da 1ª pintura */
-      --sbw-collapsed: 52px;
-    }
+    html { --sbw: 52px; --sbw-collapsed: 52px; }
+    html.js-ready { --sbw: 260px; --sbw-collapsed: 52px; }
   </style>
 
   <style>
-    :root { /* valores padrão caso alguém remova .js-ready por engano */
-      --sbw: 260px;
-      --sbw-collapsed: 52px;
-    }
+    :root { --sbw: 260px; --sbw-collapsed: 52px; }
     * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif }
     body { background:#f5f7fa; color:#333 }
     .container { max-width:1200px; margin:0 auto; padding:20px }
@@ -84,9 +70,7 @@
     }
     .menu .item:hover{ background:rgba(255,255,255,.09) }
     .menu .item:active{ transform:translateY(1px) }
-    .menu .item .icon{
-      width:22px; height:22px; display:grid; place-items:center; flex:0 0 22px; opacity:.95;
-    }
+    .menu .item .icon{ width:22px; height:22px; display:grid; place-items:center; flex:0 0 22px; opacity:.95; }
     .menu .item .icon svg{ width:20px; height:20px; }
     .menu .item span{ transition:opacity .2s ease, transform .2s ease }
 
@@ -109,9 +93,7 @@
     /* Rail de ícones */
     body.sidebar-collapsed .menu{ padding:8px 6px }
     body.sidebar-collapsed .menu h4{ height:0; margin:0; padding:0; opacity:0; overflow:hidden; }
-    body.sidebar-collapsed .menu .item{
-      justify-content:center; gap:0; padding:10px; margin:4px 6px; border-radius:12px;
-    }
+    body.sidebar-collapsed .menu .item{ justify-content:center; gap:0; padding:10px; margin:4px 6px; border-radius:12px; }
     body.sidebar-collapsed .menu .item .icon{ width:auto; height:auto; }
     body.sidebar-collapsed .menu .item span{ opacity:0; pointer-events:none; transform:translateX(-6px); }
 
@@ -124,7 +106,7 @@
       z-index:1500;
     }
 
-    /* ===== Mobile: slide in/out ===== */
+    /* ===== Mobile ===== */
     @media (max-width: 900px){
       .sidebar { transform:translateX(-100%) }
       body.sidebar-open .sidebar { transform:none }
@@ -133,18 +115,27 @@
       body.sidebar-open .sidebar-overlay { display:block }
       .edge-hitbox { position: fixed; left:0; top:0; bottom:0; width:18px; z-index:900; background:transparent; }
     }
-    @media (min-width: 901px){
-      .edge-hitbox{ display:none }
-    }
+    @media (min-width: 901px){ .edge-hitbox{ display:none } }
 
-    /* ===== Header / Sections ===== */
+    /* ===== Header ===== */
     header {
       background:linear-gradient(135deg,#2c3e50,#1a2530); color:#fff; padding:20px;
-      border-radius:10px; margin-bottom:30px; box-shadow:0 4px 12px rgba(0,0,0,.1)
+      border-radius:10px; margin-bottom:30px; box-shadow:0 4px 12px rgba(0,0,0,.1); position:relative;
     }
     .header-row{ text-align:center; display:block }
     h1 { margin-bottom:6px }
     .subtitle { opacity:.9; font-weight:300; white-space:nowrap }
+
+    /* ===== Botão Lock (topo) ===== */
+    .lock-wrap{
+      position:absolute; right:14px; top:14px; display:flex; align-items:center; gap:8px;
+      background:#ffffff1a; border:1px solid #ffffff24; padding:6px 10px; border-radius:10px;
+    }
+    .lock-wrap button{
+      display:inline-flex; align-items:center; gap:8px; background:transparent; border:0; color:#fff; cursor:pointer;
+      font-weight:700;
+    }
+    .lock-wrap img{ width:22px; height:22px; display:block }
 
     .btn { background:#3498db; color:#fff; border:0; padding:12px 16px; border-radius:6px; cursor:pointer; font-weight:600; transition:.25s; display:inline-flex; align-items:center; gap:8px }
     .btn:hover { background:#2980b9 }
@@ -182,8 +173,9 @@
 
     .switch-list { display:none; padding:8px 16px 16px 16px; overflow:visible; position:relative }
     .switch-row {
-      background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; margem-top:10px;
-      display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible
+      background:#fff; border:1px solid #eee; border-radius:8px; padding:12px;
+      display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible;
+      margin-top:10px;
     }
     .switch-info-wrap { display:flex; flex-direction:column; gap:2px }
     .switch-name { font-weight:700; color:#2c3e50 }
@@ -228,9 +220,7 @@
       animation: indeterminate 1.2s infinite linear;
     }
     @keyframes indeterminate {
-      0% { left:-40%; width:40%; }
-      50% { left:30%; width:30%; }
-      100% { left:100%; width:40%; }
+      0% { left:-40%; width:40%; } 50% { left:30%; width:30%; } 100% { left:100%; width:40%; }
     }
 
     #confirmModal .modal-body { padding:18px 20px; color:#333; }
@@ -245,7 +235,6 @@
   </style>
 </head>
 
-<!-- Já começamos colapsado no HTML -->
 <body class="sidebar-collapsed">
   <!-- VIDEO OCULTO QUE ALIMENTA O FAVICON (ANIMADO) -->
   <video id="favVideo" width="256" height="256" preload="auto" muted playsinline loop
@@ -294,6 +283,14 @@
   <div class="with-sidebar">
     <div class="container">
       <header>
+        <!-- ===== LOCK: Botão Travar/Destravar ===== -->
+        <div class="lock-wrap" title="Travar/Destravar">
+          <button id="lockBtn" type="button" aria-pressed="true">
+            <img id="lockIcon" src="https://cdn-icons-png.flaticon.com/512/7615/7615902.png" alt="Travado" />
+            <span id="lockText">Travado</span>
+          </button>
+        </div>
+
         <div class="header-row">
           <h1>Gestão de Switches de Rede</h1>
           <p class="subtitle">Todos → Switches de POPs</p>
@@ -503,21 +500,9 @@
     const fbDb = getDatabase(fbApp);
 
     signInAnonymously(fbAuth).catch(err => console.warn('[FB] Erro ao autenticar anon:', err));
-    onAuthStateChanged(fbAuth, user => {
-      if (user) { loadPops(); loadSwitches(); }
-    });
+    onAuthStateChanged(fbAuth, user => { if (user) { loadPops(); loadSwitches(); } });
 
     /* ========= Estado / Utils ========= */
-    const LS_SIDEBAR_STATE = 'sidebarCollapsed';
-
-    let switches = [];
-    let pops = [];
-    let pendingPopEdits = [];
-
-    let popsLoaded = false;
-    let switchesLoaded = false;
-    let loadFallbackTimer = null;
-
     const byId = (id) => document.getElementById(id);
     const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
 
@@ -541,96 +526,88 @@
       { nome:'Brasília (POP-DF)', uf:'DF' }
     ].map(n => ({ id: slugify(n.nome), nome: n.nome, estado: n.uf }));
 
-    /* ===== Helpers de imagem ===== */
-    async function compressImage(file, { maxWidth = 1600, maxHeight = 1200, mimeType = 'image/webp', quality = 0.82 } = {}) {
-      if (!('createImageBitmap' in window)) return await fileToDataURL(file);
-      const bitmap = await createImageBitmap(file);
-      const { width, height } = bitmap;
-      const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
-      const targetW = Math.round(width * ratio);
-      const targetH = Math.round(height * ratio);
-      const canvas = document.createElement('canvas');
-      canvas.width = targetW; canvas.height = targetH;
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(bitmap, 0, 0, targetW, targetH);
-      let outType = mimeType;
-      if (!canvas.toDataURL(outType).startsWith('data:image/webp')) outType = 'image/jpeg';
-      return canvas.toDataURL(outType, quality);
-    }
-    function fileToDataURL(file) {
-      return new Promise((resolve, reject) => {
-        const fr = new FileReader();
-        fr.onload = e => resolve(e.target.result);
-        fr.onerror = reject;
-        fr.readAsDataURL(file);
-      });
-    }
-    async function compressAdaptively(file) {
-      const steps = [
-        { w: 2200, h: 1600, q: 0.88 }, { w: 1800, h: 1350, q: 0.84 },
-        { w: 1600, h: 1200, q: 0.82 }, { w: 1400, h: 1050, q: 0.78 },
-        { w: 1200, h: 900,  q: 0.75 }, { w: 1000, h: 750,  q: 0.72 },
-        { w: 900,  h: 675,  q: 0.70 }
-      ];
-      for (const s of steps) {
-        const d = await compressImage(file, { maxWidth: s.w, maxHeight: s.h, quality: s.q });
-        if (d.length < 4_500_000) return d;
-      }
-      return await compressImage(file, { maxWidth: 800, maxHeight: 600, quality: 0.68 });
+    /* ========= Dados ========= */
+    let switches = [];
+    let pops = [];
+    let pendingPopEdits = [];
+    let popsLoaded = false;
+    let switchesLoaded = false;
+    let loadFallbackTimer = null;
+
+    /* ========= LOCK: estado e helpers ========= */
+    // Sempre começa TRAVADO
+    let isLocked = true;
+    const LOCK_PASSWORD = '123456';
+    const LOCK_ICON = 'https://cdn-icons-png.flaticon.com/512/7615/7615902.png';
+    const UNLOCK_ICON = 'https://cdn-icons-png.flaticon.com/512/7615/7615905.png';
+
+    function canEditNow(){ return !isLocked; }
+
+    function promptUnlock(){
+      const pwd = window.prompt('Digite a senha para destravar:');
+      if (pwd === null) return false; // cancelado
+      if (pwd === LOCK_PASSWORD) { isLocked = false; updateLockUI(); return true; }
+      alert('Senha incorreta.');
+      return false;
     }
 
-    /* ===== Acordeão POPs ===== */
-    function closeAllPopLists(exceptId = null){
-      document.querySelectorAll('.pop-card').forEach(card=>{
-        const btn = card.querySelector('[data-toggle-pop]');
-        const list = card.querySelector('.switch-list');
-        const id = btn?.getAttribute('data-toggle-pop');
-        if (id !== exceptId){
-          if (btn) { btn.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
-          if (list){ list.style.display = 'none'; }
+    function lock(){
+      isLocked = true;
+      // Fecha qualquer modal aberto
+      ['modalCadastro','modalEditSwitch','modalPops','confirmModal'].forEach(id=>{
+        const el = byId(id); if(el) el.classList.remove('open');
+      });
+      updateLockUI();
+    }
+
+    function updateLockUI(){
+      // Atualiza botão/ícone/label do topo
+      const icon = byId('lockIcon'), text = byId('lockText');
+      if (icon) icon.src = isLocked ? LOCK_ICON : UNLOCK_ICON;
+      if (icon) icon.alt = isLocked ? 'Travado' : 'Destravado';
+      if (text) text.textContent = isLocked ? 'Travado' : 'Destravado';
+      byId('lockBtn')?.setAttribute('aria-pressed', String(!isLocked));
+
+      // Menu (esconde/mostra opções)
+      const novo = byId('menuNovoCadastro'), popsBtn = byId('menuGerenciarPops');
+      if (novo) novo.style.display = isLocked ? 'none' : '';
+      if (popsBtn) popsBtn.style.display = isLocked ? 'none' : '';
+
+      // Re-renderiza listas para esconder/mostrar botões de ação
+      renderEstadosComPops();
+    }
+
+    /* ========= Loading / Render control ========= */
+    function showLoading(show){
+      const loading = byId('estadoLoading');
+      if (loading) loading.style.display = show ? 'flex' : 'none';
+    }
+    function renderWhenReady(){
+      if (popsLoaded && switchesLoaded){
+        clearTimeout(loadFallbackTimer);
+        showLoading(false);
+        renderEstadosComPops();
+        updateLockUI(); // garante o estado visual do lock após primeiro render
+      }
+    }
+    function startLoadFallbackTimer(timeoutMs = 8000){
+      clearTimeout(loadFallbackTimer);
+      loadFallbackTimer = setTimeout(()=>{
+        if (!(popsLoaded && switchesLoaded)){
+          showLoading(false);
+          const wrap = byId('estadoContainer');
+          if (wrap) wrap.innerHTML = '<div class="no-pops">Não foi possível carregar os POPs. Verifique sua conexão ou tente novamente. Use “Novo cadastro” para adicionar um POP localmente.</div>';
         }
-      });
+      }, timeoutMs);
     }
 
-    /* ===== Sidebar ===== */
-    function setCollapsed(collapsed){
-      document.body.classList.toggle('sidebar-collapsed', collapsed);
-      try { localStorage.setItem(LS_SIDEBAR_STATE, collapsed ? '1' : '0'); } catch {}
-      const btn = byId('btnCollapse');
-      if (btn){
-        btn.setAttribute('aria-expanded', String(!collapsed));
-        btn.title = collapsed ? 'Mostrar menu' : 'Ocultar menu';
-      }
-    }
-    function isSidebarOpen(){
-      return isMobile()
-        ? document.body.classList.contains('sidebar-open')
-        : !document.body.classList.contains('sidebar-collapsed');
-    }
-    function closeSidebar(){
-      if (isMobile()) document.body.classList.remove('sidebar-open');
-      else setCollapsed(true);
-    }
-
-    let autoHideTimer = null, isSidebarHovered = false;
-    function scheduleAutoHide(){
-      clearTimeout(autoHideTimer);
-      if (!isSidebarOpen()) return;
-      autoHideTimer = setTimeout(()=>{
-        if (!isSidebarHovered && isSidebarOpen()) closeSidebar();
-      }, 5000);
-    }
-    function cancelAutoHide(){ clearTimeout(autoHideTimer); }
-
-    /* ========= Firebase ========= */
+    /* ========= Firebase: carregar/salvar ========= */
     function loadPops(){
       const dbRef = ref(fbDb, 'pops');
       onValue(dbRef, (snapshot) => {
         const data = snapshot.val();
         pops = data ? Object.values(data) : [];
         if (!pops || pops.length === 0) { pops = [...POPS_PADRAO]; savePops(); }
-        renderPopOptions();
         popsLoaded = true;
         renderWhenReady();
       }, (error) => { console.error("Erro ao carregar POPs:", error); popsLoaded = true; renderWhenReady(); });
@@ -656,8 +633,8 @@
     }
 
     /* ========= Confirm/Alert ========= */
-    function _openModalById(id){ const el = document.getElementById(id); if (!el) return; el.classList.add('open'); el.setAttribute('aria-hidden','false'); }
-    function _closeModalById(id){ const el = document.getElementById(id); if (!el) return; el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
+    function _openModalById(id){ const el = byId(id); if (!el) return; el.classList.add('open'); el.setAttribute('aria-hidden','false'); }
+    function _closeModalById(id){ const el = byId(id); if (!el) return; el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
 
     function showConfirm({ title='Confirmar', message='', okLabel='Confirmar', cancelLabel='Cancelar', okIsDanger=false } = {}){
       return new Promise(resolve => {
@@ -722,33 +699,6 @@
       });
     }
 
-    /* ========= Loading / Render control ========= */
-    function showLoading(show){
-      const loading = byId('estadoLoading');
-      const container = byId('estadoContainer');
-      if (!loading || !container) return;
-      loading.style.display = show ? 'flex' : 'none';
-    }
-
-    function renderWhenReady(){
-      if (popsLoaded && switchesLoaded){
-        clearTimeout(loadFallbackTimer);
-        showLoading(false);
-        renderEstadosComPops();
-      }
-    }
-
-    function startLoadFallbackTimer(timeoutMs = 8000){
-      clearTimeout(loadFallbackTimer);
-      loadFallbackTimer = setTimeout(()=>{
-        if (!(popsLoaded && switchesLoaded)){
-          showLoading(false);
-          const wrap = byId('estadoContainer');
-          if (wrap) wrap.innerHTML = '<div class="no-pops">Não foi possível carregar os POPs. Verifique sua conexão ou tente novamente. Use “Novo cadastro” para adicionar um POP localmente.</div>';
-        }
-      }, timeoutMs);
-    }
-
     /* ========= Render ========= */
     function popsByEstado(){
       const groups = {};
@@ -780,6 +730,14 @@
           const card = document.createElement('div');
           card.className='pop-card';
           const swDoPop = switches.filter(s=>s.pop===pop.id);
+
+          // ===== LOCK: só renderiza botões se destravado
+          const actionButtons = !isLocked ? `
+              <div class="row-actions">
+                <button class="btn small" data-action="edit">Editar</button>
+                <button class="btn danger small" data-action="delete">Excluir</button>
+              </div>` : '';
+
           card.innerHTML = `
             <div class="pop-header">
               <div class="pop-title">${pop.nome}</div>
@@ -799,10 +757,7 @@
                         <div class="switch-meta">IP: ${sw.ip}</div>
                         <div class="switch-meta">Modelo: ${sw.modelo ? sw.modelo : '—'}</div>
                       </div>
-                      <div class="row-actions">
-                        <button class="btn small" data-action="edit">Editar</button>
-                        <button class="btn danger small" data-action="delete">Excluir</button>
-                      </div>
+                      ${actionButtons}
                       <div class="hover-preview">
                         ${ sw.foto ? `<img src="${sw.foto}" alt="Foto de ${sw.nome}">` : `<div class="noimg">Sem imagem para este switch</div>` }
                       </div>
@@ -836,12 +791,13 @@
     function openModal(id){ const el=byId(id); if(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); } }
     function closeModal(id){ const el=byId(id); if(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); } }
 
-    function openCadastroModal() {  
-      openModal('modalCadastro');  
-      renderPopOptions();  
-      renderUFSelect(byId('popEstado')); // ← preenche as UFs  
-      const tipoSel = byId('tipoCadastro'); tipoSel.value = 'switch';  
-      bindTipoCadastroEvents(); alternarTipo();  
+    function openCadastroModal(){
+      if (isLocked){ showAlert({ title:'Travado', message:'Destrave com a senha para cadastrar.' }); return; }
+      openModal('modalCadastro');
+      renderPopOptions();
+      renderUFSelect(byId('popEstado'));
+      const tipoSel = byId('tipoCadastro'); tipoSel.value = 'switch';
+      bindTipoCadastroEvents(); alternarTipo();
     }
     function bindTipoCadastroEvents() {
       const sel = byId('tipoCadastro'); const clone = sel.cloneNode(true);
@@ -860,6 +816,7 @@
     }
 
     async function cadastrarPOP(){
+      if (isLocked){ await showAlert({ title:'Travado', message:'Destrave para cadastrar POP.' }); return; }
       const nome=(byId('popNome').value||'').trim();
       if(!nome){ await showAlert({ title:'Atenção', message:'Informe o Nome/Descrição do POP.' }); return; }
       const uf = (byId('popEstado').value||'__'); const id=slugify(nome);
@@ -871,6 +828,7 @@
     }
 
     async function cadastrarSwitch(){
+      if (isLocked){ await showAlert({ title:'Travado', message:'Destrave para cadastrar Switch.' }); return; }
       const popSel=byId('pop').value; const ip=byId('ip').value.trim(); const nome=byId('nome').value.trim();
       const modelo=(byId('modelo').value||'').trim(); const fotoInput=byId('foto');
       if(!popSel||!ip||!nome){ await showAlert({ title:'Atenção', message:'Preencha POP, IP e Nome do switch.' }); return; }
@@ -887,6 +845,7 @@
     }
 
     function openEditSwitch(id){
+      if (isLocked){ showAlert({ title:'Travado', message:'Destrave para editar.' }); return; }
       const sw=switches.find(s=>s.id===id); if(!sw) return;
       byId('editSwitchId').value=String(sw.id);
       byId('editSwitchNome').value=sw.nome;
@@ -903,6 +862,7 @@
 
     async function saveEditSwitch(ev){
       ev && ev.preventDefault();
+      if (isLocked){ await showAlert({ title:'Travado', message:'Destrave para salvar alterações.' }); return; }
       const idString = byId('editSwitchId').value;
       const id = idString && !isNaN(Number(idString)) ? Number(idString) : idString;
       const nome = (byId('editSwitchNome').value || '').trim();
@@ -954,6 +914,7 @@
     }
 
     async function deleteSwitch(id){
+      if (isLocked){ await showAlert({ title:'Travado', message:'Destrave para excluir.' }); return; }
       const ok = await showConfirm({
         title: 'Confirmar exclusão',
         message: 'Tem certeza de que deseja remover este switch permanentemente? Esta ação não pode ser desfeita.',
@@ -965,7 +926,11 @@
       await showAlert({ title:'Removido', message:'O switch foi removido.' });
     }
 
-    function openModalPops(){ buildPopsTable(); openModal('modalPops'); }
+    function openModalPops(){
+      if (isLocked){ showAlert({ title:'Travado', message:'Destrave para gerenciar POPs.' }); return; }
+      buildPopsTable(); openModal('modalPops');
+    }
+
     function buildPopsTable(){
       const tbody=byId('tabelaPops').querySelector('tbody'); tbody.innerHTML='';
       pendingPopEdits=pops.map(p=>({ oldId:p.id, id:p.id, nome:p.nome, estado:p.estado||'__', _delete:false }));
@@ -974,16 +939,19 @@
         const tr=document.createElement('tr'); tr.dataset.index=i;
         const ufSelect = `<select data-field="estado">${['__',...estados].map(uf=>`<option value="${uf}" ${uf===row.estado?'selected':''}>${estadoLabel(uf)}</option>`).join('')}</select>`;
         tr.innerHTML = `
-          <td><input type="text" value="${row.nome.replace(/"/g,'&quot;')}" data-field="nome"></td>
-          <td>${ufSelect}</td>
+          <td><input type="text" value="${row.nome.replace(/"/g,'&quot;')}" data-field="nome" ${isLocked?'disabled':''}></td>
+          <td>${isLocked?`<input type="text" value="${estadoLabel(row.estado)}" disabled>`:ufSelect}</td>
           <td><input type="text" value="${row.id.replace(/"/g,'&quot;')}" data-field="id" disabled></td>
           <td>${vinculados}</td>
           <td class="row-actions">
-            <button class="btn small" data-act="renomear">Gerar ID</button>
-            <button class="btn danger small" data-act="excluir">Excluir</button>
+            ${!isLocked?`<button class="btn small" data-act="renomear">Gerar ID</button>
+            <button class="btn danger small" data-act="excluir">Excluir</button>`:''}
           </td>`;
         tbody.appendChild(tr);
       });
+
+      if (isLocked) return; // sem eventos se travado
+
       tbody.onclick=(ev)=>{
         const tr=ev.target.closest('tr'); if(!tr) return; const idx=Number(tr.dataset.index);
         if(ev.target.matches('[data-act="renomear"]')){
@@ -1016,6 +984,7 @@
     }
 
     async function applyPopEdits(){
+      if (isLocked){ await showAlert({ title:'Travado', message:'Destrave para salvar alterações de POPs.' }); return; }
       const deletions = pendingPopEdits.filter(r => r._delete);
       const effective = pendingPopEdits.filter(r => !r._delete);
       let anyChange = deletions.length > 0;
@@ -1056,12 +1025,44 @@
       await showAlert({ title:'Sucesso', message:'POPs atualizados.' });
     }
 
+    /* ========= Sidebar / Auto-hide ========= */
+    const LS_SIDEBAR_STATE = 'sidebarCollapsed';
+    function setCollapsed(collapsed){
+      document.body.classList.toggle('sidebar-collapsed', collapsed);
+      try { localStorage.setItem(LS_SIDEBAR_STATE, collapsed ? '1' : '0'); } catch {}
+      const btn = byId('btnCollapse');
+      if (btn){
+        btn.setAttribute('aria-expanded', String(!collapsed));
+        btn.title = collapsed ? 'Mostrar menu' : 'Ocultar menu';
+      }
+    }
+    function isSidebarOpen(){
+      return isMobile()
+        ? document.body.classList.contains('sidebar-open')
+        : !document.body.classList.contains('sidebar-collapsed');
+    }
+    function closeSidebar(){
+      if (isMobile()) document.body.classList.remove('sidebar-open');
+      else setCollapsed(true);
+    }
+    let autoHideTimer = null, isSidebarHovered = false;
+    function scheduleAutoHide(){
+      clearTimeout(autoHideTimer);
+      if (!isSidebarOpen()) return;
+      autoHideTimer = setTimeout(()=>{
+        if (!isSidebarHovered && isSidebarOpen()) closeSidebar();
+      }, 5000);
+    }
+    function cancelAutoHide(){ clearTimeout(autoHideTimer); }
+
     /* ========= Listeners globais ========= */
     document.addEventListener('DOMContentLoaded', () => {
-      // 1) Força início oculto no desktop; no mobile, fechado (sem .sidebar-open)
+      // Sempre inicia TRAVADO
+      isLocked = true;
+      updateLockUI();
+
       if (!isMobile()) { setCollapsed(true); } else { document.body.classList.remove('sidebar-open'); }
 
-      // 2) Botões e ações
       document.querySelectorAll('[data-close]').forEach(btn =>
         btn.addEventListener('click', (e)=> closeModal(e.currentTarget.getAttribute('data-close')))
       );
@@ -1088,12 +1089,29 @@
         edge.addEventListener('click', ()=>{ if (isMobile()) { document.body.classList.add('sidebar-open'); scheduleAutoHide(); } });
       }
 
-      byId('menuNovoCadastro').addEventListener('click', () => { closeSidebar(); cancelAutoHide(); openCadastroModal(); });
-      byId('menuGerenciarPops').addEventListener('click', () => { closeSidebar(); cancelAutoHide(); openModalPops(); });
+      // Menu (respeita lock)
+      byId('menuNovoCadastro').addEventListener('click', () => {
+        if (isLocked){ showAlert({ title:'Travado', message:'Destrave com a senha para cadastrar.' }); return; }
+        closeSidebar(); cancelAutoHide(); openCadastroModal();
+      });
+      byId('menuGerenciarPops').addEventListener('click', () => {
+        if (isLocked){ showAlert({ title:'Travado', message:'Destrave com a senha para gerenciar POPs.' }); return; }
+        closeSidebar(); cancelAutoHide(); openModalPops();
+      });
 
-      byId('btnSalvarCadastro').addEventListener('click', async (e)=>{ e.preventDefault(); const tipo=byId('tipoCadastro').value; if(tipo==='pop') await cadastrarPOP(); else await cadastrarSwitch(); });
+      // CRUD listeners
+      byId('btnSalvarCadastro').addEventListener('click', async (e)=>{
+        e.preventDefault();
+        if (isLocked){ await showAlert({ title:'Travado', message:'Destrave para cadastrar.' }); return; }
+        const tipo=byId('tipoCadastro').value; if(tipo==='pop') await cadastrarPOP(); else await cadastrarSwitch();
+      });
       byId('btnSalvarEditSwitch').addEventListener('click', saveEditSwitch);
-      byId('btnRemoverFoto').addEventListener('click', () => { byId('editSwitchFoto').value=''; byId('previewInfo').textContent='Imagem será removida ao salvar.'; byId('previewInfo').dataset.remove='true'; });
+      byId('btnRemoverFoto').addEventListener('click', () => {
+        if (isLocked){ showAlert({ title:'Travado', message:'Destrave para remover imagem.' }); return; }
+        byId('editSwitchFoto').value='';
+        byId('previewInfo').textContent='Imagem será removida ao salvar.';
+        byId('previewInfo').dataset.remove='true';
+      });
       byId('btnSalvarPops').addEventListener('click', applyPopEdits);
 
       byId('estadoContainer').addEventListener('click', (ev) => {
@@ -1104,11 +1122,16 @@
           const popId = toggleBtn.getAttribute('data-toggle-pop');
           const isOpen = list.style.display === 'block';
           if (isOpen) { toggleBtn.classList.remove('open'); toggleBtn.setAttribute('aria-expanded','false'); list.style.display = 'none'; }
-          else { closeAllPopLists(popId); toggleBtn.classList.add('open'); toggleBtn.setAttribute('aria-expanded','true'); list.style.display = 'block'; }
+          else { 
+            // Fecha os demais, mas isso é só visual; não depende de lock
+            document.querySelectorAll('.pop-card .switch-list').forEach(el=>{ el.style.display='none'; el.previousElementSibling?.classList?.remove('open'); });
+            toggleBtn.classList.add('open'); toggleBtn.setAttribute('aria-expanded','true'); list.style.display = 'block';
+          }
           return;
         }
         const swBtn = ev.target.closest('[data-action]');
         if (swBtn) {
+          if (isLocked){ showAlert({ title:'Travado', message:'Destrave para executar esta ação.' }); return; }
           const action = swBtn.dataset.action;
           const swId = swBtn.closest('[data-switch-id]')?.dataset.switchId;
           if (!swId) return;
@@ -1129,10 +1152,8 @@
       bodyObserver.observe(document.body, { attributes:true, attributeFilter:['class'] });
 
       window.addEventListener('resize', () => {
-        // Sem transições durante o ajuste
-        document.documentElement.classList.remove('js-ready'); // desliga transições rapidamente
+        document.documentElement.classList.remove('js-ready');
         if (!isMobile()) { document.body.classList.remove('sidebar-open'); setCollapsed(true); }
-        // reabilita
         requestAnimationFrame(() => {
           document.documentElement.classList.add('js-ready');
           if (isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide();
@@ -1146,10 +1167,18 @@
         }
       });
 
-      startLoadFallbackTimer(8000);
+      // Botão Lock
+      byId('lockBtn').addEventListener('click', ()=>{
+        if (isLocked){
+          // Tenta destravar
+          promptUnlock();
+        } else {
+          // Re-travar imediato
+          lock();
+        }
+      });
 
-      // *** Libera as transições e fixa vars reais (sem qualquer salto visual) ***
-      // (No desktop estamos colapsados, então mudar --sbw não mexe nada)
+      startLoadFallbackTimer(8000);
       requestAnimationFrame(() => { document.documentElement.classList.add('js-ready'); });
     });
   </script>
@@ -1164,22 +1193,18 @@
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-    // Tamanho alvo do favicon (32x32 é suficiente e leve)
     const FAV_W = 32, FAV_H = 32;
     canvas.width = FAV_W; canvas.height = FAV_H;
 
     let running = false;
     let rafId = null;
     let lastUpdate = 0;
-    const FPS = 10;                 // ~10 fps = leve e fluido
+    const FPS = 10;
     const FRAME_MS = 1000 / FPS;
 
     function drawFrame(ts){
       if (!running) return;
-      if (document.hidden) {        // evita custo quando aba está oculta
-        rafId = requestAnimationFrame(drawFrame);
-        return;
-      }
+      if (document.hidden) { rafId = requestAnimationFrame(drawFrame); return; }
       if (ts - lastUpdate >= FRAME_MS) {
         lastUpdate = ts;
         try {
@@ -1187,7 +1212,6 @@
           const vW = video.videoWidth || 256;
           const vH = video.videoHeight || 256;
           if (vW && vH) {
-            // crop central quadrado para manter proporção
             const s = Math.min(vW, vH);
             const sx = (vW - s) / 2;
             const sy = (vH - s) / 2;
@@ -1197,14 +1221,10 @@
             ctx.fillRect(0,0,FAV_W,FAV_H);
           }
           const url = canvas.toDataURL('image/png');
-          if (url && url.startsWith('data:image/png')) {
-            link.href = url;
-          }
+          if (url && url.startsWith('data:image/png')) link.href = url;
         } catch (e) {
-          // CORS provavelmente bloqueou leitura do vídeo -> mantém estático
           console.warn('[favicon] Falha ao animar (CORS?):', e);
-          stop();
-          return;
+          stop(); return;
         }
       }
       rafId = requestAnimationFrame(drawFrame);
@@ -1214,29 +1234,16 @@
       if (running) return;
       running = true;
       const p = video.play();
-      if (p && typeof p.then === 'function') {
-        p.catch(()=>{/* autoplay pode ser bloqueado; interação do usuário libera */});
-      }
+      if (p && typeof p.then === 'function') p.catch(()=>{});
       rafId = requestAnimationFrame(drawFrame);
     }
-    function stop(){
-      running = false;
-      if (rafId) cancelAnimationFrame(rafId), rafId = null;
-    }
+    function stop(){ running = false; if (rafId) cancelAnimationFrame(rafId), rafId = null; }
 
     if (video.readyState >= 1) start();
     else video.addEventListener('loadedmetadata', start, { once:true });
 
-    document.addEventListener('visibilitychange', ()=>{
-      if (document.hidden) stop(); else start();
-    });
-
-    video.addEventListener('error', (e)=>{
-      console.warn('[favicon] Erro no vídeo:', e);
-      stop();
-    });
-
-    // Caso o autoplay seja bloqueado, tenta iniciar após primeira interação
+    document.addEventListener('visibilitychange', ()=>{ if (document.hidden) stop(); else start(); });
+    video.addEventListener('error', (e)=>{ console.warn('[favicon] Erro no vídeo:', e); stop(); });
     window.addEventListener('pointerdown', ()=> { if (!running) start(); }, { once:true });
   })();
   </script>
