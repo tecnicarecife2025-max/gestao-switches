@@ -694,7 +694,7 @@
       el.setAttribute('aria-hidden', 'true');
     }
 
-    // Confirm modal (retorna Promise<boolean>)
+    // Confirm modal (retorna Promise<boolean>) - agora move o modal para o final do body e garante z-index alto
     function showConfirm({ title = 'Confirmar', message = '', okLabel = 'Confirmar', cancelLabel = 'Cancelar', okIsDanger = false } = {}) {
       return new Promise(resolve => {
         const modal = byId('confirmModal');
@@ -702,6 +702,14 @@
           resolve(window.confirm(message));
           return;
         }
+
+        // Trazer modal para frente: movendo para o final do <body> e garantindo z-index alto
+        const originalParent = modal.parentElement;
+        const originalNext = modal.nextSibling;
+        document.body.appendChild(modal);
+        const originalZ = modal.style.zIndex || '';
+        modal.style.zIndex = '3000';
+
         const titleEl = modal.querySelector('#confirmModalTitle');
         const msgEl = modal.querySelector('#confirmModalMessage');
         const okBtn = modal.querySelector('#confirmOkBtn');
@@ -713,6 +721,7 @@
         msgEl.textContent = message;
         okBtn.textContent = okLabel;
         cancelBtn.textContent = cancelLabel;
+        cancelBtn.style.display = ''; // garantir visível
         // danger style
         okBtn.classList.toggle('danger', !!okIsDanger);
 
@@ -720,12 +729,26 @@
         const onCancel = () => { cleanup(); resolve(false); };
         const onClose = () => { onCancel(); };
 
+        function restorePosition() {
+          try {
+            if (originalParent) {
+              if (originalNext) originalParent.insertBefore(modal, originalNext);
+              else originalParent.appendChild(modal);
+            }
+          } catch (e) {
+            // ignore
+          } finally {
+            modal.style.zIndex = originalZ;
+          }
+        }
+
         function cleanup(){
           okBtn.removeEventListener('click', onOk);
           cancelBtn.removeEventListener('click', onCancel);
           if (closeBtn) closeBtn.removeEventListener('click', onClose);
           okBtn.classList.remove('danger');
           _closeModalById('confirmModal');
+          restorePosition();
         }
 
         okBtn.addEventListener('click', onOk);
@@ -736,11 +759,19 @@
       });
     }
 
-    // Alerta simples (modal) - resolve quando fechar
+    // Alerta simples (modal) - resolve quando fechar — movemos modal para o topo também
     function showAlert({ title = 'Aviso', message = 'Operação concluída.' } = {}) {
       return new Promise(resolve => {
         const modal = byId('confirmModal');
         if (!modal) { window.alert(message); resolve(); return; }
+
+        // Trazer modal para frente
+        const originalParent = modal.parentElement;
+        const originalNext = modal.nextSibling;
+        document.body.appendChild(modal);
+        const originalZ = modal.style.zIndex || '';
+        modal.style.zIndex = '3000';
+
         const titleEl = modal.querySelector('#confirmModalTitle');
         const msgEl = modal.querySelector('#confirmModalMessage');
         const okBtn = modal.querySelector('#confirmOkBtn');
@@ -756,11 +787,25 @@
         const onOk = () => { cleanup(); resolve(); };
         const onClose = () => { cleanup(); resolve(); };
 
+        function restorePosition() {
+          try {
+            if (originalParent) {
+              if (originalNext) originalParent.insertBefore(modal, originalNext);
+              else originalParent.appendChild(modal);
+            }
+          } catch (e) {
+            // ignore
+          } finally {
+            modal.style.zIndex = originalZ;
+          }
+        }
+
         function cleanup(){
           okBtn.removeEventListener('click', onOk);
           if (closeBtn) closeBtn.removeEventListener('click', onClose);
           cancelBtn.style.display = '';
           _closeModalById('confirmModal');
+          restorePosition();
         }
 
         okBtn.addEventListener('click', onOk);
