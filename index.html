@@ -173,7 +173,7 @@
 
     .switch-list { display:none; padding:8px 16px 16px 16px; overflow:visible; position:relative }
     .switch-row {
-      background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; margin-top:10px;
+      background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; margem-top:10px;
       display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible
     }
     .switch-info-wrap { display:flex; flex-direction:column; gap:2px }
@@ -226,6 +226,10 @@
       100% { left:100%; width:40%; }
     }
 
+    /* Confirm/Alert modal adjustments */
+    #confirmModal .modal-body { padding:18px 20px; color:#333; }
+    #confirmModal .modal-footer { padding:12px 20px; }
+
     @media (max-width: 768px) {
       .main-content { flex-direction:column }
       .hover-preview { left:50%; right:auto; bottom:calc(100% + 8px); transform:translate(-50%,0) scale(.98); max-width:95vw }
@@ -259,7 +263,7 @@
 
     <nav class="menu">
       <h4>Ações</h4>
-      <div class="item" id="menuNovoCadastro" data-label="Novo cadastro">
+      <div class="item" id="menuNovoCadastro" data-label="Novo cadastro" role="button" tabindex="0">
         <span class="icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round">
@@ -269,7 +273,7 @@
         <span>Novo cadastro</span>
       </div>
 
-      <div class="item" id="menuGerenciarPops" data-label="Gerenciar POPs">
+      <div class="item" id="menuGerenciarPops" data-label="Gerenciar POPs" role="button" tabindex="0">
         <span class="icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round">
@@ -299,10 +303,27 @@
             <!-- agora mostramos um loading até os dados chegarem -->
             <div id="estadoLoading" class="loading-wrap" role="status" aria-live="polite" aria-busy="true">
               <div class="progress" aria-hidden="true"><div class="indeterminate"></div></div>
-              <div class="muted" style="text-align:center;margin-top:12px">Carregando…</div>
+              <div class="muted" style="text-align:center;margin-top:12px">Carregando POPs…</div>
             </div>
           </div>
         </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm/Alert modal reutilizável -->
+  <div class="modal" id="confirmModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+    <div class="modal-content" style="max-width:600px">
+      <div class="modal-header">
+        <div class="modal-title" id="confirmModalTitle">Confirmar</div>
+        <button class="close-x" data-close="confirmModal" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmModalMessage" style="margin:0; color:#333; line-height:1.4"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn ghost" id="confirmCancelBtn">Cancelar</button>
+        <button class="btn danger" id="confirmOkBtn">Remover</button>
       </div>
     </div>
   </div>
@@ -321,7 +342,7 @@
     <option value="Planet GSW"></option>
   </datalist>
 
-  <!-- MODAIS -->
+  <!-- MODAIS (cadastro/edição/pops) -->
   <div class="modal" id="modalCadastro" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
@@ -636,7 +657,7 @@
     function savePops(){
       const dbRef = ref(fbDb, 'pops');
       const popsObj = {}; pops.forEach(pop => { popsObj[pop.id] = pop; });
-      set(dbRef, popsObj).catch(err => { console.error("Erro ao salvar POPs:", err); alert("Falha ao salvar POPs."); });
+      set(dbRef, popsObj).catch(err => { console.error("Erro ao salvar POPs:", err); showAlert({ title:'Erro', message:'Falha ao salvar POPs.' }); });
     }
 
     function loadSwitches(){
@@ -656,7 +677,97 @@
     function saveSwitches(){
       const dbRef = ref(fbDb, 'switches');
       const switchesObj = {}; switches.forEach(sw => { switchesObj[sw.id] = sw; });
-      set(dbRef, switchesObj).catch(err => { console.error("Erro ao salvar switches:", err); alert("Falha ao salvar switches."); });
+      set(dbRef, switchesObj).catch(err => { console.error("Erro ao salvar switches:", err); showAlert({ title:'Erro', message:'Falha ao salvar switches.' }); });
+    }
+
+    /* ========= Confirm/Alert helpers (modal) ========= */
+    function _openModalById(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.add('open');
+      el.setAttribute('aria-hidden', 'false');
+    }
+    function _closeModalById(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('open');
+      el.setAttribute('aria-hidden', 'true');
+    }
+
+    // Confirm modal (retorna Promise<boolean>)
+    function showConfirm({ title = 'Confirmar', message = '', okLabel = 'Confirmar', cancelLabel = 'Cancelar', okIsDanger = false } = {}) {
+      return new Promise(resolve => {
+        const modal = byId('confirmModal');
+        if (!modal) {
+          resolve(window.confirm(message));
+          return;
+        }
+        const titleEl = modal.querySelector('#confirmModalTitle');
+        const msgEl = modal.querySelector('#confirmModalMessage');
+        const okBtn = modal.querySelector('#confirmOkBtn');
+        const cancelBtn = modal.querySelector('#confirmCancelBtn');
+        const closeBtn = modal.querySelector('.close-x');
+
+        // set labels
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        okBtn.textContent = okLabel;
+        cancelBtn.textContent = cancelLabel;
+        // danger style
+        okBtn.classList.toggle('danger', !!okIsDanger);
+
+        const onOk = () => { cleanup(); resolve(true); };
+        const onCancel = () => { cleanup(); resolve(false); };
+        const onClose = () => { onCancel(); };
+
+        function cleanup(){
+          okBtn.removeEventListener('click', onOk);
+          cancelBtn.removeEventListener('click', onCancel);
+          if (closeBtn) closeBtn.removeEventListener('click', onClose);
+          okBtn.classList.remove('danger');
+          _closeModalById('confirmModal');
+        }
+
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+        if (closeBtn) closeBtn.addEventListener('click', onClose);
+
+        _openModalById('confirmModal');
+      });
+    }
+
+    // Alerta simples (modal) - resolve quando fechar
+    function showAlert({ title = 'Aviso', message = 'Operação concluída.' } = {}) {
+      return new Promise(resolve => {
+        const modal = byId('confirmModal');
+        if (!modal) { window.alert(message); resolve(); return; }
+        const titleEl = modal.querySelector('#confirmModalTitle');
+        const msgEl = modal.querySelector('#confirmModalMessage');
+        const okBtn = modal.querySelector('#confirmOkBtn');
+        const cancelBtn = modal.querySelector('#confirmCancelBtn');
+        const closeBtn = modal.querySelector('.close-x');
+
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        okBtn.textContent = 'OK';
+        cancelBtn.style.display = 'none';
+        okBtn.classList.remove('danger');
+
+        const onOk = () => { cleanup(); resolve(); };
+        const onClose = () => { cleanup(); resolve(); };
+
+        function cleanup(){
+          okBtn.removeEventListener('click', onOk);
+          if (closeBtn) closeBtn.removeEventListener('click', onClose);
+          cancelBtn.style.display = '';
+          _closeModalById('confirmModal');
+        }
+
+        okBtn.addEventListener('click', onOk);
+        if (closeBtn) closeBtn.addEventListener('click', onClose);
+
+        _openModalById('confirmModal');
+      });
     }
 
     /* ========= Loading / Render control ========= */
@@ -666,23 +777,16 @@
       if (!loading || !container) return;
       if (show){
         loading.style.display = 'flex';
-        // garante que container mantém o loading (limpa conteúdo antigo)
-        // (quando show é true, colocamos apenas o loading)
-        // container.innerHTML = ''; // não necessário, carregamento inicial já tem loading
       } else {
         loading.style.display = 'none';
       }
     }
 
     function renderWhenReady(){
-      // quando ambos os conjuntos de dados forem carregados, escondemos o loading e renderizamos a UI
       if (popsLoaded && switchesLoaded){
         clearTimeout(loadFallbackTimer);
         showLoading(false);
         renderEstadosComPops();
-      } else {
-        // se pelo menos pops já chegou, atualizamos opções do select (feito em loadPops)
-        // mantemos loading visível até ambos finalizarem
       }
     }
 
@@ -700,7 +804,7 @@
       }, timeoutMs);
     }
 
-    /* ========= Render (sem alteração funcional além do loading) ========= */
+    /* ========= Render ========= */
     function popsByEstado(){
       const groups = {};
       pops.forEach(p=>{
@@ -811,29 +915,39 @@
       swBox.style.display  = showPop ? 'none'  : 'block';
     }
 
-    function cadastrarPOP(){
-      const nome=(byId('popNome').value||'').trim(); if(!nome) return alert('Informe o Nome/Descrição do POP.');
+    async function cadastrarPOP(){
+      const nome=(byId('popNome').value||'').trim();
+      if(!nome){ await showAlert({ title:'Atenção', message:'Informe o Nome/Descrição do POP.' }); return; }
       const uf = (byId('popEstado').value||'__'); const id=slugify(nome);
-      const exists=pops.some(p=>p.id===id||p.nome.toLowerCase()===nome.toLowerCase()); if(exists) return alert('Já existe um POP com esse nome.');
+      const exists=pops.some(p=>p.id===id||p.nome.toLowerCase()===nome.toLowerCase());
+      if(exists){ await showAlert({ title:'Atenção', message:'Já existe um POP com esse nome.' }); return; }
       pops.push({ id, nome, estado: uf }); savePops(); renderPopOptions(); renderEstadosComPops();
-      resetCadastroForm(); closeModal('modalCadastro'); alert('POP cadastrado.');
+      resetCadastroForm(); closeModal('modalCadastro');
+      await showAlert({ title:'Sucesso', message:'POP cadastrado com sucesso.' });
     }
 
-    function cadastrarSwitch(){
+    async function cadastrarSwitch(){
       const popSel=byId('pop').value; const ip=byId('ip').value.trim(); const nome=byId('nome').value.trim();
       const modelo=(byId('modelo').value||'').trim(); const fotoInput=byId('foto');
-      if(!popSel||!ip||!nome) return alert('Preencha POP, IP e Nome do Switch.');
-      if(!validarIP(ip)) return alert('IP inválido. Informe um IPv4 válido, ex: 192.168.1.100');
-      const sw={ id:Date.now(), pop:popSel, ip, nome, modelo: modelo || null, foto:null };
+      if(!popSel||!ip||!nome){ await showAlert({ title:'Atenção', message:'Por favor, preencha os campos POP, IP e Nome do switch.' }); return; }
+      if(!validarIP(ip)){ await showAlert({ title:'Atenção', message:'Endereço IP inválido. Informe um IPv4 válido (ex.: 192.168.1.100).' }); return; }
+      const sw={ id:String(Date.now()), pop:popSel, ip, nome, modelo: modelo || null, foto:null };
       if (fotoInput.files && fotoInput.files[0]) {
         const file = fotoInput.files[0];
-        compressAdaptively(file).then(dataURL => { sw.foto = dataURL; finalizarCadastroSwitch(sw); })
-          .catch(()=>{ alert('Não foi possível processar a imagem. Vou salvar o switch sem imagem.'); finalizarCadastroSwitch(sw); });
-      } else finalizarCadastroSwitch(sw);
+        try {
+          const dataURL = await compressAdaptively(file);
+          sw.foto = dataURL;
+        } catch (err) {
+          console.warn('Erro compressão imagem', err);
+          await showAlert({ title:'Aviso', message:'Não foi possível processar a imagem. O switch será salvo sem foto.' });
+        }
+      }
+      finalizarCadastroSwitch(sw);
     }
-    function finalizarCadastroSwitch(sw){
+    async function finalizarCadastroSwitch(sw){
       switches.push(sw); saveSwitches(); renderPopOptions(); renderEstadosComPops();
-      resetCadastroForm(); closeModal('modalCadastro'); alert('Switch cadastrado.');
+      resetCadastroForm(); closeModal('modalCadastro');
+      await showAlert({ title:'Sucesso', message:'Switch cadastrado com sucesso.' });
     }
     function resetCadastroForm(){
       byId('cadastroForm').reset(); const tipoSel=byId('tipoCadastro'); tipoSel.value='switch'; alternarTipo(); renderUFSelect(byId('popEstado'));
@@ -847,27 +961,49 @@
       byId('previewInfo').textContent=sw.foto?'Imagem atual presente.':'Sem imagem.'; byId('editSwitchFoto').value='';
       openModal('modalEditSwitch');
     }
-    function saveEditSwitch(ev){
+    async function saveEditSwitch(ev){
       ev && ev.preventDefault();
-      const id=Number(byId('editSwitchId').value); const nome=byId('editSwitchNome').value.trim();
-      const ip=byId('editSwitchIP').value.trim(); const popSel=byId('editSwitchPop').value; const modelo=(byId('editSwitchModelo').value||'').trim();
+      const idString = byId('editSwitchId').value;
+      const id = idString && !isNaN(Number(idString)) ? Number(idString) : idString;
+      const nome=byId('editSwitchNome').value.trim();
+      const ip=byId('editSwitchIP').value.trim(); const popSel=byId('editSwitchPop').value;
+      const modelo=(byId('editSwitchModelo').value||'').trim();
       const fotoInput=byId('editSwitchFoto'); const removeFlag=byId('previewInfo').dataset.remove==='true';
-      if(!nome||!ip||!popSel) return alert('Preencha Nome, IP e POP.'); if(!validarIP(ip)) return alert('IP inválido.');
+      if(!nome||!ip||!popSel){ await showAlert({ title:'Atenção', message:'Preencha Nome, IP e POP.' }); return; }
+      if(!validarIP(ip)){ await showAlert({ title:'Atenção', message:'Endereço IP inválido. Informe um IPv4 válido (ex.: 192.168.1.100).' }); return; }
       const idx=switches.findIndex(s=>s.id===id); if(idx===-1) return;
-      const applyAndClose=(newFoto)=>{
+      const applyAndClose= async (newFoto)=>{
         switches[idx].nome=nome; switches[idx].ip=ip; switches[idx].pop=popSel; switches[idx].modelo=modelo||null;
         if(removeFlag) switches[idx].foto=null; if(newFoto!==undefined) switches[idx].foto=newFoto;
-        saveSwitches(); renderPopOptions(); renderEstadosComPops(); closeModal('modalEditSwitch'); alert('Switch atualizado.');
+        saveSwitches(); renderPopOptions(); renderEstadosComPops(); closeModal('modalEditSwitch');
+        await showAlert({ title:'Sucesso', message:'Alterações salvas com sucesso.' });
       };
       if (fotoInput.files && fotoInput.files[0]) {
         const file = fotoInput.files[0];
-        compressAdaptively(file).then(dataURL => applyAndClose(dataURL))
-          .catch(()=>{ alert('Não consegui processar a nova imagem. Vou salvar os demais dados.'); applyAndClose(); });
-      } else applyAndClose();
+        try {
+          const dataURL = await compressAdaptively(file);
+          await applyAndClose(dataURL);
+        } catch (err) {
+          console.warn('Erro processar nova imagem', err);
+          await showAlert({ title:'Aviso', message:'Não foi possível processar a nova imagem. Os demais dados serão salvos.' });
+          await applyAndClose();
+        }
+      } else {
+        await applyAndClose();
+      }
     }
-    function deleteSwitch(id){
-      if(!confirm('Deseja realmente excluir este switch?')) return;
-      switches=switches.filter(s=>s.id!==id); saveSwitches(); renderPopOptions(); renderEstadosComPops();
+    async function deleteSwitch(id){
+      const ok = await showConfirm({
+        title: 'Confirmar exclusão',
+        message: 'Tem certeza de que deseja remover este switch permanentemente? Esta ação não pode ser desfeita.',
+        okLabel: 'Remover',
+        cancelLabel: 'Cancelar',
+        okIsDanger: true
+      });
+      if (!ok) return;
+      switches = switches.filter(s=>s.id!==id);
+      saveSwitches(); renderPopOptions(); renderEstadosComPops();
+      await showAlert({ title:'Removido', message:'O switch foi removido.' });
     }
 
     function openModalPops(){ buildPopsTable(); openModal('modalPops'); }
@@ -878,10 +1014,10 @@
         const vinculados=switches.filter(s=>s.pop===row.id).length;
         const tr=document.createElement('tr'); tr.dataset.index=i;
         const ufSelect = `<select data-field="estado">${['__',...estados].map(uf=>`<option value="${uf}" ${uf===row.estado?'selected':''}>${estadoLabel(uf)}</option>`).join('')}</select>`;
-        tr.innerHTML=`
-          <td><input type="text" value="${row.nome}" data-field="nome"></td>
+        tr.innerHTML = `
+          <td><input type="text" value="${row.nome.replace(/"/g,'&quot;')}" data-field="nome"></td>
           <td>${ufSelect}</td>
-          <td><input type="text" value="${row.id}" data-field="id" disabled></td>
+          <td><input type="text" value="${row.id.replace(/"/g,'&quot;')}" data-field="id" disabled></td>
           <td>${vinculados}</td>
           <td class="row-actions">
             <button class="btn small" data-act="renomear">Gerar ID</button>
@@ -900,9 +1036,18 @@
         if(ev.target.matches('[data-act="excluir"]')){
           const idAtual=pendingPopEdits[idx].id;
           const vinculados=switches.filter(s=>s.pop===idAtual).length;
-          if(vinculados>0) return alert('Não é possível excluir: existem switches vinculados a este POP.');
-          if(!confirm('Confirmar exclusão deste POP?')) return;
-          pendingPopEdits[idx]._delete=true; tr.style.opacity=.5;
+          if(vinculados>0){ showAlert({ title:'Atenção', message:'Não é possível excluir: existem switches vinculados a este POP.' }); return; }
+          (async ()=>{
+            const ok = await showConfirm({
+              title: 'Confirmar exclusão',
+              message: 'Deseja realmente excluir este POP? Esta operação não pode ser desfeita.',
+              okLabel: 'Excluir',
+              cancelLabel: 'Cancelar',
+              okIsDanger: true
+            });
+            if (!ok) return;
+            pendingPopEdits[idx]._delete=true; tr.style.opacity=.5;
+          })();
         }
       };
       tbody.oninput=(ev)=>{
@@ -912,12 +1057,12 @@
       };
       tbody.onchange = tbody.oninput;
     }
-    function applyPopEdits(){
+    async function applyPopEdits(){
       const effective=pendingPopEdits.filter(r=>!r._delete);
       const ids=effective.map(r=>r.id);
       const nomes=effective.map(r=>r.nome.trim().toLowerCase());
-      if(ids.length!==new Set(ids).size) return alert('IDs (slug) duplicados após edição. Ajuste os nomes/IDs.');
-      if(nomes.length!==new Set(nomes).size) return alert('Nomes duplicados após edição. Ajuste os nomes.');
+      if(ids.length!==new Set(ids).size){ await showAlert({ title:'Atenção', message:'IDs (slug) duplicados após edição. Ajuste os nomes/IDs.' }); return; }
+      if(nomes.length!==new Set(nomes).size){ await showAlert({ title:'Atenção', message:'Nomes duplicados após edição. Ajuste os nomes.' }); return; }
       pendingPopEdits.filter(r=>r._delete).forEach(rem=>{ pops=pops.filter(p=>p.id!==rem.oldId); });
       pendingPopEdits.filter(r=>!r._delete).forEach(edit=>{
         const pIdx=pops.findIndex(p=>p.id===edit.oldId); if(pIdx===-1) return;
@@ -925,11 +1070,17 @@
         pops[pIdx].id=edit.id; pops[pIdx].nome=edit.nome; pops[pIdx].estado=edit.estado || '__';
         if(idChanged){ switches.forEach(s=>{ if(s.pop===edit.oldId) s.pop=edit.id; }); }
       });
-      savePops(); saveSwitches(); renderPopOptions(); renderEstadosComPops(); closeModal('modalPops'); alert('POPs atualizados.');
+      savePops(); saveSwitches(); renderPopOptions(); renderEstadosComPops(); closeModal('modalPops');
+      await showAlert({ title:'Sucesso', message:'POPs atualizados.' });
     }
 
     /* ========= Listeners globais ========= */
     document.addEventListener('DOMContentLoaded', () => {
+      // Fechar modais via botão [x] e botão com data-close
+      document.querySelectorAll('[data-close]').forEach(btn =>
+        btn.addEventListener('click', (e)=> closeModal(e.currentTarget.getAttribute('data-close')))
+      );
+
       // Estado inicial salvo (desktop)
       const saved = localStorage.getItem(LS_SIDEBAR_STATE);
       if (saved === '1' && !isMobile()) document.body.classList.add('sidebar-collapsed');
@@ -967,13 +1118,8 @@
         closeSidebar(); cancelAutoHide(); openModalPops();
       });
 
-      // Fechar modais
-      document.querySelectorAll('[data-close]').forEach(btn =>
-        btn.addEventListener('click', (e)=> closeModal(e.currentTarget.getAttribute('data-close')))
-      );
-
       // Ações dos botões dos modais
-      byId('btnSalvarCadastro').addEventListener('click', (e)=>{ e.preventDefault(); const tipo=byId('tipoCadastro').value; if(tipo==='pop') cadastrarPOP(); else cadastrarSwitch(); });
+      byId('btnSalvarCadastro').addEventListener('click', async (e)=>{ e.preventDefault(); const tipo=byId('tipoCadastro').value; if(tipo==='pop') await cadastrarPOP(); else await cadastrarSwitch(); });
       byId('btnSalvarEditSwitch').addEventListener('click', saveEditSwitch);
       byId('btnRemoverFoto').addEventListener('click', () => { byId('editSwitchFoto').value=''; byId('previewInfo').textContent='Imagem será removida ao salvar.'; byId('previewInfo').dataset.remove='true'; });
       byId('btnSalvarPops').addEventListener('click', applyPopEdits);
@@ -993,9 +1139,12 @@
         const swBtn = ev.target.closest('[data-action]');
         if (swBtn) {
           const action = swBtn.dataset.action;
-          const swId = Number(swBtn.closest('[data-switch-id]').dataset.switchId);
-          if (action === 'edit') openEditSwitch(swId);
-          if (action === 'delete') deleteSwitch(swId);
+          const swId = swBtn.closest('[data-switch-id]')?.dataset.switchId;
+          if (!swId) return;
+          const isNumeric = !isNaN(Number(swId));
+          const swIdParsed = isNumeric ? Number(swId) : swId;
+          if (action === 'edit') openEditSwitch(swIdParsed);
+          if (action === 'delete') deleteSwitch(swIdParsed);
         }
       });
 
@@ -1006,7 +1155,7 @@
         sidebarEl.addEventListener('mouseleave', ()=>{ isSidebarHovered = false; scheduleAutoHide(); });
       }
 
-      // Observar mudanças de classe no body para reagendar auto-hide automaticamente
+      // Observador para reagendar auto-hide automaticamente
       const bodyObserver = new MutationObserver(()=> {
         if (isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide();
       });
