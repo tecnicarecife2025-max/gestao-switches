@@ -824,11 +824,13 @@
     function openModal(id){ const el=byId(id); if(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); } }
     function closeModal(id){ const el=byId(id); if(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); } }
 
-    function openCadastroModal() {
-      openModal('modalCadastro'); renderPopOptions();
-      const tipoSel = byId('tipoCadastro'); tipoSel.value = 'switch';
-      bindTipoCadastroEvents(); alternarTipo();
-    }
+    function openCadastroModal() {  
+  openModal('modalCadastro');  
+  renderPopOptions();  
+  renderUFSelect(byId('popEstado')); // ← Adicionado: preenche as UFs  
+  const tipoSel = byId('tipoCadastro'); tipoSel.value = 'switch';  
+  bindTipoCadastroEvents(); alternarTipo();  
+}
     function bindTipoCadastroEvents() {
       const sel = byId('tipoCadastro'); const clone = sel.cloneNode(true);
       sel.parentNode.replaceChild(clone, sel);
