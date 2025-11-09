@@ -1,9 +1,22 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="js-prehide">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestão de Switches de Rede</title>
+
+  <!-- Anti-FOUC CRÍTICO: aplicado antes de qualquer outro CSS -->
+  <style>
+    /* Desliga transições/anim. na 1ª pintura para evitar piscadas */
+    html.js-prehide * { transition: none !important; animation: none !important; }
+
+    /* Sidebar invisível e JÁ colapsada na 1ª pintura */
+    html.js-prehide .sidebar { visibility: hidden; width: 52px; }
+
+    /* Conteúdo já compensado para a largura colapsada (52px) */
+    html.js-prehide .with-sidebar { margin-left: 52px; }
+  </style>
+
   <style>
     :root{
       --sbw: 260px;           /* largura sidebar aberta */
@@ -12,9 +25,6 @@
     * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif }
     body { background:#f5f7fa; color:#333 }
     .container { max-width:1200px; margin:0 auto; padding:20px }
-
-    /* Anti-flicker: enquanto o body tiver .js-prehide, a sidebar fica invisível */
-    .js-prehide .sidebar { visibility: hidden; }
 
     /* ===== Sidebar ===== */
     .sidebar {
@@ -241,7 +251,7 @@
     }
   </style>
 </head>
-<body class="sidebar-collapsed js-prehide">
+<body class="sidebar-collapsed">
   <!-- Overlay para mobile quando sidebar aberta -->
   <div class="sidebar-overlay" onclick="document.body.classList.remove('sidebar-open')"></div>
   <!-- Hitbox invisível no mobile para abrir a sidebar -->
@@ -508,7 +518,7 @@
     });
 
     /* ========= Estado / Utils ========= */
-    const LS_SWITCHES_KEY = 'networkSwitches'; // mantidos para fallback, mas não usados para leitura
+    const LS_SWITCHES_KEY = 'networkSwitches';
     const LS_POPS_KEY = 'networkPops';
     const LS_SIDEBAR_STATE = 'sidebarCollapsed';
 
@@ -736,7 +746,7 @@
           try {
             if (originalParent) {
               if (originalNext) originalParent.insertBefore(modal, originalNext);
-              else originalParent.appendChild(modal);
+              else originalParent.insertBefore(modal, null);
             }
           } catch (e) {} finally {
             modal.style.zIndex = originalZ;
@@ -790,7 +800,7 @@
           try {
             if (originalParent) {
               if (originalNext) originalParent.insertBefore(modal, originalNext);
-              else originalParent.appendChild(modal);
+              else originalParent.insertBefore(modal, null);
             }
           } catch (e) {} finally {
             modal.style.zIndex = originalZ;
@@ -817,11 +827,7 @@
       const loading = byId('estadoLoading');
       const container = byId('estadoContainer');
       if (!loading || !container) return;
-      if (show){
-        loading.style.display = 'flex';
-      } else {
-        loading.style.display = 'none';
-      }
+      loading.style.display = show ? 'flex' : 'none';
     }
 
     function renderWhenReady(){
@@ -1208,7 +1214,7 @@
 
     /* ========= Listeners globais ========= */
     document.addEventListener('DOMContentLoaded', () => {
-      // Sempre iniciar com menu lateral oculto no desktop (sem considerar estado salvo)
+      // Sempre iniciar com menu lateral oculto no desktop
       if (!isMobile()) {
         setCollapsed(true); // força oculto
       } else {
@@ -1297,13 +1303,17 @@
       });
       bodyObserver.observe(document.body, { attributes:true, attributeFilter:['class'] });
 
-      // Resize: não restaurar estado salvo no desktop
+      // Resize: aplicar em modo "sem transição" e manter colapsado no desktop
       window.addEventListener('resize', () => {
+        document.documentElement.classList.add('js-prehide');
         if (!isMobile()) {
           document.body.classList.remove('sidebar-open'); // desktop nunca abre automático
           setCollapsed(true); // mantém colapsado no desktop
         }
-        setTimeout(()=>{ if (isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide(); }, 0);
+        requestAnimationFrame(() => {
+          document.documentElement.classList.remove('js-prehide');
+          if (isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide();
+        });
       });
 
       // Atalho (Ctrl+B) para colapsar/expandir no desktop
@@ -1317,11 +1327,11 @@
       // start fallback timer para evitar loading infinito
       startLoadFallbackTimer(8000);
 
-      // *** IMPORTANTE: Remover o pré-hide somente ao fim da inicialização ***
-      document.body.classList.remove('js-prehide');
-
-      // Agenda/cancela o auto-hide conforme estado final
-      if (isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide();
+      // *** IMPORTANTE: Remover o pré-hide (e reabilitar transições) só DEPOIS da 1ª pintura já colapsada ***
+      requestAnimationFrame(() => {
+        document.documentElement.classList.remove('js-prehide');
+        if (isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide();
+      });
     });
   </script>
 </body>
