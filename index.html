@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestão de Switches de Rede</title>
 
-  <!-- Favicon -->  
-  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3749/3749786.png" type="image/png" sizes="32x32">  
-  <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/3749/3749786.png" type="image/png">  
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3749/3749786.png">  
+  <!-- Favicon base (fallback) -->
+  <link id="dynamic-favicon" rel="icon" type="image/png"
+        href="https://cdn-icons-png.flaticon.com/512/3749/3749786.png" />
   <meta name="theme-color" content="#111923">
 
   <!-- Anti-flicker: inicia colapsado via variáveis e sem animações até .js-ready -->
@@ -248,6 +247,13 @@
 
 <!-- Já começamos colapsado no HTML -->
 <body class="sidebar-collapsed">
+  <!-- VIDEO OCULTO QUE ALIMENTA O FAVICON (ANIMADO) -->
+  <video id="favVideo" width="256" height="256" preload="auto" muted playsinline loop
+         autoplay crossorigin="anonymous"
+         style="position:absolute; left:-9999px; width:256px; height:256px; visibility:hidden; background:transparent url('https://cdn-icons-png.flaticon.com/512/19034/19034328.png') 50% 50% / contain no-repeat;">
+    <source src="https://cdn-icons-mp4.flaticon.com/512/19034/19034328.mp4" type="video/mp4">
+  </video>
+
   <div class="sidebar-overlay" onclick="document.body.classList.remove('sidebar-open')"></div>
   <div class="edge-hitbox" id="edgeHitbox" aria-hidden="true"></div>
 
@@ -831,12 +837,12 @@
     function closeModal(id){ const el=byId(id); if(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); } }
 
     function openCadastroModal() {  
-  openModal('modalCadastro');  
-  renderPopOptions();  
-  renderUFSelect(byId('popEstado')); // ← Adicionado: preenche as UFs  
-  const tipoSel = byId('tipoCadastro'); tipoSel.value = 'switch';  
-  bindTipoCadastroEvents(); alternarTipo();  
-}
+      openModal('modalCadastro');  
+      renderPopOptions();  
+      renderUFSelect(byId('popEstado')); // ← preenche as UFs  
+      const tipoSel = byId('tipoCadastro'); tipoSel.value = 'switch';  
+      bindTipoCadastroEvents(); alternarTipo();  
+    }
     function bindTipoCadastroEvents() {
       const sel = byId('tipoCadastro'); const clone = sel.cloneNode(true);
       sel.parentNode.replaceChild(clone, sel);
@@ -1146,6 +1152,93 @@
       // (No desktop estamos colapsados, então mudar --sbw não mexe nada)
       requestAnimationFrame(() => { document.documentElement.classList.add('js-ready'); });
     });
+  </script>
+
+  <!-- ===== FAVICON ANIMADO VIA CANVAS ===== -->
+  <script>
+  (function(){
+    const link = document.querySelector('#dynamic-favicon');
+    const video = document.querySelector('#favVideo');
+    if (!link || !video) return;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    // Tamanho alvo do favicon (32x32 é suficiente e leve)
+    const FAV_W = 32, FAV_H = 32;
+    canvas.width = FAV_W; canvas.height = FAV_H;
+
+    let running = false;
+    let rafId = null;
+    let lastUpdate = 0;
+    const FPS = 10;                 // ~10 fps = leve e fluido
+    const FRAME_MS = 1000 / FPS;
+
+    function drawFrame(ts){
+      if (!running) return;
+      if (document.hidden) {        // evita custo quando aba está oculta
+        rafId = requestAnimationFrame(drawFrame);
+        return;
+      }
+      if (ts - lastUpdate >= FRAME_MS) {
+        lastUpdate = ts;
+        try {
+          ctx.clearRect(0,0,FAV_W,FAV_H);
+          const vW = video.videoWidth || 256;
+          const vH = video.videoHeight || 256;
+          if (vW && vH) {
+            // crop central quadrado para manter proporção
+            const s = Math.min(vW, vH);
+            const sx = (vW - s) / 2;
+            const sy = (vH - s) / 2;
+            ctx.drawImage(video, sx, sy, s, s, 0, 0, FAV_W, FAV_H);
+          } else {
+            ctx.fillStyle = '#111923';
+            ctx.fillRect(0,0,FAV_W,FAV_H);
+          }
+          const url = canvas.toDataURL('image/png');
+          if (url && url.startsWith('data:image/png')) {
+            link.href = url;
+          }
+        } catch (e) {
+          // CORS provavelmente bloqueou leitura do vídeo -> mantém estático
+          console.warn('[favicon] Falha ao animar (CORS?):', e);
+          stop();
+          return;
+        }
+      }
+      rafId = requestAnimationFrame(drawFrame);
+    }
+
+    function start(){
+      if (running) return;
+      running = true;
+      const p = video.play();
+      if (p && typeof p.then === 'function') {
+        p.catch(()=>{/* autoplay pode ser bloqueado; interação do usuário libera */});
+      }
+      rafId = requestAnimationFrame(drawFrame);
+    }
+    function stop(){
+      running = false;
+      if (rafId) cancelAnimationFrame(rafId), rafId = null;
+    }
+
+    if (video.readyState >= 1) start();
+    else video.addEventListener('loadedmetadata', start, { once:true });
+
+    document.addEventListener('visibilitychange', ()=>{
+      if (document.hidden) stop(); else start();
+    });
+
+    video.addEventListener('error', (e)=>{
+      console.warn('[favicon] Erro no vídeo:', e);
+      stop();
+    });
+
+    // Caso o autoplay seja bloqueado, tenta iniciar após primeira interação
+    window.addEventListener('pointerdown', ()=> { if (!running) start(); }, { once:true });
+  })();
   </script>
 </body>
 </html>
