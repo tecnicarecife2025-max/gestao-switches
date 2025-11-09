@@ -1239,10 +1239,10 @@
         btn.addEventListener('click', (e)=> closeModal(e.currentTarget.getAttribute('data-close')))
       );
 
-      // Estado inicial salvo (desktop)
-      if (!isMobile()) {  
-  document.body.classList.add('sidebar-collapsed');  
-}
+      // Sempre iniciar com menu lateral oculto no desktop (ignora estado salvo)
+      if (!isMobile()) {
+        document.body.classList.add('sidebar-collapsed');
+      }
 
       // Botão colapsar/expandir
       byId('btnCollapse').addEventListener('click', () => {
