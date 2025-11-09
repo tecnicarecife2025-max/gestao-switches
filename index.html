@@ -555,7 +555,7 @@
   });  
 }
 
-    fufunction loadSwitches() {  
+    function loadSwitches() {  
   const dbRef = ref(fbDb, 'switches');  
   onValue(dbRef, (snapshot) => {  
     const data = snapshot.val();  
@@ -565,7 +565,6 @@
     console.error("Erro ao carregar switches:", error);  
   });  
 }
-    nction loadSwitches(){ const stored=localStorage.getItem(LS_SWITCHES_KEY); if(stored){ try{ switches=JSON.parse(stored)||[]; } catch{ switches=[]; } } }
     function saveSwitches() {  
   const dbRef = ref(fbDb, 'switches');  
   const switchesObj = {};  
