@@ -124,6 +124,18 @@
       z-index:1500;
     }
 
+    /* ===== BOTÃO DE TRAVAR/DESTRAVAR (no canto inferior da sidebar) ===== */
+    .lock-area{ padding:10px; margin-top:auto; border-top:1px solid rgba(255,255,255,.06) }
+    .lock-btn{
+      width:100%; display:flex; align-items:center; gap:10px; justify-content:center;
+      background:#ffffff1a; border:1px solid #ffffff24; color:#fff;
+      padding:10px 12px; border-radius:10px; cursor:pointer; transition:.2s;
+    }
+    .lock-btn:hover{ background:#ffffff2d }
+    .lock-btn img{ width:20px; height:20px; display:block }
+    .lock-label{ font-weight:700; letter-spacing:.02em }
+    body.sidebar-collapsed .lock-label{ display:none } /* só o ícone quando colapsado */
+
     /* ===== Mobile: slide in/out ===== */
     @media (max-width: 900px){
       .sidebar { transform:translateX(-100%) }
@@ -242,11 +254,17 @@
       .switch-row:hover .hover-preview { transform:translate(-50%,0) scale(1) }
       .hover-preview::before, .hover-preview::after { left:50%; transform:translateX(-50%) }
     }
+
+    /* ======== REGRAS DE BLOQUEIO (TRAVADO) ======== */
+    /* Esconde ações sensíveis quando body tiver a classe .locked */
+    body.locked #menuNovoCadastro,
+    body.locked #menuGerenciarPops,
+    body.locked .row-actions { display:none !important; }
   </style>
 </head>
 
-<!-- Já começamos colapsado no HTML -->
-<body class="sidebar-collapsed">
+<!-- Já começamos colapsado e TRAVADO no HTML -->
+<body class="sidebar-collapsed locked">
   <!-- VIDEO OCULTO QUE ALIMENTA O FAVICON (ANIMADO) -->
   <video id="favVideo" width="256" height="256" preload="auto" muted playsinline loop
          autoplay crossorigin="anonymous"
@@ -289,6 +307,14 @@
         <span>Gerenciar POPs</span>
       </div>
     </nav>
+
+    <!-- Botão de Trava/Destrava -->
+    <div class="lock-area">
+      <button class="lock-btn" id="lockBtn" title="Destravar (senha)">
+        <img id="lockIcon" src="https://cdn-icons-png.flaticon.com/512/7615/7615902.png" alt="Bloqueado">
+        <span class="lock-label" id="lockLabel">Bloqueado</span>
+      </button>
+    </div>
   </aside>
 
   <div class="with-sidebar">
@@ -623,6 +649,32 @@
     }
     function cancelAutoHide(){ clearTimeout(autoHideTimer); }
 
+    /* ========= BLOQUEIO / SENHA ========= */
+    let isLocked = true; // sempre inicia travado
+
+    function setLocked(state){
+      isLocked = !!state;
+      document.body.classList.toggle('locked', isLocked);
+      const icon = byId('lockIcon');
+      const label = byId('lockLabel');
+      const btn = byId('lockBtn');
+      if (isLocked){
+        if (icon) icon.src = "https://cdn-icons-png.flaticon.com/512/7615/7615902.png"; // cadeado fechado
+        if (label) label.textContent = "Bloqueado";
+        if (btn) btn.title = "Destravar (senha)";
+      } else {
+        if (icon) icon.src = "https://cdn-icons-png.flaticon.com/512/7615/7615905.png"; // cadeado aberto
+        if (label) label.textContent = "Desbloqueado";
+        if (btn) btn.title = "Bloquear";
+      }
+    }
+
+    async function requireUnlocked(){
+      if (!isLocked) return true;
+      await showAlert({ title:'Bloqueado', message:'Para usar essa função, clique no cadeado e destrave com a senha.' });
+      return false;
+    }
+
     /* ========= Firebase ========= */
     function loadPops(){
       const dbRef = ref(fbDb, 'pops');
@@ -860,6 +912,7 @@
     }
 
     async function cadastrarPOP(){
+      if (isLocked){ await showAlert({ title:'Bloqueado', message:'Destrave com a senha para cadastrar POP.' }); return; }
       const nome=(byId('popNome').value||'').trim();
       if(!nome){ await showAlert({ title:'Atenção', message:'Informe o Nome/Descrição do POP.' }); return; }
       const uf = (byId('popEstado').value||'__'); const id=slugify(nome);
@@ -871,6 +924,7 @@
     }
 
     async function cadastrarSwitch(){
+      if (isLocked){ await showAlert({ title:'Bloqueado', message:'Destrave com a senha para cadastrar Switch.' }); return; }
       const popSel=byId('pop').value; const ip=byId('ip').value.trim(); const nome=byId('nome').value.trim();
       const modelo=(byId('modelo').value||'').trim(); const fotoInput=byId('foto');
       if(!popSel||!ip||!nome){ await showAlert({ title:'Atenção', message:'Preencha POP, IP e Nome do switch.' }); return; }
@@ -887,6 +941,7 @@
     }
 
     function openEditSwitch(id){
+      if (isLocked){ showAlert({ title:'Bloqueado', message:'Destrave com a senha para editar.' }); return; }
       const sw=switches.find(s=>s.id===id); if(!sw) return;
       byId('editSwitchId').value=String(sw.id);
       byId('editSwitchNome').value=sw.nome;
@@ -903,6 +958,7 @@
 
     async function saveEditSwitch(ev){
       ev && ev.preventDefault();
+      if (isLocked){ await showAlert({ title:'Bloqueado', message:'Destrave com a senha para salvar alterações.' }); return; }
       const idString = byId('editSwitchId').value;
       const id = idString && !isNaN(Number(idString)) ? Number(idString) : idString;
       const nome = (byId('editSwitchNome').value || '').trim();
@@ -954,6 +1010,7 @@
     }
 
     async function deleteSwitch(id){
+      if (isLocked){ await showAlert({ title:'Bloqueado', message:'Destrave com a senha para excluir.' }); return; }
       const ok = await showConfirm({
         title: 'Confirmar exclusão',
         message: 'Tem certeza de que deseja remover este switch permanentemente? Esta ação não pode ser desfeita.',
@@ -965,7 +1022,10 @@
       await showAlert({ title:'Removido', message:'O switch foi removido.' });
     }
 
-    function openModalPops(){ buildPopsTable(); openModal('modalPops'); }
+    function openModalPops(){
+      if (isLocked){ showAlert({ title:'Bloqueado', message:'Destrave com a senha para gerenciar POPs.' }); return; }
+      buildPopsTable(); openModal('modalPops');
+    }
     function buildPopsTable(){
       const tbody=byId('tabelaPops').querySelector('tbody'); tbody.innerHTML='';
       pendingPopEdits=pops.map(p=>({ oldId:p.id, id:p.id, nome:p.nome, estado:p.estado||'__', _delete:false }));
@@ -1016,6 +1076,8 @@
     }
 
     async function applyPopEdits(){
+      if (isLocked){ await showAlert({ title:'Bloqueado', message:'Destrave com a senha para salvar alterações de POP.' }); return; }
+
       const deletions = pendingPopEdits.filter(r => r._delete);
       const effective = pendingPopEdits.filter(r => !r._delete);
       let anyChange = deletions.length > 0;
@@ -1061,7 +1123,22 @@
       // 1) Força início oculto no desktop; no mobile, fechado (sem .sidebar-open)
       if (!isMobile()) { setCollapsed(true); } else { document.body.classList.remove('sidebar-open'); }
 
-      // 2) Botões e ações
+      // 2) Inicia TRAVADO
+      setLocked(true);
+
+      // 3) Botão de trava/destrava
+      byId('lockBtn')?.addEventListener('click', async ()=>{
+        if (isLocked){
+          const pwd = window.prompt('Digite a senha para destravar:');
+          if (pwd === '123456'){ setLocked(false); await showAlert({ title:'Desbloqueado', message:'Funções liberadas.' }); }
+          else { await showAlert({ title:'Senha incorreta', message:'Tente novamente.' }); }
+        } else {
+          setLocked(true);
+          await showAlert({ title:'Bloqueado', message:'Ações ocultadas e bloqueadas.' });
+        }
+      });
+
+      // 4) Botões e ações existentes
       document.querySelectorAll('[data-close]').forEach(btn =>
         btn.addEventListener('click', (e)=> closeModal(e.currentTarget.getAttribute('data-close')))
       );
@@ -1088,12 +1165,26 @@
         edge.addEventListener('click', ()=>{ if (isMobile()) { document.body.classList.add('sidebar-open'); scheduleAutoHide(); } });
       }
 
-      byId('menuNovoCadastro').addEventListener('click', () => { closeSidebar(); cancelAutoHide(); openCadastroModal(); });
-      byId('menuGerenciarPops').addEventListener('click', () => { closeSidebar(); cancelAutoHide(); openModalPops(); });
+      byId('menuNovoCadastro').addEventListener('click', () => { 
+        if (isLocked){ showAlert({ title:'Bloqueado', message:'Destrave com a senha para cadastrar.' }); return; }
+        closeSidebar(); cancelAutoHide(); openCadastroModal(); 
+      });
+      byId('menuGerenciarPops').addEventListener('click', () => { 
+        if (isLocked){ showAlert({ title:'Bloqueado', message:'Destrave com a senha para gerenciar POPs.' }); return; }
+        closeSidebar(); cancelAutoHide(); openModalPops(); 
+      });
 
-      byId('btnSalvarCadastro').addEventListener('click', async (e)=>{ e.preventDefault(); const tipo=byId('tipoCadastro').value; if(tipo==='pop') await cadastrarPOP(); else await cadastrarSwitch(); });
+      byId('btnSalvarCadastro').addEventListener('click', async (e)=>{
+        e.preventDefault();
+        const tipo=byId('tipoCadastro').value;
+        if (isLocked){ await showAlert({ title:'Bloqueado', message:'Destrave com a senha para cadastrar.' }); return; }
+        if(tipo==='pop') await cadastrarPOP(); else await cadastrarSwitch();
+      });
       byId('btnSalvarEditSwitch').addEventListener('click', saveEditSwitch);
-      byId('btnRemoverFoto').addEventListener('click', () => { byId('editSwitchFoto').value=''; byId('previewInfo').textContent='Imagem será removida ao salvar.'; byId('previewInfo').dataset.remove='true'; });
+      byId('btnRemoverFoto').addEventListener('click', () => { 
+        if (isLocked){ showAlert({ title:'Bloqueado', message:'Destrave com a senha para remover a imagem.' }); return; }
+        byId('editSwitchFoto').value=''; byId('previewInfo').textContent='Imagem será removida ao salvar.'; byId('previewInfo').dataset.remove='true'; 
+      });
       byId('btnSalvarPops').addEventListener('click', applyPopEdits);
 
       byId('estadoContainer').addEventListener('click', (ev) => {
@@ -1114,8 +1205,8 @@
           if (!swId) return;
           const isNumeric = !isNaN(Number(swId));
           const swIdParsed = isNumeric ? Number(swId) : swId;
-          if (action === 'edit') openEditSwitch(swIdParsed);
-          if (action === 'delete') deleteSwitch(swIdParsed);
+          if (action === 'edit'){ if (isLocked){ showAlert({ title:'Bloqueado', message:'Destrave para editar.' }); return; } openEditSwitch(swIdParsed); }
+          if (action === 'delete'){ if (isLocked){ showAlert({ title:'Bloqueado', message:'Destrave para excluir.' }); return; } deleteSwitch(swIdParsed); }
         }
       });
 
@@ -1149,7 +1240,6 @@
       startLoadFallbackTimer(8000);
 
       // *** Libera as transições e fixa vars reais (sem qualquer salto visual) ***
-      // (No desktop estamos colapsados, então mudar --sbw não mexe nada)
       requestAnimationFrame(() => { document.documentElement.classList.add('js-ready'); });
     });
   </script>
