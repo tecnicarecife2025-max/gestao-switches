@@ -303,7 +303,7 @@
             <!-- agora mostramos um loading até os dados chegarem -->
             <div id="estadoLoading" class="loading-wrap" role="status" aria-live="polite" aria-busy="true">
               <div class="progress" aria-hidden="true"><div class="indeterminate"></div></div>
-              <div class="muted" style="text-align:center;margin-top:12px">Carregando…</div>
+              <div class="muted" style="text-align:center;margin-top:12px">Carregando POPs…</div>
             </div>
           </div>
         </section>
@@ -1006,37 +1006,91 @@
       byId('previewInfo').textContent=sw.foto?'Imagem atual presente.':'Sem imagem.'; byId('editSwitchFoto').value='';
       openModal('modalEditSwitch');
     }
+
+    // Função saveEditSwitch atualizada - só salva se houver alteração real
     async function saveEditSwitch(ev){
       ev && ev.preventDefault();
       const idString = byId('editSwitchId').value;
       const id = idString && !isNaN(Number(idString)) ? Number(idString) : idString;
-      const nome=byId('editSwitchNome').value.trim();
-      const ip=byId('editSwitchIP').value.trim(); const popSel=byId('editSwitchPop').value;
-      const modelo=(byId('editSwitchModelo').value||'').trim();
-      const fotoInput=byId('editSwitchFoto'); const removeFlag=byId('previewInfo').dataset.remove==='true';
-      if(!nome||!ip||!popSel){ await showAlert({ title:'Atenção', message:'Preencha Nome, IP e POP.' }); return; }
-      if(!validarIP(ip)){ await showAlert({ title:'Atenção', message:'Endereço IP inválido. Informe um IPv4 válido (ex.: 192.168.1.100).' }); return; }
-      const idx=switches.findIndex(s=>s.id===id); if(idx===-1) return;
-      const applyAndClose= async (newFoto)=>{
-        switches[idx].nome=nome; switches[idx].ip=ip; switches[idx].pop=popSel; switches[idx].modelo=modelo||null;
-        if(removeFlag) switches[idx].foto=null; if(newFoto!==undefined) switches[idx].foto=newFoto;
-        saveSwitches(); renderPopOptions(); renderEstadosComPops(); closeModal('modalEditSwitch');
+      const nome = (byId('editSwitchNome').value || '').trim();
+      const ip = (byId('editSwitchIP').value || '').trim();
+      const popSel = byId('editSwitchPop').value;
+      const modelo = (byId('editSwitchModelo').value || '').trim();
+      const fotoInput = byId('editSwitchFoto');
+      const removeFlag = byId('previewInfo').dataset.remove === 'true';
+
+      if(!nome || !ip || !popSel){
+        await showAlert({ title:'Atenção', message:'Preencha Nome, IP e POP.' });
+        return;
+      }
+      if(!validarIP(ip)){
+        await showAlert({ title:'Atenção', message:'Endereço IP inválido. Informe um IPv4 válido (ex.: 192.168.1.100).' });
+        return;
+      }
+
+      const idx = switches.findIndex(s => s.id === id);
+      if(idx === -1) return;
+
+      const original = switches[idx];
+
+      // Normaliza modelo para comparação (null vs empty)
+      const origModelo = original.modelo || null;
+      const newModelo = modelo || null;
+
+      // Detectar se há novo arquivo de imagem (upload)
+      const hasNewFile = fotoInput && fotoInput.files && fotoInput.files[0];
+
+      // Detectar se a remoção de foto vai alterar algo
+      const willRemoveFoto = removeFlag && !!original.foto;
+
+      // Verificar se algo mudou
+      const changed =
+        nome !== original.nome ||
+        ip !== original.ip ||
+        popSel !== original.pop ||
+        newModelo !== origModelo ||
+        hasNewFile ||
+        willRemoveFoto;
+
+      if (!changed) {
+        // Fechar modal sem mostrar mensagem de "Alterações salvas"
+        closeModal('modalEditSwitch');
+        return;
+      }
+
+      // Função que aplica as alterações e finaliza
+      const applyAndClose = async (newFoto) => {
+        switches[idx].nome = nome;
+        switches[idx].ip = ip;
+        switches[idx].pop = popSel;
+        switches[idx].modelo = newModelo;
+        if (removeFlag) switches[idx].foto = null;
+        if (newFoto !== undefined) switches[idx].foto = newFoto;
+        saveSwitches();
+        renderPopOptions();
+        renderEstadosComPops();
+        closeModal('modalEditSwitch');
         await showAlert({ title:'Sucesso', message:'Alterações salvas com sucesso.' });
       };
-      if (fotoInput.files && fotoInput.files[0]) {
+
+      // Se tiver novo arquivo, processa antes de salvar
+      if (hasNewFile) {
         const file = fotoInput.files[0];
         try {
           const dataURL = await compressAdaptively(file);
           await applyAndClose(dataURL);
         } catch (err) {
           console.warn('Erro processar nova imagem', err);
+          // Ainda salva demais alterações, mas informa sobre a imagem
           await showAlert({ title:'Aviso', message:'Não foi possível processar a nova imagem. Os demais dados serão salvos.' });
-          await applyAndClose();
+          await applyAndClose(); // salva sem nova foto
         }
       } else {
+        // Sem novo arquivo — apenas aplicar alterações (pode incluir remoção de foto)
         await applyAndClose();
       }
     }
+
     async function deleteSwitch(id){
       const ok = await showConfirm({
         title: 'Confirmar exclusão',
