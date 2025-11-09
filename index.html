@@ -1240,8 +1240,9 @@
       );
 
       // Estado inicial salvo (desktop)
-      const saved = localStorage.getItem(LS_SIDEBAR_STATE);
-      if (saved === '1' && !isMobile()) document.body.classList.add('sidebar-collapsed');
+      if (!isMobile()) {  
+  document.body.classList.add('sidebar-collapsed');  
+}
 
       // Botão colapsar/expandir
       byId('btnCollapse').addEventListener('click', () => {
