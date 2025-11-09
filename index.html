@@ -13,6 +13,9 @@
     body { background:#f5f7fa; color:#333 }
     .container { max-width:1200px; margin:0 auto; padding:20px }
 
+    /* Anti-flicker: enquanto o body tiver .js-prehide, a sidebar fica invisível */
+    .js-prehide .sidebar { visibility: hidden; }
+
     /* ===== Sidebar ===== */
     .sidebar {
       position: fixed; left:0; top:0; bottom:0; width:var(--sbw);
@@ -238,7 +241,7 @@
     }
   </style>
 </head>
-<body>
+<body class="sidebar-collapsed js-prehide">
   <!-- Overlay para mobile quando sidebar aberta -->
   <div class="sidebar-overlay" onclick="document.body.classList.remove('sidebar-open')"></div>
   <!-- Hitbox invisível no mobile para abrir a sidebar -->
@@ -253,7 +256,7 @@
           <b>MENU</b>
         </div>
       </div>
-      <button class="collapse-btn" id="btnCollapse" aria-expanded="true" title="Ocultar menu">
+      <button class="collapse-btn" id="btnCollapse" aria-expanded="false" title="Mostrar menu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="15 18 9 12 15 6"></polyline>
@@ -605,7 +608,12 @@
     /* ====== Sidebar: colapso, auto-hide e mobile ====== */
     function setCollapsed(collapsed){
       document.body.classList.toggle('sidebar-collapsed', collapsed);
-      try { localStorage.setItem(LS_SIDEBAR_STATE, collapsed ? '1' : '0'); } catch {}
+      try {
+        // Só persiste no mobile; no desktop sempre iniciamos oculto por padrão
+        if (isMobile()) {
+          localStorage.setItem(LS_SIDEBAR_STATE, collapsed ? '1' : '0');
+        }
+      } catch {}
       const btn = byId('btnCollapse');
       if (btn){
         btn.setAttribute('aria-expanded', String(!collapsed));
@@ -643,13 +651,12 @@
         const data = snapshot.val();
         pops = data ? Object.values(data) : [];
         if (!pops || pops.length === 0) { pops = [...POPS_PADRAO]; savePops(); }
-        // preenche select de pops imediatamente (útil no formulário)
         renderPopOptions();
         popsLoaded = true;
         renderWhenReady();
       }, (error) => {
         console.error("Erro ao carregar POPs:", error);
-        popsLoaded = true; // evitar loading infinito — trataremos no renderWhenReady
+        popsLoaded = true;
         renderWhenReady();
       });
     }
@@ -694,7 +701,6 @@
       el.setAttribute('aria-hidden', 'true');
     }
 
-    // Confirm modal (retorna Promise<boolean>) - agora move o modal para o final do body e garante z-index alto
     function showConfirm({ title = 'Confirmar', message = '', okLabel = 'Confirmar', cancelLabel = 'Cancelar', okIsDanger = false } = {}) {
       return new Promise(resolve => {
         const modal = byId('confirmModal');
@@ -703,7 +709,6 @@
           return;
         }
 
-        // Trazer modal para frente: movendo para o final do <body> e garantindo z-index alto
         const originalParent = modal.parentElement;
         const originalNext = modal.nextSibling;
         document.body.appendChild(modal);
@@ -716,13 +721,11 @@
         const cancelBtn = modal.querySelector('#confirmCancelBtn');
         const closeBtn = modal.querySelector('.close-x');
 
-        // set labels
         titleEl.textContent = title;
         msgEl.textContent = message;
         okBtn.textContent = okLabel;
         cancelBtn.textContent = cancelLabel;
-        cancelBtn.style.display = ''; // garantir visível
-        // danger style
+        cancelBtn.style.display = '';
         okBtn.classList.toggle('danger', !!okIsDanger);
 
         const onOk = () => { cleanup(); resolve(true); };
@@ -735,9 +738,7 @@
               if (originalNext) originalParent.insertBefore(modal, originalNext);
               else originalParent.appendChild(modal);
             }
-          } catch (e) {
-            // ignore
-          } finally {
+          } catch (e) {} finally {
             modal.style.zIndex = originalZ;
           }
         }
@@ -759,13 +760,11 @@
       });
     }
 
-    // Alerta simples (modal) - resolve quando fechar — movemos modal para o topo também
     function showAlert({ title = 'Aviso', message = 'Operação concluída.' } = {}) {
       return new Promise(resolve => {
         const modal = byId('confirmModal');
         if (!modal) { window.alert(message); resolve(); return; }
 
-        // Trazer modal para frente
         const originalParent = modal.parentElement;
         const originalNext = modal.nextSibling;
         document.body.appendChild(modal);
@@ -793,9 +792,7 @@
               if (originalNext) originalParent.insertBefore(modal, originalNext);
               else originalParent.appendChild(modal);
             }
-          } catch (e) {
-            // ignore
-          } finally {
+          } catch (e) {} finally {
             modal.style.zIndex = originalZ;
           }
         }
@@ -835,7 +832,6 @@
       }
     }
 
-    // fallback para evitar loading infinito se Firebase falhar
     function startLoadFallbackTimer(timeoutMs = 8000){
       clearTimeout(loadFallbackTimer);
       loadFallbackTimer = setTimeout(()=>{
@@ -1007,7 +1003,6 @@
       openModal('modalEditSwitch');
     }
 
-    // Função saveEditSwitch atualizada - só salva se houver alteração real
     async function saveEditSwitch(ev){
       ev && ev.preventDefault();
       const idString = byId('editSwitchId').value;
@@ -1033,17 +1028,12 @@
 
       const original = switches[idx];
 
-      // Normaliza modelo para comparação (null vs empty)
       const origModelo = original.modelo || null;
       const newModelo = modelo || null;
 
-      // Detectar se há novo arquivo de imagem (upload)
       const hasNewFile = fotoInput && fotoInput.files && fotoInput.files[0];
-
-      // Detectar se a remoção de foto vai alterar algo
       const willRemoveFoto = removeFlag && !!original.foto;
 
-      // Verificar se algo mudou
       const changed =
         nome !== original.nome ||
         ip !== original.ip ||
@@ -1053,12 +1043,10 @@
         willRemoveFoto;
 
       if (!changed) {
-        // Fechar modal sem mostrar mensagem de "Alterações salvas"
         closeModal('modalEditSwitch');
         return;
       }
 
-      // Função que aplica as alterações e finaliza
       const applyAndClose = async (newFoto) => {
         switches[idx].nome = nome;
         switches[idx].ip = ip;
@@ -1073,7 +1061,6 @@
         await showAlert({ title:'Sucesso', message:'Alterações salvas com sucesso.' });
       };
 
-      // Se tiver novo arquivo, processa antes de salvar
       if (hasNewFile) {
         const file = fotoInput.files[0];
         try {
@@ -1081,12 +1068,10 @@
           await applyAndClose(dataURL);
         } catch (err) {
           console.warn('Erro processar nova imagem', err);
-          // Ainda salva demais alterações, mas informa sobre a imagem
           await showAlert({ title:'Aviso', message:'Não foi possível processar a nova imagem. Os demais dados serão salvos.' });
-          await applyAndClose(); // salva sem nova foto
+          await applyAndClose();
         }
       } else {
-        // Sem novo arquivo — apenas aplicar alterações (pode incluir remoção de foto)
         await applyAndClose();
       }
     }
@@ -1157,20 +1142,15 @@
       tbody.onchange = tbody.oninput;
     }
 
-    // applyPopEdits atualizado: só salva/mostra mensagem se houver alteração real
     async function applyPopEdits(){
-      // Detectar mudanças reais comparando pendingPopEdits com pops originais
       const deletions = pendingPopEdits.filter(r => r._delete);
       const effective = pendingPopEdits.filter(r => !r._delete);
 
       let anyChange = deletions.length > 0;
 
-      // Verifica se há diferenças em nome/estado/id entre os efetivos e os originais
       for (const row of effective){
         const orig = pops.find(p => p.id === row.oldId);
-        if (!orig) { // se o original não existe, isso é mudança
-          anyChange = true; break;
-        }
+        if (!orig) { anyChange = true; break; }
         const origNome = (orig.nome || '').trim();
         const newNome = (row.nome || '').trim();
         const origEstado = (orig.estado || '__');
@@ -1182,13 +1162,11 @@
         }
       }
 
-      // Se nada mudou, apenas fechar o modal sem mensagem
       if (!anyChange) {
         closeModal('modalPops');
         return;
       }
 
-      // Continua com as validações e aplicação das alterações
       const effectiveIds = effective.map(r => r.id);
       const effectiveNamesLower = effective.map(r => (r.nome || '').trim().toLowerCase());
 
@@ -1201,16 +1179,13 @@
         return;
       }
 
-      // Aplica deleções
       pendingPopEdits.filter(r => r._delete).forEach(rem => {
         pops = pops.filter(p => p.id !== rem.oldId);
       });
 
-      // Aplica edições (nome, estado, id) e realoca switches se id mudou
       pendingPopEdits.filter(r => !r._delete).forEach(edit => {
         const pIdx = pops.findIndex(p => p.id === edit.oldId);
         if (pIdx === -1) {
-          // se por algum motivo não encontrar, adiciona novo
           pops.push({ id: edit.id, nome: (edit.nome || '').trim(), estado: edit.estado || '__' });
           return;
         }
@@ -1223,7 +1198,6 @@
         }
       });
 
-      // Persistir e re-renderizar
       savePops();
       saveSwitches();
       renderPopOptions();
@@ -1234,15 +1208,18 @@
 
     /* ========= Listeners globais ========= */
     document.addEventListener('DOMContentLoaded', () => {
+      // Sempre iniciar com menu lateral oculto no desktop (sem considerar estado salvo)
+      if (!isMobile()) {
+        setCollapsed(true); // força oculto
+      } else {
+        // no mobile, começamos fechados por padrão (sem .sidebar-open)
+        document.body.classList.remove('sidebar-open');
+      }
+
       // Fechar modais via botão [x] e botão com data-close
       document.querySelectorAll('[data-close]').forEach(btn =>
         btn.addEventListener('click', (e)=> closeModal(e.currentTarget.getAttribute('data-close')))
       );
-
-      // Sempre iniciar com menu lateral oculto no desktop (ignora estado salvo)
-      if (!isMobile()) {
-        document.body.classList.add('sidebar-collapsed');
-      }
 
       // Botão colapsar/expandir
       byId('btnCollapse').addEventListener('click', () => {
@@ -1320,11 +1297,12 @@
       });
       bodyObserver.observe(document.body, { attributes:true, attributeFilter:['class'] });
 
-      // Resize
+      // Resize: não restaurar estado salvo no desktop
       window.addEventListener('resize', () => {
-        if (!isMobile()) document.body.classList.remove('sidebar-open');
-        const saved = localStorage.getItem(LS_SIDEBAR_STATE) === '1';
-        if (!isMobile()) setCollapsed(saved);
+        if (!isMobile()) {
+          document.body.classList.remove('sidebar-open'); // desktop nunca abre automático
+          setCollapsed(true); // mantém colapsado no desktop
+        }
         setTimeout(()=>{ if (isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide(); }, 0);
       });
 
@@ -1336,12 +1314,14 @@
         }
       });
 
-      // Sincroniza estado inicial e agenda auto-hide se já estiver aberta
-      setCollapsed(document.body.classList.contains('sidebar-collapsed'));
-      if (isSidebarOpen()) scheduleAutoHide();
-
       // start fallback timer para evitar loading infinito
       startLoadFallbackTimer(8000);
+
+      // *** IMPORTANTE: Remover o pré-hide somente ao fim da inicialização ***
+      document.body.classList.remove('js-prehide');
+
+      // Agenda/cancela o auto-hide conforme estado final
+      if (isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide();
     });
   </script>
 </body>
