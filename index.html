@@ -10,19 +10,26 @@
       --sbw-collapsed: 52px;  /* largura sidebar colapsada */
     }
     * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif }
-    body { background:#f5f7fa; color:#333; }
+    body { background:#f5f7fa; color:#333 }
 
-    /* ===== Sidebar (novo) ===== */
+    .container { max-width:1200px; margin:0 auto; padding:20px }
+
+    /* ===== Sidebar ===== */
     .sidebar {
       position: fixed; left:0; top:0; bottom:0; width:var(--sbw);
       background:linear-gradient(180deg,#1a2530,#111923);
       color:#e5e7eb; box-shadow:2px 0 12px rgba(0,0,0,.15); z-index:1100;
-      transition: width .25s ease;
-      overflow-x:hidden; display:flex; flex-direction:column;
+      transition: width .25s ease, transform .25s ease;
+      will-change: width, transform;
+      overflow-x:hidden;
+      display:flex; flex-direction:column;
     }
+
+    /* Cabeçalho da sidebar */
     .brand{
       display:flex; align-items:center; gap:10px; justify-content:space-between;
-      padding:12px; border-bottom:1px solid rgba(255,255,255,.06); flex-shrink:0; min-height:56px;
+      padding:12px; border-bottom:1px solid rgba(255,255,255,.06); flex-shrink:0;
+      min-height:56px;
     }
     .brand-left{ display:flex; align-items:center; gap:10px; min-width:0 }
     .logo {
@@ -32,6 +39,8 @@
     }
     .title { font-size:14px; line-height:1.15; white-space:nowrap; transition:opacity .2s ease }
     .title b{ display:block; font-size:15px; color:#fff }
+
+    /* Botão de colapsar/expandir */
     .collapse-btn{
       background:#ffffff1a; border:1px solid #ffffff24; color:#fff;
       padding:8px 10px; border-radius:8px; cursor:pointer; transition:.2s;
@@ -40,6 +49,7 @@
     .collapse-btn:hover{ background:#ffffff2d }
     .collapse-btn svg{ width:18px; height:18px; transition:transform .25s ease }
 
+    /* Menu da sidebar */
     .menu{ padding:10px; overflow:auto; flex:1 }
     .menu h4{
       font-size:12px; color:#9fb0c2; letter-spacing:.06em; text-transform:uppercase;
@@ -59,13 +69,14 @@
     .menu .item .icon svg{ width:20px; height:20px; }
     .menu .item span{ transition:opacity .2s ease, transform .2s ease }
 
-    /* ===== Layout deslocado pela sidebar ===== */
+    /* ===== Layout principal deslocado pela sidebar ===== */
     .with-sidebar { margin-left:var(--sbw); transition: margin-left .25s ease }
 
-    /* ===== Estado colapsado ===== */
+    /* ====== ESTADO COLAPSADO (desktop) ====== */
     body.sidebar-collapsed .sidebar{ width:var(--sbw-collapsed) }
     body.sidebar-collapsed .with-sidebar{ margin-left:var(--sbw-collapsed) }
 
+    /* Oculta textos/ajusta header */
     body.sidebar-collapsed .title{ opacity:0; pointer-events:none }
     body.sidebar-collapsed .brand{ justify-content:center; gap:0px; }
     body.sidebar-collapsed .logo{ display:none; }
@@ -75,6 +86,7 @@
     body.sidebar-collapsed .collapse-btn{ padding:8px; }
     body.sidebar-collapsed .collapse-btn svg { transform: rotate(180deg); }
 
+    /* Rail de ícones */
     body.sidebar-collapsed .menu{ padding:8px 6px }
     body.sidebar-collapsed .menu h4{ height:0; margin:0; padding:0; opacity:0; overflow:hidden; }
     body.sidebar-collapsed .menu .item{
@@ -92,12 +104,42 @@
       z-index:1500;
     }
 
-    /* ===== Conteúdo ===== */
-    .container { max-width:1200px; margin:0 auto; padding:20px }
-    header { background:linear-gradient(135deg,#2c3e50,#1a2530); color:#fff; padding:20px; border-radius:10px; margin-bottom:30px; box-shadow:0 4px 12px rgba(0,0,0,.1) }
-    header .top-actions{ display:flex; gap:10px; justify-content:center; margin-top:12px; flex-wrap:wrap }
-    h1 { text-align:center; margin-bottom:6px }
-    .subtitle { text-align:center; opacity:.9; font-weight:300 }
+    /* ===== Comportamento mobile: slide in/out ===== */
+    @media (max-width: 900px){
+      .sidebar { transform:translateX(-100%) }
+      body.sidebar-open .sidebar { transform:none }
+      .with-sidebar { margin-left:0 }
+      .sidebar-overlay {
+        content:""; position:fixed; inset:0; background:rgba(0,0,0,.35);
+        display:none; z-index:1000;
+      }
+      body.sidebar-open .sidebar-overlay { display:block }
+
+      .edge-hitbox {
+        position: fixed; left:0; top:0; bottom:0; width:18px;
+        z-index:900; background:transparent;
+      }
+    }
+    @media (min-width: 901px){
+      .edge-hitbox{ display:none }
+    }
+
+    /* ===== Header / Sections ===== */
+    header {
+      background:linear-gradient(135deg,#2c3e50,#1a2530); color:#fff; padding:20px;
+      border-radius:10px; margin-bottom:30px; box-shadow:0 4px 12px rgba(0,0,0,.1)
+    }
+    .header-row{
+      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    }
+    h1 { margin-bottom:6px }
+    .subtitle { opacity:.9; font-weight:300; white-space:nowrap }
+
+    .btn.icon{
+      background:#ffffff1a; border:1px solid #ffffff24; color:#fff;
+      padding:10px 12px; border-radius:8px; cursor:pointer; transition:.25s; display:inline-flex; gap:8px; align-items:center
+    }
+    .btn.icon:hover{ background:#ffffff2d }
 
     .main-content { display:flex; gap:30px; flex-wrap:wrap }
     .switches-section { background:#fff; padding:25px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,.05); flex:1; min-width:320px }
@@ -121,6 +163,7 @@
     .estado-head { display:flex; align-items:center; justify-content:space-between; }
     .estado-badge { background:#eef3f7; border:1px solid #e3e8ee; color:#2c3e50; font-weight:700; padding:4px 10px; border-radius:999px; font-size:12px }
 
+    /* ALTURA INDEPENDENTE POR CARD (flex + wrap) */
     .pop-grid{
       display:flex; flex-wrap:wrap; gap:20px; margin-top:12px; align-items:flex-start;
     }
@@ -147,6 +190,7 @@
     .switch-meta { font-size:14px; color:#7f8c8d }
     .row-actions { display:flex; gap:8px; align-items:center }
 
+    /* PREVIEW IMAGEM NO HOVER */
     .hover-preview {
       position:absolute; left:50%; bottom: calc(100% + 10px); transform: translate(-50%, 6px) scale(.98);
       width:340px; max-width:90vw; max-height:260px; background:#fff; border:1px solid #e6e9ef; border-radius:10px;
@@ -158,7 +202,7 @@
     .hover-preview img{ width:100%; height:auto; display:block; border-radius:6px; object-fit:cover; max-height:240px }
     .hover-preview .noimg{ color:#7f8c8d; font-size:14px; text-align:center; padding:18px 6px }
 
-    .modal { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:1000 }
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:1200 }
     .modal.open { display:flex }
     .modal-content { background:#fff; width:min(900px, 100%); max-height:90vh; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:auto }
     .modal-header { padding:16px 20px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between }
@@ -177,8 +221,8 @@
     .file-input-button:hover { background:#d5dbdb }
 
     .hide { display:none !important }
-
     @media (max-width: 768px) {
+      .main-content { flex-direction:column }
       .hover-preview { left:50%; right:auto; bottom:calc(100% + 8px); transform:translate(-50%,0) scale(.98); max-width:95vw }
       .switch-row:hover .hover-preview { transform:translate(-50%,0) scale(1) }
       .hover-preview::before, .hover-preview::after { left:50%; transform:translateX(-50%) }
@@ -186,7 +230,12 @@
   </style>
 </head>
 <body>
-  <!-- ===== Sidebar (novo) ===== -->
+  <!-- Overlay para mobile quando sidebar aberta -->
+  <div class="sidebar-overlay" onclick="document.body.classList.remove('sidebar-open')"></div>
+  <!-- Hitbox invisível no mobile para abrir a sidebar -->
+  <div class="edge-hitbox" id="edgeHitbox" aria-hidden="true"></div>
+
+  <!-- ===== Sidebar ===== -->
   <aside class="sidebar" aria-label="Menu lateral">
     <div class="brand">
       <div class="brand-left">
@@ -200,13 +249,11 @@
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
-        <span>Ocultar</span>
       </button>
     </div>
 
     <nav class="menu">
       <h4>Ações</h4>
-
       <div class="item" id="menuNovoCadastro" data-label="Novo cadastro">
         <span class="icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -221,8 +268,8 @@
         <span class="icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a2 2 0 1 1-2.83 2.83 2 2 0 0 0-2.84 1.82A2 2 0 1 1 8 21a2 2 0 0 0-1.82-2.84A2 2 0 1 1 3.2 7.02 2 2 0 0 0 5 5.2 2 2 0 1 1 9 3a2 2 0 0 0 2 2"></path>
+            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.07a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.07a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.02 3.2l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.07a1.65 1.65 0 0 0 1 1.51h.1a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c0 .66.39 1.26 1 1.51.16.07.33.11.51.11H21a2 2 0 1 1 0 4h-.07c-.18 0-.35.04-.51.11-.61.25-1 .85-1 1.51z"></path>
           </svg>
         </span>
         <span>Gerenciar POPs</span>
@@ -230,15 +277,19 @@
     </nav>
   </aside>
 
-  <!-- ===== Conteúdo com deslocamento ===== -->
+  <!-- ===== Conteúdo ===== -->
   <div class="with-sidebar">
     <div class="container">
       <header>
-        <h1>Gestão de Switches de Rede</h1>
-        <p class="subtitle">Todos os switch</p>
-        <div class="top-actions">
-          <button class="btn" id="btnNovoCadastro">Novo cadastro</button>
-          <button class="btn ghost" id="btnAbrirGerenciarPops">Gerenciar POPs</button>
+        <div class="header-row">
+          <div>
+            <h1>Gestão de Switches de Rede</h1>
+            <p class="subtitle">Todos → Switches de POPs</p>
+          </div>
+          <div class="top-actions">
+            <button class="btn" id="btnNovoCadastro">Novo cadastro</button>
+            <button class="btn ghost" id="btnAbrirGerenciarPops">Gerenciar POPs</button>
+          </div>
         </div>
       </header>
 
@@ -267,7 +318,7 @@
     <option value="Planet GSW"></option>
   </datalist>
 
-  <!-- MODAIS (iguais aos seus) -->
+  <!-- MODAL: Cadastro -->
   <div class="modal" id="modalCadastro" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
@@ -284,6 +335,7 @@
             </select>
           </div>
 
+          <!-- POP -->
           <div id="camposPOP" class="hide" style="display:none">
             <div class="form-group">
               <label for="popNome">Nome/Descrição do POP</label>
@@ -295,6 +347,7 @@
             </div>
           </div>
 
+          <!-- SWITCH (ORDEM: POP → Modelo → Nome → IP → Foto) -->
           <div id="camposSW" style="display:block">
             <div class="form-group">
               <label for="pop">POP (Ponto de Presença)</label>
@@ -330,6 +383,7 @@
     </div>
   </div>
 
+  <!-- MODAL: Editar Switch -->
   <div class="modal" id="modalEditSwitch" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
@@ -375,6 +429,7 @@
     </div>
   </div>
 
+  <!-- MODAL: Gerenciar POPs -->
   <div class="modal" id="modalPops" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
@@ -404,7 +459,7 @@
   </div>
 
   <script type="module">
-    /* ================== Firebase ================== */
+    /* ===================== Firebase ===================== */
     const firebaseConfig = {
       apiKey: "AIzaSyCGSDjIf8pRP_IE0xqjLii4Qeuc6_bhE50",
       authDomain: "gestao-switches.firebaseapp.com",
@@ -424,77 +479,82 @@
     const fbAuth = getAuth(fbApp);
     const fbDb = getDatabase(fbApp);
 
-    signInAnonymously(fbAuth).catch(err => console.warn('[FB] Erro ao autenticar anon:', err));
+    signInAnonymously(fbAuth)
+      .then(() => console.log('[FB] signInAnonymously chamado'))
+      .catch(err => console.warn('[FB] Erro ao autenticar anon:', err));
+
     onAuthStateChanged(fbAuth, user => {
-      if (user) { loadPops(); loadSwitches(); }
+      if (user) {
+        console.log('Autenticado anonimamente (uid):', user.uid);
+        loadPops();
+        loadSwitches();
+      } else {
+        console.log('Usuário deslogado');
+      }
     });
-    /* ============================================== */
+    /* ==================================================== */
 
-    /* ====== Sidebar: colapso com persistência ====== */
+    const LS_SWITCHES_KEY = 'networkSwitches';
+    const LS_POPS_KEY = 'networkPops';
     const LS_SIDEBAR_STATE = 'sidebarCollapsed';
-    function setCollapsed(collapsed){
-      document.body.classList.toggle('sidebar-collapsed', collapsed);
-      try { localStorage.setItem(LS_SIDEBAR_STATE, collapsed ? '1' : '0'); } catch{}
-      const btn = document.getElementById('btnCollapse');
-      if (btn){
-        btn.setAttribute('aria-expanded', String(!collapsed));
-        const label = btn.querySelector('span');
-        if (label) label.textContent = collapsed ? 'Mostrar' : 'Ocultar';
-        btn.title = collapsed ? 'Mostrar menu' : 'Ocultar menu';
-      }
-    }
-    function toggleDesktopCollapse(){
-      setCollapsed(!document.body.classList.contains('sidebar-collapsed'));
-    }
-    document.addEventListener('DOMContentLoaded', () => {
-      const saved = localStorage.getItem(LS_SIDEBAR_STATE);
-      setCollapsed(saved === '1');
-
-      const btnCollapse = document.getElementById('btnCollapse');
-      if (btnCollapse){
-        btnCollapse.addEventListener('click', toggleDesktopCollapse);
-      }
-      // Itens da sidebar acionando as mesmas ações dos botões do header
-      const menuNovo = document.getElementById('menuNovoCadastro');
-      const menuPops = document.getElementById('menuGerenciarPops');
-      if (menuNovo) menuNovo.addEventListener('click', openCadastroModal);
-      if (menuPops) menuPops.addEventListener('click', openModalPops);
-
-      // Atalho Ctrl/Cmd + B
-      document.addEventListener('keydown', (e)=>{
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='b'){
-          e.preventDefault(); toggleDesktopCollapse();
-        }
-      });
-    });
-    /* ============================================== */
-
-    const byId = (id) => document.getElementById(id);
-    const estados = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
-    const estadoLabel = (uf)=> uf && uf!=='__' ? uf : 'Sem Estado';
-    const slugify = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
-
-    function validarIP(ip) {
-      const re = /^(25[0-5]|2[0-4]\d|[01]?\d?\d)(\.(25[0-5]|2[0-4]\d|[01]?\d?\d)){3}$/;
-      return re.test(ip);
-    }
 
     let switches = [];
     let pops = [];
     let pendingPopEdits = [];
 
+    const byId = (id) => document.getElementById(id);
+    const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
+
+    function validarIP(ip) {
+      const re = /^(25[0-5]|2[0-4]\d|[01]?\d?\d)(\.(25[0-5]|2[0-4]\d|[01]?\d?\d)){3}$/;
+      return re.test(ip);
+    }
+    const slugify = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+    const estados = [
+      'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
+      'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
+    ];
+    const estadoLabel = (uf)=> uf && uf!=='__' ? uf : 'Sem Estado';
+
+    function parseUFFromName(nome){
+      const m1 = /\(.*?POP[-\s]?([A-Z]{2})\)/i.exec(nome || '');
+      if(m1) return m1[1].toUpperCase();
+      const m2 = /\(([A-Z]{2})\)\s*$/.exec(nome || '');
+      if(m2) return m2[1].toUpperCase();
+      return '__';
+    }
+
+    const POPS_PADRAO = [
+      { nome:'São Paulo (POP-SP)',   uf:'SP' },
+      { nome:'Rio de Janeiro (POP-RJ)', uf:'RJ' },
+      { nome:'Belo Horizonte (POP-MG)', uf:'MG' },
+      { nome:'Porto Alegre (POP-RS)', uf:'RS' },
+      { nome:'Curitiba (POP-PR)',    uf:'PR' },
+      { nome:'Salvador (POP-BA)',    uf:'BA' },
+      { nome:'Fortaleza (POP-CE)',   uf:'CE' },
+      { nome:'Brasília (POP-DF)',    uf:'DF' }
+    ].map(n => ({ id: slugify(n.nome), nome: n.nome, estado: n.uf }));
+
     /* ===== Helpers de imagem ===== */
-    async function compressImage(file, { maxWidth=1600, maxHeight=1200, mimeType='image/webp', quality=0.82 } = {}) {
-      if (!('createImageBitmap' in window)) return await fileToDataURL(file);
+    async function compressImage(file, {
+      maxWidth = 1600,
+      maxHeight = 1200,
+      mimeType = 'image/webp',
+      quality = 0.82
+    } = {}) {
+      if (!('createImageBitmap' in window)) {
+        return await fileToDataURL(file);
+      }
       const bitmap = await createImageBitmap(file);
       const { width, height } = bitmap;
       const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
+      const targetW = Math.round(width * ratio);
+      const targetH = Math.round(height * ratio);
       const canvas = document.createElement('canvas');
-      canvas.width = Math.round(width * ratio);
-      canvas.height = Math.round(height * ratio);
+      canvas.width = targetW; canvas.height = targetH;
       const ctx = canvas.getContext('2d');
       ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bitmap, 0, 0, targetW, targetH);
       let outType = mimeType;
       if (!canvas.toDataURL(outType).startsWith('data:image/webp')) outType = 'image/jpeg';
       return canvas.toDataURL(outType, quality);
@@ -507,24 +567,123 @@
         fr.readAsDataURL(file);
       });
     }
+    function trySaveLocalStorage(key, value) {
+      try { localStorage.setItem(key, value); return true; }
+      catch (e) { console.warn('Falha ao salvar no localStorage:', e); return false; }
+    }
     async function compressAdaptively(file) {
-      const steps = [
+      const sizeSteps = [
         { w: 2200, h: 1600, q: 0.88 }, { w: 1800, h: 1350, q: 0.84 },
         { w: 1600, h: 1200, q: 0.82 }, { w: 1400, h: 1050, q: 0.78 },
         { w: 1200, h: 900,  q: 0.75 }, { w: 1000, h: 750,  q: 0.72 },
         { w: 900,  h: 675,  q: 0.70 }
       ];
-      for (const s of steps) {
-        const dataURL = await compressImage(file, { maxWidth:s.w, maxHeight:s.h, quality:s.q });
+      for (const step of sizeSteps) {
+        const dataURL = await compressImage(file, step);
         if (dataURL.length < 4_500_000) return dataURL;
       }
       return await compressImage(file, { maxWidth: 800, maxHeight: 600, quality: 0.68 });
     }
 
-    /* ===== Ações UI ===== */
+    /* ====== Acordeão POPs: fechar outros ====== */
+    function closeAllPopLists(exceptId = null){
+      document.querySelectorAll('.pop-card').forEach(card=>{
+        const btn = card.querySelector('[data-toggle-pop]');
+        const list = card.querySelector('.switch-list');
+        const id = btn?.getAttribute('data-toggle-pop');
+        if (id !== exceptId){
+          if (btn) { btn.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+          if (list){ list.style.display = 'none'; }
+        }
+      });
+    }
+
+    /* ====== Sidebar helpers ====== */
+    function setCollapsed(collapsed){
+      document.body.classList.toggle('sidebar-collapsed', collapsed);
+      trySaveLocalStorage(LS_SIDEBAR_STATE, collapsed ? '1' : '0');
+      const btn = byId('btnCollapse');
+      if (btn){
+        btn.setAttribute('aria-expanded', String(!collapsed));
+        btn.title = collapsed ? 'Mostrar menu' : 'Ocultar menu';
+      }
+    }
+    function toggleDesktopCollapse(){
+      setCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+    }
+
+    /* ===== Auto-hide da sidebar após 5s sem hover ===== */
+    const AUTOHIDE_MS = 5000;
+    let autoHideTimer = null;
+    let isSidebarHovered = false;
+
+    function isSidebarOpen(){
+      return isMobile()
+        ? document.body.classList.contains('sidebar-open')
+        : !document.body.classList.contains('sidebar-collapsed');
+    }
+    function closeSidebar(){
+      if (isMobile()) document.body.classList.remove('sidebar-open');
+      else setCollapsed(true);
+    }
+    function scheduleAutoHide(){
+      clearTimeout(autoHideTimer);
+      if (!isSidebarOpen()) return;
+      autoHideTimer = setTimeout(()=>{
+        if (!isSidebarHovered && isSidebarOpen()){
+          closeSidebar();
+        }
+      }, AUTOHIDE_MS);
+    }
+    function cancelAutoHide(){ clearTimeout(autoHideTimer); }
+
+    /* ====== Boot ====== */
     document.addEventListener('DOMContentLoaded', () => {
-      byId('btnNovoCadastro').addEventListener('click', openCadastroModal);
-      byId('btnAbrirGerenciarPops').addEventListener('click', openModalPops);
+      /* Estado inicial salvo (desktop) */
+      const saved = localStorage.getItem(LS_SIDEBAR_STATE);
+      if (saved === '1' && !isMobile()) document.body.classList.add('sidebar-collapsed');
+
+      /* Botões da sidebar */
+      byId('btnCollapse').addEventListener('click', () => {
+        if (isMobile()) document.body.classList.toggle('sidebar-open');
+        else toggleDesktopCollapse();
+        setTimeout(scheduleAutoHide, 0);
+      });
+
+      /* Overlay mobile fecha a sidebar */
+      document.querySelector('.sidebar-overlay')
+        .addEventListener('click', ()=> {
+          document.body.classList.remove('sidebar-open');
+          cancelAutoHide();
+        });
+
+      /* Hitbox: abrir sidebar puxando da borda (mobile) */
+      const edge = byId('edgeHitbox');
+      if (edge){
+        let startX = null;
+        edge.addEventListener('touchstart', (e)=>{
+          if (!isMobile()) return; startX = e.touches[0].clientX;
+        });
+        edge.addEventListener('touchmove', (e)=>{
+          if (!isMobile() || startX===null) return;
+          const dx = e.touches[0].clientX - startX;
+          if (dx > 12){ document.body.classList.add('sidebar-open'); startX = null; scheduleAutoHide(); }
+        });
+        edge.addEventListener('click', ()=>{
+          if (isMobile()) { document.body.classList.add('sidebar-open'); scheduleAutoHide(); }
+        });
+      }
+
+      /* Itens de ação */
+      const openCadastro = () => { document.body.classList.remove('sidebar-open'); cancelAutoHide(); openCadastroModal(); };
+      const openPops = () => { document.body.classList.remove('sidebar-open'); cancelAutoHide(); openModalPops(); };
+
+      byId('menuNovoCadastro').addEventListener('click', openCadastro);
+      byId('menuGerenciarPops').addEventListener('click', openPops);
+      byId('btnNovoCadastro').addEventListener('click', openCadastro);
+      byId('btnAbrirGerenciarPops').addEventListener('click', openPops);
+
+      /* Modais */
       document.querySelectorAll('[data-close]').forEach(btn =>
         btn.addEventListener('click', (e)=> closeModal(e.currentTarget.getAttribute('data-close')))
       );
@@ -535,11 +694,10 @@
       });
       byId('btnSalvarPops').addEventListener('click', applyPopEdits);
 
-      renderUFSelect(byId('popEstado'));
-      renderPopOptions();
-      renderEstadosComPops();
+      /* Dados iniciais (se Auth já tiver carregado, onAuthStateChanged chamará) */
+      renderUFSelect(byId('popEstado')); renderPopOptions(); renderEstadosComPops();
 
-      // Acordeão POP
+      /* Acordeão POP */
       byId('estadoContainer').addEventListener('click', (ev) => {
         const toggleBtn = ev.target.closest('[data-toggle-pop]');
         if (toggleBtn) {
@@ -559,27 +717,52 @@
           if (action === 'delete') deleteSwitch(swId);
         }
       });
-    });
 
-    function closeAllPopLists(exceptId = null){
-      document.querySelectorAll('.pop-card').forEach(card=>{
-        const btn = card.querySelector('[data-toggle-pop]');
-        const list = card.querySelector('.switch-list');
-        const id = btn?.getAttribute('data-toggle-pop');
-        if (id !== exceptId){
-          if (btn) { btn.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
-          if (list){ list.style.display = 'none'; }
+      /* Resize: re-aplica estado salvo quando volta ao desktop */
+      window.addEventListener('resize', () => {
+        if (!isMobile()) document.body.classList.remove('sidebar-open');
+        const saved = localStorage.getItem(LS_SIDEBAR_STATE) === '1';
+        if (!isMobile()) setCollapsed(saved);
+        setTimeout(()=>{
+          if (isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide();
+        }, 0);
+      });
+
+      /* Atalho (Ctrl+B / Cmd+B) para colapsar/expandir no desktop */
+      document.addEventListener('keydown', (e)=>{
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='b' && !isMobile()){
+          e.preventDefault(); toggleDesktopCollapse();
+          setTimeout(scheduleAutoHide, 0);
         }
       });
-    }
 
+      /* Pausar/reiniciar timer conforme hover na sidebar */
+      const sidebarEl = document.querySelector('.sidebar');
+      if (sidebarEl){
+        sidebarEl.addEventListener('mouseenter', ()=>{ isSidebarHovered = true; cancelAutoHide(); });
+        sidebarEl.addEventListener('mouseleave', ()=>{ isSidebarHovered = false; scheduleAutoHide(); });
+      }
+
+      /* Observar mudanças na classe do body para reagendar automaticamente */
+      const bodyObserver = new MutationObserver(()=> {
+        if (isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide();
+      });
+      bodyObserver.observe(document.body, { attributes:true, attributeFilter:['class'] });
+
+      /* Sincroniza textos/estado do botão e agenda o auto-hide se já estiver aberto */
+      setCollapsed(document.body.classList.contains('sidebar-collapsed'));
+      if (isSidebarOpen()) scheduleAutoHide();
+    });
+
+    /* ==== Modais utilitários ==== */
+    function openModal(id){ const el=byId(id); if(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); } }
+    function closeModal(id){ const el=byId(id); if(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); } }
+
+    /* ==== POPs/Switches ==== */
     function renderUFSelect(selectEl){
       if(!selectEl) return;
       selectEl.innerHTML = `<option value="__">Sem Estado</option>` + estados.map(uf=>`<option value="${uf}">${uf}</option>`).join('');
     }
-    function openModal(id){ const el=byId(id); if(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); } }
-    function closeModal(id){ const el=byId(id); if(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); } }
-
     function openCadastroModal() {
       openModal('modalCadastro'); renderPopOptions();
       const tipoSel = byId('tipoCadastro'); tipoSel.value = 'switch';
@@ -600,43 +783,66 @@
       popBox.style.display = showPop ? 'block' : 'none';
       swBox.style.display  = showPop ? 'none'  : 'block';
     }
+    function migrateOldPops(arr){
+      return arr.map(p=>{
+        let id = p.id ?? (p.codigo ? String(p.codigo) : null);
+        let nome = p.nome ?? (typeof p === 'string' ? p : JSON.stringify(p));
+        if(!id) id = slugify(nome);
+        let estado = p.estado ?? parseUFFromName(nome);
+        if(estado && estado !== '__') estado = estado.toUpperCase();
+        return { id, nome, estado: estado || '__' };
+      });
+    }
 
-    function loadPops() {
+    /* ======= Firebase: POPs ======= */
+    function loadPops(){
       const dbRef = ref(fbDb, 'pops');
       onValue(dbRef, (snapshot) => {
         const data = snapshot.val();
         pops = data ? Object.values(data) : [];
+        if (!pops || pops.length===0){ pops = [...POPS_PADRAO]; savePops(); }
         renderPopOptions();
         renderEstadosComPops();
-      }, (error) => console.error("Erro ao carregar POPs:", error));
+      }, (error) => {
+        console.error("Erro ao carregar POPs:", error);
+      });
     }
-    function savePops() {
+    function savePops(){
       const dbRef = ref(fbDb, 'pops');
-      const popsObj = {}; pops.forEach(pop => popsObj[pop.id] = pop);
-      set(dbRef, popsObj).catch(err => { console.error("Erro ao salvar POPs:", err); alert("Falha ao salvar POPs."); });
+      const popsObj = {};
+      pops.forEach(pop => { popsObj[pop.id] = pop; });
+      set(dbRef, popsObj).catch(err => {
+        console.error("Erro ao salvar POPs:", err);
+        alert("Falha ao salvar POPs.");
+      });
     }
 
-    function loadSwitches() {
+    /* ======= Firebase: Switches ======= */
+    function loadSwitches(){
       const dbRef = ref(fbDb, 'switches');
       onValue(dbRef, (snapshot) => {
         const data = snapshot.val();
         switches = data ? Object.values(data) : [];
         renderEstadosComPops();
-      }, (error) => console.error("Erro ao carregar switches:", error));
+      }, (error) => {
+        console.error("Erro ao carregar switches:", error);
+      });
     }
-    function saveSwitches() {
+    function saveSwitches(){
       const dbRef = ref(fbDb, 'switches');
-      const switchesObj = {}; switches.forEach(sw => switchesObj[sw.id] = sw);
-      set(dbRef, switchesObj).catch(err => { console.error("Erro ao salvar switches:", err); alert("Falha ao salvar switches."); });
+      const switchesObj = {};
+      switches.forEach(sw => { switchesObj[sw.id] = sw; });
+      set(dbRef, switchesObj).catch(err => {
+        console.error("Erro ao salvar switches:", err);
+        alert("Falha ao salvar switches.");
+      });
     }
 
     function popsByEstado(){
-      const groups = {};
-      pops.forEach(p=>{ const uf=p.estado||'__'; (groups[uf]??=[]).push(p); });
+      const groups = {}; pops.forEach(p=>{ const uf=p.estado||'__'; (groups[uf]??=[]).push(p); });
       Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR')));
       return groups;
     }
-
     function renderEstadosComPops(){
       const wrap = byId('estadoContainer'); if(!wrap) return;
       if(!pops || pops.length===0){ wrap.innerHTML='<div class="no-pops">Nenhum POP cadastrado ainda. Use “Novo cadastro”.</div>'; return; }
@@ -655,7 +861,6 @@
           <div class="pop-grid"></div>
         `;
         const grid = bloco.querySelector('.pop-grid');
-
         groups[uf].forEach(pop=>{
           const card = document.createElement('div');
           card.className='pop-card';
@@ -692,17 +897,13 @@
             </div>`;
           grid.appendChild(card);
         });
-
         wrap.appendChild(bloco);
       });
     }
 
     function renderPopOptions(){
       const sel = byId('pop'); if(!sel) return;
-      if(!pops || pops.length===0){
-        sel.innerHTML = '<option value="">Cadastre um POP</option>';
-        return;
-      }
+      if(!pops || pops.length===0){ sel.innerHTML = '<option value="">Cadastre um POP</option>'; return; }
       const groups = popsByEstado();
       const ufs = Object.keys(groups).sort((a,b)=>{ if(a==='__') return 1; if(b==='__') return -1; return a.localeCompare(b); });
       sel.innerHTML = ufs.map(uf=>{
@@ -712,104 +913,62 @@
     }
 
     function handleCadastroSubmit(e){ e && e.preventDefault(); const tipo=byId('tipoCadastro').value; if(tipo==='pop') return cadastrarPOP(); return cadastrarSwitch(); }
-
     function cadastrarPOP(){
       const nome=(byId('popNome').value||'').trim(); if(!nome) return alert('Informe o Nome/Descrição do POP.');
-      const uf = (byId('popEstado').value||'__');
-      const id=slugify(nome);
-      const exists=pops.some(p=>p.id===id||p.nome.toLowerCase()===nome.toLowerCase());
-      if(exists) return alert('Já existe um POP com esse nome.');
-      pops.push({ id, nome, estado: uf });
-      savePops(); renderPopOptions(); renderEstadosComPops();
+      const uf = (byId('popEstado').value||'__'); const id=slugify(nome);
+      const exists=pops.some(p=>p.id===id||p.nome.toLowerCase()===nome.toLowerCase()); if(exists) return alert('Já existe um POP com esse nome.');
+      pops.push({ id, nome, estado: uf }); savePops(); renderPopOptions(); renderEstadosComPops();
       resetCadastroForm(); closeModal('modalCadastro'); alert('POP cadastrado.');
     }
-
     function cadastrarSwitch(){
       const popSel=byId('pop').value; const ip=byId('ip').value.trim(); const nome=byId('nome').value.trim();
       const modelo=(byId('modelo').value||'').trim(); const fotoInput=byId('foto');
       if(!popSel||!ip||!nome) return alert('Preencha POP, IP e Nome do Switch.');
       if(!validarIP(ip)) return alert('IP inválido. Informe um IPv4 válido, ex: 192.168.1.100');
       const sw={ id:Date.now(), pop:popSel, ip, nome, modelo: modelo || null, foto:null };
-
       if (fotoInput.files && fotoInput.files[0]) {
         const file = fotoInput.files[0];
-        compressAdaptively(file).then(dataURL => {
-          sw.foto = dataURL;
-          finalizarCadastroSwitch(sw);
-        }).catch(err => {
-          console.warn(err);
-          alert('Não foi possível processar a imagem. Vou salvar o switch sem imagem.');
-          sw.foto = null;
-          finalizarCadastroSwitch(sw);
-        });
-      } else {
-        finalizarCadastroSwitch(sw);
-      }
+        compressAdaptively(file).then(dataURL => { sw.foto = dataURL; finalizarCadastroSwitch(sw); })
+          .catch(()=>{ alert('Não foi possível processar a imagem. Vou salvar o switch sem imagem.'); finalizarCadastroSwitch(sw); });
+      } else finalizarCadastroSwitch(sw);
     }
-
     function finalizarCadastroSwitch(sw){
-      switches.push(sw);
-      saveSwitches();
-      renderPopOptions();
-      renderEstadosComPops();
-      resetCadastroForm();
-      closeModal('modalCadastro');
-      alert('Switch cadastrado.');
+      switches.push(sw); saveSwitches(); renderPopOptions(); renderEstadosComPops();
+      resetCadastroForm(); closeModal('modalCadastro'); alert('Switch cadastrado.');
     }
-
     function resetCadastroForm(){
-      byId('cadastroForm').reset();
-      const tipoSel=byId('tipoCadastro'); tipoSel.value='switch'; alternarTipo();
-      renderUFSelect(byId('popEstado'));
+      byId('cadastroForm').reset(); const tipoSel=byId('tipoCadastro'); tipoSel.value='switch'; alternarTipo(); renderUFSelect(byId('popEstado'));
     }
-
     function openEditSwitch(id){
       const sw=switches.find(s=>s.id===id); if(!sw) return;
       byId('editSwitchId').value=String(sw.id); byId('editSwitchNome').value=sw.nome; byId('editSwitchIP').value=sw.ip;
-
-      const sel=byId('editSwitchPop');
-      sel.innerHTML=pops.map(p=>`<option value="${p.id}">${estadoLabel(p.estado)} — ${p.nome}</option>`).join('');
-      sel.value=sw.pop;
-
-      byId('editSwitchModelo').value=sw.modelo||'';
-      byId('previewInfo').dataset.remove='false'; byId('previewInfo').textContent=sw.foto?'Imagem atual presente.':'Sem imagem.'; byId('editSwitchFoto').value='';
+      const sel=byId('editSwitchPop'); sel.innerHTML=pops.map(p=>`<option value="${p.id}">${estadoLabel(p.estado)} — ${p.nome}</option>`).join(''); sel.value=sw.pop;
+      byId('editSwitchModelo').value=sw.modelo||''; byId('previewInfo').dataset.remove='false';
+      byId('previewInfo').textContent=sw.foto?'Imagem atual presente.':'Sem imagem.'; byId('editSwitchFoto').value='';
       openModal('modalEditSwitch');
     }
-
     function saveEditSwitch(ev){
       ev && ev.preventDefault();
       const id=Number(byId('editSwitchId').value); const nome=byId('editSwitchNome').value.trim();
       const ip=byId('editSwitchIP').value.trim(); const popSel=byId('editSwitchPop').value; const modelo=(byId('editSwitchModelo').value||'').trim();
       const fotoInput=byId('editSwitchFoto'); const removeFlag=byId('previewInfo').dataset.remove==='true';
-      if(!nome||!ip||!popSel) return alert('Preencha Nome, IP e POP.');
-      if(!validarIP(ip)) return alert('IP inválido.');
-
+      if(!nome||!ip||!popSel) return alert('Preencha Nome, IP e POP.'); if(!validarIP(ip)) return alert('IP inválido.');
       const idx=switches.findIndex(s=>s.id===id); if(idx===-1) return;
-
       const applyAndClose=(newFoto)=>{
         switches[idx].nome=nome; switches[idx].ip=ip; switches[idx].pop=popSel; switches[idx].modelo=modelo||null;
-        if(removeFlag) switches[idx].foto=null;
-        if(newFoto!==undefined) switches[idx].foto=newFoto;
+        if(removeFlag) switches[idx].foto=null; if(newFoto!==undefined) switches[idx].foto=newFoto;
         saveSwitches(); renderPopOptions(); renderEstadosComPops(); closeModal('modalEditSwitch'); alert('Switch atualizado.');
       };
-
       if (fotoInput.files && fotoInput.files[0]) {
         const file = fotoInput.files[0];
-        compressAdaptively(file).then(dataURL => { applyAndClose(dataURL); })
+        compressAdaptively(file).then(dataURL => applyAndClose(dataURL))
           .catch(()=>{ alert('Não consegui processar a nova imagem. Vou salvar os demais dados.'); applyAndClose(); });
-      } else {
-        applyAndClose();
-      }
+      } else applyAndClose();
     }
-
     function deleteSwitch(id){
       if(!confirm('Deseja realmente excluir este switch?')) return;
-      switches=switches.filter(s=>s.id!==id);
-      saveSwitches();
-      renderPopOptions();
-      renderEstadosComPops();
+      switches=switches.filter(s=>s.id!==id); saveSwitches(); renderPopOptions(); renderEstadosComPops();
     }
-
     function openModalPops(){ buildPopsTable(); openModal('modalPops'); }
     function buildPopsTable(){
       const tbody=byId('tabelaPops').querySelector('tbody'); tbody.innerHTML='';
@@ -840,7 +999,7 @@
         if(ev.target.matches('[data-act="excluir"]')){
           const idAtual=pendingPopEdits[idx].id;
           const vinculados=switches.filter(s=>s.pop===idAtual).length;
-          if(vinculados>0) return alert('Não é possível excluir: existem switches vinculados a este POP.');
+          if(vinculados>0) return alert('Não é possível excluir: existem switches vinculados.');
           if(!confirm('Confirmar exclusão deste POP?')) return;
           pendingPopEdits[idx]._delete=true; tr.style.opacity=.5;
         }
@@ -854,11 +1013,9 @@
     }
     function applyPopEdits(){
       const effective=pendingPopEdits.filter(r=>!r._delete);
-      const ids=effective.map(r=>r.id);
-      const nomes=effective.map(r=>r.nome.trim().toLowerCase());
-      if(ids.length!==new Set(ids).size) return alert('IDs (slug) duplicados após edição. Ajuste os nomes/IDs.');
-      if(nomes.length!==new Set(nomes).size) return alert('Nomes duplicados após edição. Ajuste os nomes.');
-
+      const ids=effective.map(r=>r.id); const nomes=effective.map(r=>r.nome.trim().toLowerCase());
+      if(ids.length!==new Set(ids).size) return alert('IDs (slug) duplicados após edição.');
+      if(nomes.length!==new Set(nomes).size) return alert('Nomes duplicados após edição.');
       pendingPopEdits.filter(r=>r._delete).forEach(rem=>{ pops=pops.filter(p=>p.id!==rem.oldId); });
       pendingPopEdits.filter(r=>!r._delete).forEach(edit=>{
         const pIdx=pops.findIndex(p=>p.id===edit.oldId); if(pIdx===-1) return;
@@ -866,7 +1023,6 @@
         pops[pIdx].id=edit.id; pops[pIdx].nome=edit.nome; pops[pIdx].estado=edit.estado || '__';
         if(idChanged){ switches.forEach(s=>{ if(s.pop===edit.oldId) s.pop=edit.id; }); }
       });
-
       savePops(); saveSwitches(); renderPopOptions(); renderEstadosComPops(); closeModal('modalPops'); alert('POPs atualizados.');
     }
   </script>
