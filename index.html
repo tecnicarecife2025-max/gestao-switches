@@ -303,7 +303,7 @@
             <!-- agora mostramos um loading até os dados chegarem -->
             <div id="estadoLoading" class="loading-wrap" role="status" aria-live="polite" aria-busy="true">
               <div class="progress" aria-hidden="true"><div class="indeterminate"></div></div>
-              <div class="muted" style="text-align:center;margin-top:12px">Carregando POPs…</div>
+              <div class="muted" style="text-align:center;margin-top:12px">Carregando…</div>
             </div>
           </div>
         </section>
@@ -1156,20 +1156,79 @@
       };
       tbody.onchange = tbody.oninput;
     }
+
+    // applyPopEdits atualizado: só salva/mostra mensagem se houver alteração real
     async function applyPopEdits(){
-      const effective=pendingPopEdits.filter(r=>!r._delete);
-      const ids=effective.map(r=>r.id);
-      const nomes=effective.map(r=>r.nome.trim().toLowerCase());
-      if(ids.length!==new Set(ids).size){ await showAlert({ title:'Atenção', message:'IDs (slug) duplicados após edição. Ajuste os nomes/IDs.' }); return; }
-      if(nomes.length!==new Set(nomes).size){ await showAlert({ title:'Atenção', message:'Nomes duplicados após edição. Ajuste os nomes.' }); return; }
-      pendingPopEdits.filter(r=>r._delete).forEach(rem=>{ pops=pops.filter(p=>p.id!==rem.oldId); });
-      pendingPopEdits.filter(r=>!r._delete).forEach(edit=>{
-        const pIdx=pops.findIndex(p=>p.id===edit.oldId); if(pIdx===-1) return;
-        const idChanged=edit.oldId!==edit.id;
-        pops[pIdx].id=edit.id; pops[pIdx].nome=edit.nome; pops[pIdx].estado=edit.estado || '__';
-        if(idChanged){ switches.forEach(s=>{ if(s.pop===edit.oldId) s.pop=edit.id; }); }
+      // Detectar mudanças reais comparando pendingPopEdits com pops originais
+      const deletions = pendingPopEdits.filter(r => r._delete);
+      const effective = pendingPopEdits.filter(r => !r._delete);
+
+      let anyChange = deletions.length > 0;
+
+      // Verifica se há diferenças em nome/estado/id entre os efetivos e os originais
+      for (const row of effective){
+        const orig = pops.find(p => p.id === row.oldId);
+        if (!orig) { // se o original não existe, isso é mudança
+          anyChange = true; break;
+        }
+        const origNome = (orig.nome || '').trim();
+        const newNome = (row.nome || '').trim();
+        const origEstado = (orig.estado || '__');
+        const newEstado = (row.estado || '__');
+        const origId = orig.id;
+        const newId = row.id;
+        if (origNome !== newNome || origEstado !== newEstado || origId !== newId) {
+          anyChange = true; break;
+        }
+      }
+
+      // Se nada mudou, apenas fechar o modal sem mensagem
+      if (!anyChange) {
+        closeModal('modalPops');
+        return;
+      }
+
+      // Continua com as validações e aplicação das alterações
+      const effectiveIds = effective.map(r => r.id);
+      const effectiveNamesLower = effective.map(r => (r.nome || '').trim().toLowerCase());
+
+      if (effectiveIds.length !== new Set(effectiveIds).size) {
+        await showAlert({ title:'Atenção', message:'IDs (slug) duplicados após edição. Ajuste os nomes/IDs.' });
+        return;
+      }
+      if (effectiveNamesLower.length !== new Set(effectiveNamesLower).size) {
+        await showAlert({ title:'Atenção', message:'Nomes duplicados após edição. Ajuste os nomes.' });
+        return;
+      }
+
+      // Aplica deleções
+      pendingPopEdits.filter(r => r._delete).forEach(rem => {
+        pops = pops.filter(p => p.id !== rem.oldId);
       });
-      savePops(); saveSwitches(); renderPopOptions(); renderEstadosComPops(); closeModal('modalPops');
+
+      // Aplica edições (nome, estado, id) e realoca switches se id mudou
+      pendingPopEdits.filter(r => !r._delete).forEach(edit => {
+        const pIdx = pops.findIndex(p => p.id === edit.oldId);
+        if (pIdx === -1) {
+          // se por algum motivo não encontrar, adiciona novo
+          pops.push({ id: edit.id, nome: (edit.nome || '').trim(), estado: edit.estado || '__' });
+          return;
+        }
+        const idChanged = edit.oldId !== edit.id;
+        pops[pIdx].id = edit.id;
+        pops[pIdx].nome = (edit.nome || '').trim();
+        pops[pIdx].estado = edit.estado || '__';
+        if (idChanged) {
+          switches.forEach(s => { if (s.pop === edit.oldId) s.pop = edit.id; });
+        }
+      });
+
+      // Persistir e re-renderizar
+      savePops();
+      saveSwitches();
+      renderPopOptions();
+      renderEstadosComPops();
+      closeModal('modalPops');
       await showAlert({ title:'Sucesso', message:'POPs atualizados.' });
     }
 
