@@ -283,7 +283,7 @@
   <div class="with-sidebar">
     <div class="container">
       <header>
-        <!-- ===== LOCK: Botão Travar/Destravar ===== -->
+        <!-- Botão Travar/Destravar -->
         <div class="lock-wrap" title="Travar/Destravar">
           <button id="lockBtn" type="button" aria-pressed="true">
             <img id="lockIcon" src="https://cdn-icons-png.flaticon.com/512/7615/7615902.png" alt="Travado" />
@@ -300,11 +300,16 @@
       <div class="main-content">
         <section class="switches-section">
           <h2>POPs Cadastrados</h2>
+
+          <!-- CONTAINER DO ESTADO: loader + conteúdo -->
           <div id="estadoContainer">
             <div id="estadoLoading" class="loading-wrap" role="status" aria-live="polite" aria-busy="true">
               <div class="progress" aria-hidden="true"><div class="indeterminate"></div></div>
               <div class="muted" style="text-align:center;margin-top:12px">Carregando…</div>
             </div>
+
+            <!-- Conteúdo aparece aqui somente depois que tudo carregar -->
+            <div id="estadoContent"></div>
           </div>
         </section>
       </div>
@@ -534,47 +539,33 @@
     let switchesLoaded = false;
     let loadFallbackTimer = null;
 
-    /* ========= LOCK: estado e helpers ========= */
-    // Sempre começa TRAVADO
-    let isLocked = true;
+    /* ========= LOCK ========= */
+    let isLocked = true; // sempre inicia travado
     const LOCK_PASSWORD = '123456';
     const LOCK_ICON = 'https://cdn-icons-png.flaticon.com/512/7615/7615902.png';
     const UNLOCK_ICON = 'https://cdn-icons-png.flaticon.com/512/7615/7615905.png';
 
-    function canEditNow(){ return !isLocked; }
-
     function promptUnlock(){
       const pwd = window.prompt('Digite a senha para destravar:');
-      if (pwd === null) return false; // cancelado
+      if (pwd === null) return false;
       if (pwd === LOCK_PASSWORD) { isLocked = false; updateLockUI(); return true; }
       alert('Senha incorreta.');
       return false;
     }
-
     function lock(){
       isLocked = true;
-      // Fecha qualquer modal aberto
-      ['modalCadastro','modalEditSwitch','modalPops','confirmModal'].forEach(id=>{
-        const el = byId(id); if(el) el.classList.remove('open');
-      });
+      ['modalCadastro','modalEditSwitch','modalPops','confirmModal'].forEach(id=>byId(id)?.classList.remove('open'));
       updateLockUI();
     }
-
     function updateLockUI(){
-      // Atualiza botão/ícone/label do topo
       const icon = byId('lockIcon'), text = byId('lockText');
-      if (icon) icon.src = isLocked ? LOCK_ICON : UNLOCK_ICON;
-      if (icon) icon.alt = isLocked ? 'Travado' : 'Destravado';
+      if (icon) { icon.src = isLocked ? LOCK_ICON : UNLOCK_ICON; icon.alt = isLocked ? 'Travado' : 'Destravado'; }
       if (text) text.textContent = isLocked ? 'Travado' : 'Destravado';
       byId('lockBtn')?.setAttribute('aria-pressed', String(!isLocked));
-
-      // Menu (esconde/mostra opções)
       const novo = byId('menuNovoCadastro'), popsBtn = byId('menuGerenciarPops');
       if (novo) novo.style.display = isLocked ? 'none' : '';
       if (popsBtn) popsBtn.style.display = isLocked ? 'none' : '';
-
-      // Re-renderiza listas para esconder/mostrar botões de ação
-      renderEstadosComPops();
+      renderEstadosComPops(); // re-render para mostrar/ocultar botões de ação
     }
 
     /* ========= Loading / Render control ========= */
@@ -582,21 +573,22 @@
       const loading = byId('estadoLoading');
       if (loading) loading.style.display = show ? 'flex' : 'none';
     }
+
     function renderWhenReady(){
       if (popsLoaded && switchesLoaded){
         clearTimeout(loadFallbackTimer);
-        showLoading(false);
-        renderEstadosComPops();
-        updateLockUI(); // garante o estado visual do lock após primeiro render
+        renderEstadosComPops(); // esta função chamará showLoading(false)
+        updateLockUI();
       }
     }
+
     function startLoadFallbackTimer(timeoutMs = 8000){
       clearTimeout(loadFallbackTimer);
       loadFallbackTimer = setTimeout(()=>{
         if (!(popsLoaded && switchesLoaded)){
-          showLoading(false);
-          const wrap = byId('estadoContainer');
-          if (wrap) wrap.innerHTML = '<div class="no-pops">Não foi possível carregar os POPs. Verifique sua conexão ou tente novamente. Use “Novo cadastro” para adicionar um POP localmente.</div>';
+          showLoading(true); // permanece carregando
+          const content = byId('estadoContent');
+          if (content) content.innerHTML = ''; // sem mensagem "Nenhum POP..." antes de concluir o load
         }
       }, timeoutMs);
     }
@@ -708,68 +700,81 @@
     }
 
     function renderEstadosComPops(){
-      const wrap = byId('estadoContainer'); if(!wrap) return;
-      if(!pops || pops.length===0){ wrap.innerHTML='<div class="no-pops">Nenhum POP cadastrado ainda. Use “Novo cadastro”.</div>'; return; }
+      const content = byId('estadoContent');
+      if (!content) return;
+
+      // Se ainda não terminou de carregar, mantém o loader e não mostra conteúdo
+      if (!(popsLoaded && switchesLoaded)) {
+        content.innerHTML = '';
+        showLoading(true);
+        return;
+      }
+
+      // Terminou de carregar: esconder loader e renderizar
+      showLoading(false);
+
+      if(!pops || pops.length===0){
+        content.innerHTML = '<div class="no-pops">Nenhum POP cadastrado ainda. Use “Novo cadastro”.</div>';
+        return;
+      }
+
       const groups = popsByEstado();
       const ufs = Object.keys(groups).sort((a,b)=>{ if(a==='__') return 1; if(b==='__') return -1; return a.localeCompare(b); });
-      wrap.innerHTML = '';
+
+      let html = '';
       ufs.forEach(uf=>{
-        const bloco = document.createElement('div');
-        bloco.className = 'estado-block';
         const totalSwitchesUF = groups[uf].reduce((acc,p)=> acc + switches.filter(s=>s.pop===p.id).length, 0);
-        bloco.innerHTML = `
-          <div class="estado-head">
-            <div class="h3">${estadoLabel(uf)}</div>
-            <div class="estado-badge">${groups[uf].length} POP${groups[uf].length===1?'':'s'} • ${totalSwitchesUF} switch${totalSwitchesUF===1?'':'es'}</div>
-          </div>
-          <div class="pop-grid"></div>
-        `;
-        const grid = bloco.querySelector('.pop-grid');
-
-        groups[uf].forEach(pop=>{
-          const card = document.createElement('div');
-          card.className='pop-card';
-          const swDoPop = switches.filter(s=>s.pop===pop.id);
-
-          // ===== LOCK: só renderiza botões se destravado
-          const actionButtons = !isLocked ? `
-              <div class="row-actions">
-                <button class="btn small" data-action="edit">Editar</button>
-                <button class="btn danger small" data-action="delete">Excluir</button>
-              </div>` : '';
-
-          card.innerHTML = `
-            <div class="pop-header">
-              <div class="pop-title">${pop.nome}</div>
-              <div class="pop-badge">${swDoPop.length} switch${swDoPop.length===1?'':'es'}</div>
+        html += `
+          <div class="estado-block">
+            <div class="estado-head">
+              <div class="h3">${estadoLabel(uf)}</div>
+              <div class="estado-badge">${groups[uf].length} POP${groups[uf].length===1?'':'s'} • ${totalSwitchesUF} switch${totalSwitchesUF===1?'':'es'}</div>
             </div>
-            <button class="pop-toggle" data-toggle-pop="${pop.id}" aria-expanded="false">
-              <span>Ver switches</span><i>▼</i>
-            </button>
-            <div class="switch-list">
+            <div class="pop-grid">
               ${
-                swDoPop.length===0
-                ? `<div class="no-switches" style="padding:16px">Nenhum switch vinculado a este POP.</div>`
-                : swDoPop.map(sw=>`
-                    <div class="switch-row" data-switch-id="${sw.id}">
-                      <div class="switch-info-wrap">
-                        <div class="switch-name">${sw.nome}</div>
-                        <div class="switch-meta">IP: ${sw.ip}</div>
-                        <div class="switch-meta">Modelo: ${sw.modelo ? sw.modelo : '—'}</div>
+                groups[uf].map(pop=>{
+                  const swDoPop = switches.filter(s=>s.pop===pop.id);
+                  const actionButtons = !isLocked ? `
+                    <div class="row-actions">
+                      <button class="btn small" data-action="edit">Editar</button>
+                      <button class="btn danger small" data-action="delete">Excluir</button>
+                    </div>` : '';
+                  return `
+                    <div class="pop-card">
+                      <div class="pop-header">
+                        <div class="pop-title">${pop.nome}</div>
+                        <div class="pop-badge">${swDoPop.length} switch${swDoPop.length===1?'':'es'}</div>
                       </div>
-                      ${actionButtons}
-                      <div class="hover-preview">
-                        ${ sw.foto ? `<img src="${sw.foto}" alt="Foto de ${sw.nome}">` : `<div class="noimg">Sem imagem para este switch</div>` }
+                      <button class="pop-toggle" data-toggle-pop="${pop.id}" aria-expanded="false">
+                        <span>Ver switches</span><i>▼</i>
+                      </button>
+                      <div class="switch-list">
+                        ${
+                          swDoPop.length===0
+                          ? `<div class="no-switches" style="padding:16px">Nenhum switch vinculado a este POP.</div>`
+                          : swDoPop.map(sw=>`
+                              <div class="switch-row" data-switch-id="${sw.id}">
+                                <div class="switch-info-wrap">
+                                  <div class="switch-name">${sw.nome}</div>
+                                  <div class="switch-meta">IP: ${sw.ip}</div>
+                                  <div class="switch-meta">Modelo: ${sw.modelo ? sw.modelo : '—'}</div>
+                                </div>
+                                ${actionButtons}
+                                <div class="hover-preview">
+                                  ${ sw.foto ? `<img src="${sw.foto}" alt="Foto de ${sw.nome}">` : `<div class="noimg">Sem imagem para este switch</div>` }
+                                </div>
+                              </div>
+                            `).join('')
+                        }
                       </div>
-                    </div>
-                  `).join('')
+                    </div>`;
+                }).join('')
               }
-            </div>`;
-          grid.appendChild(card);
-        });
-
-        wrap.appendChild(bloco);
+            </div>
+          </div>`;
       });
+
+      content.innerHTML = html;
     }
 
     function renderUFSelect(selectEl){
@@ -950,7 +955,7 @@
         tbody.appendChild(tr);
       });
 
-      if (isLocked) return; // sem eventos se travado
+      if (isLocked) return;
 
       tbody.onclick=(ev)=>{
         const tr=ev.target.closest('tr'); if(!tr) return; const idx=Number(tr.dataset.index);
@@ -981,48 +986,6 @@
         if(ev.target.dataset.field==='estado') pendingPopEdits[idx].estado=ev.target.value;
       };
       tbody.onchange = tbody.oninput;
-    }
-
-    async function applyPopEdits(){
-      if (isLocked){ await showAlert({ title:'Travado', message:'Destrave para salvar alterações de POPs.' }); return; }
-      const deletions = pendingPopEdits.filter(r => r._delete);
-      const effective = pendingPopEdits.filter(r => !r._delete);
-      let anyChange = deletions.length > 0;
-
-      for (const row of effective){
-        const orig = pops.find(p => p.id === row.oldId);
-        if (!orig) { anyChange = true; break; }
-        const origNome = (orig.nome || '').trim();
-        const newNome = (row.nome || '').trim();
-        const origEstado = (orig.estado || '__');
-        const newEstado = (row.estado || '__');
-        const origId = orig.id;
-        const newId = row.id;
-        if (origNome !== newNome || origEstado !== newEstado || origId !== newId) { anyChange = true; break; }
-      }
-
-      if (!anyChange) { closeModal('modalPops'); return; }
-
-      const effectiveIds = effective.map(r => r.id);
-      const effectiveNamesLower = effective.map(r => (r.nome || '').trim().toLowerCase());
-      if (effectiveIds.length !== new Set(effectiveIds).size) { await showAlert({ title:'Atenção', message:'IDs (slug) duplicados após edição.' }); return; }
-      if (effectiveNamesLower.length !== new Set(effectiveNamesLower).size) { await showAlert({ title:'Atenção', message:'Nomes duplicados após edição.' }); return; }
-
-      pendingPopEdits.filter(r => r._delete).forEach(rem => { pops = pops.filter(p => p.id !== rem.oldId); });
-
-      pendingPopEdits.filter(r => !r._delete).forEach(edit => {
-        const pIdx = pops.findIndex(p => p.id === edit.oldId);
-        if (pIdx === -1) { pops.push({ id: edit.id, nome: (edit.nome || '').trim(), estado: edit.estado || '__' }); return; }
-        const idChanged = edit.oldId !== edit.id;
-        pops[pIdx].id = edit.id;
-        pops[pIdx].nome = (edit.nome || '').trim();
-        pops[pIdx].estado = edit.estado || '__';
-        if (idChanged) switches.forEach(s => { if (s.pop === edit.oldId) s.pop = edit.id; });
-      });
-
-      savePops(); saveSwitches(); renderPopOptions(); renderEstadosComPops();
-      closeModal('modalPops');
-      await showAlert({ title:'Sucesso', message:'POPs atualizados.' });
     }
 
     /* ========= Sidebar / Auto-hide ========= */
@@ -1057,6 +1020,9 @@
 
     /* ========= Listeners globais ========= */
     document.addEventListener('DOMContentLoaded', () => {
+      // Loader ligado desde o começo
+      showLoading(true);
+
       // Sempre inicia TRAVADO
       isLocked = true;
       updateLockUI();
@@ -1119,11 +1085,9 @@
         if (toggleBtn) {
           const card = toggleBtn.closest('.pop-card');
           const list = card.querySelector('.switch-list');
-          const popId = toggleBtn.getAttribute('data-toggle-pop');
           const isOpen = list.style.display === 'block';
           if (isOpen) { toggleBtn.classList.remove('open'); toggleBtn.setAttribute('aria-expanded','false'); list.style.display = 'none'; }
-          else { 
-            // Fecha os demais, mas isso é só visual; não depende de lock
+          else {
             document.querySelectorAll('.pop-card .switch-list').forEach(el=>{ el.style.display='none'; el.previousElementSibling?.classList?.remove('open'); });
             toggleBtn.classList.add('open'); toggleBtn.setAttribute('aria-expanded','true'); list.style.display = 'block';
           }
@@ -1169,18 +1133,51 @@
 
       // Botão Lock
       byId('lockBtn').addEventListener('click', ()=>{
-        if (isLocked){
-          // Tenta destravar
-          promptUnlock();
-        } else {
-          // Re-travar imediato
-          lock();
-        }
+        if (isLocked){ promptUnlock(); } else { lock(); }
       });
 
       startLoadFallbackTimer(8000);
       requestAnimationFrame(() => { document.documentElement.classList.add('js-ready'); });
     });
+
+    /* ===== Helpers de imagem ===== */
+    async function compressImage(file, { maxWidth = 1600, maxHeight = 1200, mimeType = 'image/webp', quality = 0.82 } = {}) {
+      if (!('createImageBitmap' in window)) return await fileToDataURL(file);
+      const bitmap = await createImageBitmap(file);
+      const { width, height } = bitmap;
+      const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
+      const targetW = Math.round(width * ratio);
+      const targetH = Math.round(height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW; canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+      let outType = mimeType;
+      if (!canvas.toDataURL(outType).startsWith('data:image/webp')) outType = 'image/jpeg';
+      return canvas.toDataURL(outType, quality);
+    }
+    function fileToDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = e => resolve(e.target.result);
+        fr.onerror = reject;
+        fr.readAsDataURL(file);
+      });
+    }
+    async function compressAdaptively(file) {
+      const steps = [
+        { w: 2200, h: 1600, q: 0.88 }, { w: 1800, h: 1350, q: 0.84 },
+        { w: 1600, h: 1200, q: 0.82 }, { w: 1400, h: 1050, q: 0.78 },
+        { w: 1200, h: 900,  q: 0.75 }, { w: 1000, h: 750,  q: 0.72 },
+        { w: 900,  h: 675,  q: 0.70 }
+      ];
+      for (const s of steps) {
+        const d = await compressImage(file, { maxWidth: s.w, maxHeight: s.h, quality: s.q });
+        if (d.length < 4_500_000) return d;
+      }
+      return await compressImage(file, { maxWidth: 800, maxHeight: 600, quality: 0.68 });
+    }
   </script>
 
   <!-- ===== FAVICON ANIMADO VIA CANVAS ===== -->
