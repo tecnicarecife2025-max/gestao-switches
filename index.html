@@ -303,19 +303,22 @@
     const fbAuth = getAuth(fbApp);  
     const fbDb = getDatabase(fbApp);
 
-    // Faça login anônimo (necessário para operações que exigem auth)
-    signInAnonymously(fbAuth).catch(err => {
-      // se ocorrer erro na autenticação anônima, mostramos no console (não expõe nada)
-      console.warn('Erro ao autenticar anon:', err);
-    });
-
-    onAuthStateChanged(fbAuth, user => {
-      if (user) {
-        console.log('Autenticado anonimamente (uid):', user.uid);
-      } else {
-        console.log('Usuário deslogado');
-      }
-    });
+    // Solicita login anônimo  
+signInAnonymously(fbAuth)  
+  .then(() => console.log('[FB] signInAnonymously chamado'))  
+  .catch(err => console.warn('[FB] Erro ao autenticar anon:', err));  
+  
+// Aguarda mudança no estado de autenticação e só então inicializa leituras/escritas  
+onAuthStateChanged(fbAuth, user => {  
+  if (user) {  
+    console.log('Autenticado anonimamente (uid):', user.uid);  
+    // Só aqui é seguro iniciar os listeners/leituras do Realtime Database  
+    loadPops();  
+    loadSwitches();  
+  } else {  
+    console.log('Usuário deslogado');  
+  }  
+});
     // ===============================================================
 
     const LS_SWITCHES_KEY = 'networkSwitches';
@@ -451,9 +454,8 @@
       byId('btnRemoverFoto').addEventListener('click', () => { byId('editSwitchFoto').value=''; byId('previewInfo').textContent='Imagem será removida ao salvar.'; byId('previewInfo').dataset.remove='true'; });
       byId('btnSalvarPops').addEventListener('click', applyPopEdits);
 
-      loadPops(); loadSwitches();
-      renderUFSelect(byId('popEstado'));
-      renderPopOptions();
+      renderUFSelect(byId('popEstado'));  
+      renderPopOptions();  
       renderEstadosComPops();
 
       /* ====== ATUALIZADO: clique com efeito acordeão ====== */
