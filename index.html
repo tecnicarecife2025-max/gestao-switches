@@ -18,193 +18,252 @@
   </style>
 
   <style>
-    :root{ --sbw:260px; --sbw-collapsed:52px }
-    *{ margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif }
-    body{ background:#f5f7fa; color:#333 }
-    .container{ max-width:1200px; margin:0 auto; padding:20px }
+    :root { --sbw: 260px; --sbw-collapsed: 52px; }
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif }
+    body { background:#f5f7fa; color:#333 }
+    .container { max-width:1200px; margin:0 auto; padding:20px }
 
     /* ===== Sidebar ===== */
-    .sidebar{
-      position:fixed; left:0; top:0; bottom:0; width:var(--sbw);
+    .sidebar {
+      position: fixed; left:0; top:0; bottom:0; width:var(--sbw);
       background:linear-gradient(180deg,#1a2530,#111923);
       color:#e5e7eb; box-shadow:2px 0 12px rgba(0,0,0,.15); z-index:1100;
-      transition:width .25s ease, transform .25s ease;
-      will-change:width, transform; overflow-x:hidden;
+      transition: width .25s ease, transform .25s ease;
+      will-change: width, transform;
+      overflow-x:hidden;
       display:flex; flex-direction:column;
     }
-    .brand{ display:flex; align-items:center; gap:10px; justify-content:space-between;
-      padding:12px; border-bottom:1px solid rgba(255,255,255,.06); min-height:56px }
+
+    /* Cabeçalho da sidebar */
+    .brand{
+      display:flex; align-items:center; gap:10px; justify-content:space-between;
+      padding:12px; border-bottom:1px solid rgba(255,255,255,.06); flex-shrink:0;
+      min-height:56px;
+    }
     .brand-left{ display:flex; align-items:center; gap:10px; min-width:0 }
-    .logo{ width:36px; height:36px; border-radius:10px; background:#2b3b4a;
+    .logo {
+      width:36px; height:36px; border-radius:10px; background:#2b3b4a;
       display:grid; place-items:center; font-weight:800; color:#a7c7ff;
-      box-shadow:inset 0 0 0 1px rgba(255,255,255,.08) }
-    .title{ font-size:14px; line-height:1.15; white-space:nowrap; transition:opacity .2s ease }
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)
+    }
+    .title { font-size:14px; line-height:1.15; white-space:nowrap; transition:opacity .2s ease }
     .title b{ display:block; font-size:15px; color:#fff }
+
     .collapse-btn{
       background:#ffffff1a; border:1px solid #ffffff24; color:#fff;
       padding:8px 10px; border-radius:8px; cursor:pointer; transition:.2s;
-      display:inline-flex; align-items:center; gap:8px; white-space:nowrap
+      display:inline-flex; align-items:center; gap:8px; white-space:nowrap; flex-shrink:0;
     }
     .collapse-btn:hover{ background:#ffffff2d }
     .collapse-btn svg{ width:18px; height:18px; transition:transform .25s ease }
 
     .menu{ padding:10px; overflow:auto; flex:1 }
-    .menu h4{ font-size:12px; color:#9fb0c2; letter-spacing:.06em; text-transform:uppercase;
-      margin:10px 10px 6px; white-space:nowrap; transition:opacity .2s ease }
+    .menu h4{
+      font-size:12px; color:#9fb0c2; letter-spacing:.06em; text-transform:uppercase;
+      margin:10px 10px 6px; white-space:nowrap; transition:opacity .2s ease
+    }
     .menu .item{
-      display:flex; align-items:center; gap:10px; padding:12px 14px; margin:6px 6px;
-      border-radius:10px; cursor:pointer; color:#e5e7eb; transition:.18s background, .18s transform;
+      display:flex; align-items:center; gap:10px;
+      padding:12px 14px; margin:6px 6px; border-radius:10px; cursor:pointer;
+      color:#e5e7eb; user-select:none; transition:.18s background, .18s transform;
       position:relative; white-space:nowrap; line-height:1;
     }
     .menu .item:hover{ background:rgba(255,255,255,.09) }
-    .menu .item .icon{ width:22px; height:22px; display:grid; place-items:center; flex:0 0 22px; opacity:.95 }
-    .menu .item .icon svg{ width:20px; height:20px }
-
-    /* Rodapé fixo na sidebar: botão de cadeado */
-    .sidebar-footer{
-  padding:10px 6px 10px 6px; /* diminui o espaço da esquerda */
-  border-top:1px solid rgba(255,255,255,.06);
-  display:flex;
-  gap:8px; /* pode diminuir para 4 se quiser mais juntinho */
-  align-items:center;
-  justify-content:flex-start; /* garante alinhamento para a esquerda */
-}
-    .lock-btn{
-      display:flex; align-items:center; gap:10px; width:100%;
-      background:#ffffff14; border:1px solid #ffffff24; color:#fff; cursor:pointer;
-      padding:10px 12px; border-radius:10px; transition:background .2s ease, transform .1s ease
+    .menu .item:active{ transform:translateY(1px) }
+    .menu .item .icon{
+      width:22px; height:22px; display:grid; place-items:center; flex:0 0 22px; opacity:.95;
     }
-    .lock-btn:hover{ background:#ffffff26 }
-    .lock-btn:active{ transform:translateY(1px) }
-    .lock-btn img{ width:20px; height:20px }
-    .lock-badge{ margin-left:auto; font-size:12px; padding:.2rem .5rem; border-radius:999px; background:#0d1a24; border:1px solid #ffffff24 }
+    .menu .item .icon svg{ width:20px; height:20px; }
+    .menu .item span{ transition:opacity .2s ease, transform .2s ease }
 
-    /* Layout principal deslocado pela sidebar */
-    .with-sidebar{ margin-left:var(--sbw); transition:margin-left .25s ease }
+    /* ===== Layout principal deslocado pela sidebar ===== */
+    .with-sidebar { margin-left:var(--sbw); transition: margin-left .25s ease }
 
-    /* Estado colapsado (desktop) */
+    /* ====== ESTADO COLAPSADO (desktop) ====== */
     body.sidebar-collapsed .sidebar{ width:var(--sbw-collapsed) }
     body.sidebar-collapsed .with-sidebar{ margin-left:var(--sbw-collapsed) }
-    body.sidebar-collapsed .title{ opacity:0; pointer-events:none }
-    body.sidebar-collapsed .brand{ justify-content:center; gap:0 }
-    body.sidebar-collapsed .logo{ display:none }
-    body.sidebar-collapsed .collapse-btn span{ display:none }
-    body.sidebar-collapsed .collapse-btn{ padding:8px }
-    body.sidebar-collapsed .collapse-btn svg{ transform:rotate(180deg) }
-    body.sidebar-collapsed .menu{ padding:8px 6px }
-    body.sidebar-collapsed .menu h4{ height:0; margin:0; padding:0; opacity:0; overflow:hidden }
-    body.sidebar-collapsed .menu .item{ justify-content:center; gap:0; padding:10px; margin:4px 6px; border-radius:12px }
-    body.sidebar-collapsed .menu .item span{ display:none }
 
-    /* Mobile */
+    /* Oculta textos/ajusta header ao colapsar */
+    body.sidebar-collapsed .title{ opacity:0; pointer-events:none }
+    body.sidebar-collapsed .brand{ justify-content:center; gap:0px; }
+    body.sidebar-collapsed .logo{ display:none; }
+    body.sidebar-collapsed .brand-left{ width:0; padding:0; margin:0; overflow:hidden; }
+    body.sidebar-collapsed .collapse-btn span{ display:none }
+    body.sidebar-collapsed .collapse-btn{ padding:8px; }
+    body.sidebar-collapsed .collapse-btn svg { transform: rotate(180deg); }
+
+    /* Rail de ícones */
+    body.sidebar-collapsed .menu{ padding:8px 6px }
+    body.sidebar-collapsed .menu h4{ height:0; margin:0; padding:0; opacity:0; overflow:hidden; }
+    body.sidebar-collapsed .menu .item{
+      justify-content:center; gap:0; padding:10px; margin:4px 6px; border-radius:12px;
+    }
+    body.sidebar-collapsed .menu .item .icon{ width:auto; height:auto; }
+    body.sidebar-collapsed .menu .item span{ opacity:0; pointer-events:none; transform:translateX(-6px); }
+
+    /* Tooltip quando colapsado */
+    body.sidebar-collapsed .menu .item[data-label]:hover::after{
+      content:attr(data-label);
+      position:absolute; left:calc(100% + 8px); top:50%; transform:translateY(-50%);
+      background:#111923; color:#e5e7eb; border:1px solid #ffffff24;
+      padding:6px 10px; border-radius:8px; white-space:nowrap; box-shadow:0 6px 20px rgba(0,0,0,.25);
+      z-index:1500;
+    }
+
+    /* ===== Mobile: slide in/out ===== */
     @media (max-width: 900px){
       .sidebar { transform:translateX(-100%) }
       body.sidebar-open .sidebar { transform:none }
       .with-sidebar { margin-left:0 }
-      .sidebar-overlay{ content:""; position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; z-index:1000 }
-      body.sidebar-open .sidebar-overlay{ display:block }
-      .edge-hitbox{ position:fixed; left:0; top:0; bottom:0; width:18px; z-index:900; background:transparent }
+      .sidebar-overlay { content:""; position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; z-index:1000; }
+      body.sidebar-open .sidebar-overlay { display:block }
+      .edge-hitbox { position: fixed; left:0; top:0; bottom:0; width:18px; z-index:900; background:transparent; }
     }
-    @media (min-width:901px){ .edge-hitbox{ display:none } }
+    @media (min-width: 901px){
+      .edge-hitbox{ display:none }
+    }
 
-    /* Header/Sections */
-    header{ background:linear-gradient(135deg,#2c3e50,#1a2530); color:#fff; padding:20px; border-radius:10px; margin-bottom:30px; box-shadow:0 4px 12px rgba(0,0,0,.1) }
+    /* ===== Header / Sections ===== */
+    header {
+      background:linear-gradient(135deg,#2c3e50,#1a2530); color:#fff; padding:20px;
+      border-radius:10px; margin-bottom:30px; box-shadow:0 4px 12px rgba(0,0,0,.1)
+    }
     .header-row{ text-align:center; display:block }
-    h1{ margin-bottom:6px }
-    .subtitle{ opacity:.9; font-weight:300; white-space:nowrap }
+    h1 { margin-bottom:6px }
+    .subtitle { opacity:.9; font-weight:300; white-space:nowrap }
 
-    .btn{ background:#3498db; color:#fff; border:0; padding:12px 16px; border-radius:6px; cursor:pointer; font-weight:600; transition:.25s; display:inline-flex; align-items:center; gap:8px }
-    .btn:hover{ background:#2980b9 }
-    .btn.ghost{ background:#ecf0f1; color:#2c3e50 }
-    .btn.ghost:hover{ background:#d5dbdb }
-    .btn.danger{ background:#e74c3c }
-    .btn.danger:hover{ background:#c0392b }
-    .btn.small{ padding:8px 10px; font-size:14px }
+    .btn { background:#3498db; color:#fff; border:0; padding:12px 16px; border-radius:6px; cursor:pointer; font-weight:600; transition:.25s; display:inline-flex; align-items:center; gap:8px }
+    .btn:hover { background:#2980b9 }
+    .btn.ghost { background:#ecf0f1; color:#2c3e50 }
+    .btn.ghost:hover { background:#d5dbdb }
+    .btn.danger { background:#e74c3c }
+    .btn.danger:hover { background:#c0392b }
+    .btn.small { padding:8px 10px; font-size:14px }
 
-    .main-content{ display:flex; gap:30px; flex-wrap:wrap }
-    .switches-section{ background:#fff; padding:25px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,.05); flex:1; min-width:320px }
-    h2{ color:#2c3e50; margin-bottom:20px; padding-bottom:10px; border-bottom:2px solid #eee }
-    .h3{ color:#2c3e50; margin:18px 0 10px; font-size:18px; font-weight:800 }
-    .muted{ color:#7f8c8d; font-size:14px }
-    .no-switches,.no-pops{ text-align:center; padding:40px; color:#7f8c8d; font-style:italic }
+    .main-content { display:flex; gap:30px; flex-wrap:wrap }
+    .switches-section { background:#fff; padding:25px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,.05); flex:1; min-width:320px }
 
-    .estado-block{ margin-bottom:32px }
-    .estado-head{ display:flex; align-items:center; justify-content:space-between }
-    .estado-badge{ background:#eef3f7; border:1px solid #e3e8ee; color:#2c3e50; font-weight:700; padding:4px 10px; border-radius:999px; font-size:12px }
+    h2 { color:#2c3e50; margin-bottom:20px; padding-bottom:10px; border-bottom:2px solid #eee }
+    .h3 { color:#2c3e50; margin:18px 0 10px; font-size:18px; font-weight:800 }
+    .muted { color:#7f8c8d; font-size:14px }
+    .no-switches, .no-pops { text-align:center; padding:40px; color:#7f8c8d; font-style:italic }
 
-    .pop-grid{ display:flex; flex-wrap:wrap; gap:20px; margin-top:12px; align-items:flex-start }
-    .pop-card{ flex:1 1 320px; max-width:420px; background:#f8f9fa; border-radius:8px; overflow:visible; box-shadow:0 2px 8px rgba(0,0,0,.1); transition:transform .3s, box-shadow .3s }
-    .pop-card:hover{ transform:translateY(-5px); box-shadow:0 5px 15px rgba(0,0,0,.1) }
-    .pop-header{ display:flex; align-items:center; justify-content:space-between; padding:16px }
-    .pop-title{ font-size:18px; font-weight:700; color:#2c3e50 }
-    .pop-badge{ background:#ecf0f1; padding:4px 10px; border-radius:999px; font-size:12px; color:#2c3e50 }
-    .pop-toggle{ width:100%; text-align:left; background:#eef3f7; border-top:1px solid #e3e8ee; padding:12px 16px; cursor:pointer; display:flex; align-items:center; justify-content:space-between }
-    .pop-toggle span{ font-weight:600; color:#2c3e50 }
-    .pop-toggle i{ transition:transform .2s }
-    .pop-toggle.open i{ transform:rotate(180deg) }
+    .estado-block { margin-bottom:32px }
+    .estado-head { display:flex; align-items:center; justify-content:space-between; }
+    .estado-badge { background:#eef3f7; border:1px solid #e3e8ee; color:#2c3e50; font-weight:700; padding:4px 10px; border-radius:999px; font-size:12px }
 
-    .switch-list{ display:none; padding:8px 16px 16px 16px; overflow:visible; position:relative }
-    .switch-row{ background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible }
-    .switch-info-wrap{ display:flex; flex-direction:column; gap:2px }
-    .switch-name{ font-weight:700; color:#2c3e50 }
-    .switch-meta{ font-size:14px; color:#7f8c8d }
-    .row-actions{ display:flex; gap:8px; align-items:center }
+    .pop-grid{ display:flex; flex-wrap:wrap; gap:20px; margin-top:12px; align-items:flex-start; }
+    .pop-card{
+      flex: 1 1 320px; max-width: 420px; background:#f8f9fa; border-radius:8px; overflow:visible;
+      box-shadow:0 2px 8px rgba(0,0,0,.1); transition:transform .3s, box-shadow .3s
+    }
+    .pop-card:hover { transform:translateY(-5px); box-shadow:0 5px 15px rgba(0,0,0,.1) }
+    .pop-header { display:flex; align-items:center; justify-content:space-between; padding:16px }
+    .pop-title { font-size:18px; font-weight:700; color:#2c3e50 }
+    .pop-badge { background:#ecf0f1; padding:4px 10px; border-radius:999px; font-size:12px; color:#2c3e50 }
+    .pop-toggle { width:100%; text-align:left; background:#eef3f7; border-top:1px solid #e3e8ee; padding:12px 16px; cursor:pointer; display:flex; align-items:center; justify-content:space-between }
+    .pop-toggle span { font-weight:600; color:#2c3e50 }
+    .pop-toggle i { transition:transform .2s }
+    .pop-toggle.open i { transform:rotate(180deg) }
 
-    .hover-preview{ position:absolute; left:50%; bottom:calc(100% + 10px); transform:translate(-50%, 6px) scale(.98); width:340px; max-width:90vw; max-height:260px; background:#fff; border:1px solid #e6e9ef; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,.18); padding:10px; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:999 }
-    .switch-row:hover .hover-preview{ opacity:1; transform:translate(-50%,0) scale(1) }
+    .switch-list { display:none; padding:8px 16px 16px 16px; overflow:visible; position:relative }
+    .switch-row {
+      background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; margem-top:10px;
+      display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible
+    }
+    .switch-info-wrap { display:flex; flex-direction:column; gap:2px }
+    .switch-name { font-weight:700; color:#2c3e50 }
+    .switch-meta { font-size:14px; color:#7f8c8d }
+    .row-actions { display:flex; gap:8px; align-items:center }
+
+    .hover-preview {
+      position:absolute; left:50%; bottom: calc(100% + 10px); transform: translate(-50%, 6px) scale(.98);
+      width:340px; max-width:90vw; max-height:260px; background:#fff; border:1px solid #e6e9ef; border-radius:10px;
+      box-shadow:0 10px 28px rgba(20, 30, 50, .18); padding:10px; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:999
+    }
+    .switch-row:hover .hover-preview { opacity:1; transform: translate(-50%, 0) scale(1) }
     .hover-preview::before{ content:""; position:absolute; left:50%; bottom:-16px; transform:translateX(-50%); border-width:8px; border-style:solid; border-color:#e6e9ef transparent transparent transparent }
     .hover-preview::after{ content:""; position:absolute; left:50%; bottom:-15px; transform:translateX(-50%); border-width:8px; border-style:solid; border-color:#fff transparent transparent transparent }
     .hover-preview img{ width:100%; height:auto; display:block; border-radius:6px; object-fit:cover; max-height:240px }
     .hover-preview .noimg{ color:#7f8c8d; font-size:14px; text-align:center; padding:18px 6px }
 
-    .modal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:1200 }
-    .modal.open{ display:flex }
-    .modal-content{ background:#fff; width:min(900px, 100%); max-height:90vh; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:auto }
-    .modal-header{ padding:16px 20px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between }
-    .modal-title{ font-size:18px; font-weight:700 }
-    .modal-body{ padding:20px }
-    .modal-footer{ padding:16px 20px; border-top:1px solid #eee; display:flex; gap:10px; justify-content:flex-end }
-    .close-x{ background:transparent; border:0; font-size:20px; cursor:pointer }
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:1200 }
+    .modal.open { display:flex }
+    .modal-content { background:#fff; width:min(900px, 100%); max-height:90vh; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:auto }
+    .modal-header { padding:16px 20px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between }
+    .modal-title { font-size:18px; font-weight:700 }
+    .modal-body { padding:20px }
+    .modal-footer { padding:16px 20px; border-top:1px solid #eee; display:flex; gap:10px; justify-content:flex-end }
+    .close-x { background:transparent; border:0; font-size:20px; cursor:pointer }
 
-    .form-group{ margin-bottom:16px }
-    label{ display:block; margin-bottom:8px; font-weight:600; color:#2c3e50 }
-    input,select{ width:100%; padding:12px; border:1px solid #ddd; border-radius:5px; transition:border-color .3s }
-    input:focus,select:focus{ border-color:#3498db; outline:0; box-shadow:0 0 0 2px rgba(52,152,219,.2) }
-    .file-input-wrapper{ position:relative; overflow:hidden; display:inline-block; width:100% }
-    .file-input-wrapper input[type=file]{ position:absolute; left:0; top:0; opacity:0; width:100%; height:100%; cursor:pointer }
-    .file-input-button{ display:block; padding:12px; background:#ecf0f1; border:1px solid #ddd; border-radius:5px; text-align:center; cursor:pointer; transition:background .3s }
-    .file-input-button:hover{ background:#d5dbdb }
+    .form-group { margin-bottom:16px }
+    label { display:block; margin-bottom:8px; font-weight:600; color:#2c3e50 }
+    input, select { width:100%; padding:12px; border:1px solid #ddd; border-radius:5px; transition:border-color .3s }
+    input:focus, select:focus { border-color:#3498db; outline:0; box-shadow:0 0 0 2px rgba(52,152,219,.2) }
+    .file-input-wrapper { position:relative; overflow:hidden; display:inline-block; width:100% }
+    .file-input-wrapper input[type=file] { position:absolute; left:0; top:0; opacity:0; width:100%; height:100%; cursor:pointer }
+    .file-input-button { display:block; padding:12px; background:#ecf0f1; border:1px solid #ddd; border-radius:5px; text-align:center; cursor:pointer; transition:background .3s }
+    .file-input-button:hover { background:#d5dbdb }
 
-    .hide{ display:none !important }
+    .hide { display:none !important }
 
-    .loading-wrap{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px; min-height:140px }
-    .progress{ width:100%; max-width:420px; height:10px; background:#e8eef6; border-radius:999px; overflow:hidden; position:relative }
-    .progress .indeterminate{ position:absolute; left:-40%; top:0; bottom:0; width:40%; background:linear-gradient(90deg,#3498db,#6fb3ff); animation:indeterminate 1.2s infinite linear }
-    @keyframes indeterminate{ 0%{left:-40%; width:40%} 50%{left:30%; width:30%} 100%{left:100%; width:40%} }
-
-    /* ====== BLOQUEIO VISUAL ====== */
-    /* Esconde as ações e itens de menu quando bloqueado */
-    body.locked .row-actions{ display:none !important }
-    body.locked #menuNovoCadastro,
-    body.locked #menuGerenciarPops{ display:none !important }
-    body.locked .lock-badge{ background:#2a0f12 } /* só pra diferenciar corzinha */
-
-    /* ====== Modal de Senha ====== */
-    .password-field{ position:relative }
-    .password-field input{ width:100%; padding-right:44px }
-    .password-field .eye{
-      position:absolute; right:8px; top:50%; transform:translateY(-50%);
-      width:34px; height:34px; border:0; background:transparent; cursor:pointer;
-      border-radius:8px; display:grid; place-items:center; color:#2c3e50;
+    .loading-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px; min-height:140px; }
+    .progress { width:100%; max-width:420px; height:10px; background:#e8eef6; border-radius:999px; overflow:hidden; position:relative; }
+    .progress .indeterminate {
+      position:absolute; left:-40%; top:0; bottom:0; width:40%; background:linear-gradient(90deg,#3498db,#6fb3ff);
+      animation: indeterminate 1.2s infinite linear;
     }
-    .password-field .eye:hover{ background:#ecf0f1 }
-    .input-hint{ color:#e74c3c; margin-top:8px; font-size:14px }
+    @keyframes indeterminate {
+      0% { left:-40%; width:40%; }
+      50% { left:30%; width:30%; }
+      100% { left:100%; width:40%; }
+    }
+
+    #confirmModal .modal-body { padding:18px 20px; color:#333; }
+    #confirmModal .modal-footer { padding:12px 20px; }
+
+    /* ======= NOVO: BOTÃO DE CADEADO & REGRAS DE BLOQUEIO ======= */
+
+    /* Rodapé fixo da sidebar (cadeado) */
+    .sidebar-footer{
+      padding:10px 6px;
+      border-top:1px solid rgba(255,255,255,.06);
+      display:flex; align-items:center; gap:8px;
+      justify-content:flex-start;
+      flex-shrink:0;
+    }
+
+    /* Botão do cadeado */
+    .lock-btn{
+      background:#ffffff1a; border:1px solid #ffffff24; color:#fff;
+      padding:9px 12px; border-radius:10px;
+      display:flex; align-items:center; gap:10px; cursor:pointer;
+      transition:background .2s ease, transform .15s ease;
+    }
+    .lock-btn:hover{ background:#ffffff2d }
+    .lock-btn:active{ transform:translateY(1px) }
+    #lockIcon{ width:20px; height:20px; display:block }
+
+    /* Quando menu colapsado → só ícone, centralizado */
+    body.sidebar-collapsed .sidebar-footer{
+      justify-content:center; padding-left:0; padding-right:0;
+    }
+    body.sidebar-collapsed #lockText{ display:none !important; }
+    body.sidebar-collapsed #lockBtn{
+      width:42px; height:42px; padding:0; border-radius:12px; justify-content:center;
+    }
+
+    /* Quando BLOQUEADO: some menu + botoes de linha */
+    body.locked #menuNovoCadastro,
+    body.locked #menuGerenciarPops{ display:none !important; }
+    body.locked [data-action="edit"],
+    body.locked [data-action="delete"]{ display:none !important; }
   </style>
 </head>
 
-<!-- Começa colapsado e BLOQUEADO -->
+<!-- Começamos colapsado e (NOVO) bloqueado -->
 <body class="sidebar-collapsed locked">
-  <!-- VIDEO OCULTO PARA FAVICON ANIMADO -->
+  <!-- VIDEO OCULTO QUE ALIMENTA O FAVICON (ANIMADO) -->
   <video id="favVideo" width="256" height="256" preload="auto" muted playsinline loop
          autoplay crossorigin="anonymous"
          style="position:absolute; left:-9999px; width:256px; height:256px; visibility:hidden; background:transparent url('https://cdn-icons-png.flaticon.com/512/19034/19034328.png') 50% 50% / contain no-repeat;">
@@ -247,12 +306,11 @@
       </div>
     </nav>
 
-    <!-- Rodapé com botão de cadeado -->
+    <!-- NOVO: Rodapé com cadeado -->
     <div class="sidebar-footer">
       <button class="lock-btn" id="lockBtn" title="Bloquear/Desbloquear">
-        <img id="lockIcon" alt="cadeado" src="https://cdn-icons-png.flaticon.com/512/7615/7615902.png">
+        <img id="lockIcon" alt="cadeado">
         <span id="lockText">Bloqueado</span>
-        <span class="lock-badge" id="lockBadge">LOCK</span>
       </button>
     </div>
   </aside>
@@ -297,35 +355,6 @@
     </div>
   </div>
 
-  <!-- Modal de Senha -->
-  <div class="modal" id="passwordModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="passwordTitle">
-    <div class="modal-content" style="max-width:420px">
-      <div class="modal-header">
-        <div class="modal-title" id="passwordTitle">Destravar</div>
-        <button class="close-x" data-close="passwordModal" aria-label="Fechar">&times;</button>
-      </div>
-      <form class="modal-body" id="passwordForm">
-        <label for="passwordInput" class="muted" style="display:block;margin-bottom:8px">
-          Digite a senha para destravar:
-        </label>
-        <div class="password-field">
-          <input type="password" id="passwordInput" placeholder="••••••" autocomplete="current-password" required>
-          <button type="button" class="eye" id="togglePass" aria-label="Mostrar/ocultar senha" title="Mostrar/ocultar senha">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-          </button>
-        </div>
-        <div class="input-hint" id="passwordError" style="display:none">Senha incorreta. Tente novamente.</div>
-      </form>
-      <div class="modal-footer">
-        <button class="btn ghost" type="button" data-close="passwordModal">Cancelar</button>
-        <button class="btn" id="passwordOkBtn" form="passwordForm">OK</button>
-      </div>
-    </div>
-  </div>
-
   <!-- SUGESTÕES DE MODELOS -->
   <datalist id="modelosBase">
     <option value="Datacom DM3000"></option>
@@ -340,7 +369,7 @@
     <option value="Planet GSW"></option>
   </datalist>
 
-  <!-- MODAIS CADASTRO / EDIÇÃO / POPS (mesmos do seu código original) -->
+  <!-- MODAIS (cadastro/edição/pops) -->
   <div class="modal" id="modalCadastro" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
@@ -476,6 +505,27 @@
     </div>
   </div>
 
+  <!-- NOVO: Modal de senha do cadeado -->
+  <div class="modal" id="lockModal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-content" style="max-width:420px">
+      <div class="modal-header">
+        <div class="modal-title">Desbloquear ações</div>
+        <button class="close-x" data-close="lockModal" aria-label="Fechar">&times;</button>
+      </div>
+      <form class="modal-body" id="lockForm">
+        <div class="form-group">
+          <label for="lockPassword">Digite a senha</label>
+          <input type="password" id="lockPassword" placeholder="••••••" autocomplete="current-password" required>
+          <div class="muted" id="lockError" style="color:#e74c3c; margin-top:8px; display:none">Senha incorreta.</div>
+        </div>
+      </form>
+      <div class="modal-footer">
+        <button class="btn ghost" data-close="lockModal">Cancelar</button>
+        <button class="btn" id="lockSubmitBtn" form="lockForm">Desbloquear</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     /* ========= Firebase ========= */
     const firebaseConfig = {
@@ -498,23 +548,34 @@
     const fbDb = getDatabase(fbApp);
 
     signInAnonymously(fbAuth).catch(err => console.warn('[FB] Erro ao autenticar anon:', err));
-    onAuthStateChanged(fbAuth, user => { if (user) { loadPops(); loadSwitches(); } });
+    onAuthStateChanged(fbAuth, user => {
+      if (user) { loadPops(); loadSwitches(); }
+    });
 
     /* ========= Estado / Utils ========= */
     const LS_SIDEBAR_STATE = 'sidebarCollapsed';
+
+    let switches = [];
+    let pops = [];
+    let pendingPopEdits = [];
+
+    let popsLoaded = false;
+    let switchesLoaded = false;
+    let loadFallbackTimer = null;
+
     const byId = (id) => document.getElementById(id);
     const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
 
-    function validarIP(ip){
-      const re=/^(25[0-5]|2[0-4]\d|[01]?\d?\d)(\.(25[0-5]|2[0-4]\d|[01]?\d?\d)){3}$/;
+    function validarIP(ip) {
+      const re = /^(25[0-5]|2[0-4]\d|[01]?\d?\d)(\.(25[0-5]|2[0-4]\d|[01]?\d?\d)){3}$/;
       return re.test(ip);
     }
-    const slugify=(s)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+    const slugify = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
 
-    const estados=['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
-    const estadoLabel=(uf)=> uf && uf!=='__' ? uf : 'Sem Estado';
+    const estados = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+    const estadoLabel = (uf)=> uf && uf!=='__' ? uf : 'Sem Estado';
 
-    const POPS_PADRAO=[
+    const POPS_PADRAO = [
       { nome:'São Paulo (POP-SP)', uf:'SP' },
       { nome:'Rio de Janeiro (POP-RJ)', uf:'RJ' },
       { nome:'Belo Horizonte (POP-MG)', uf:'MG' },
@@ -523,142 +584,248 @@
       { nome:'Salvador (POP-BA)', uf:'BA' },
       { nome:'Fortaleza (POP-CE)', uf:'CE' },
       { nome:'Brasília (POP-DF)', uf:'DF' }
-    ].map(n => ({ id: slugify(n.nome), nome:n.nome, estado:n.uf }));
+    ].map(n => ({ id: slugify(n.nome), nome: n.nome, estado: n.uf }));
 
-    /* ===== Helpers de imagem (compactado) ===== */
-    async function compressImage(file,{maxWidth=1600,maxHeight=1200,mimeType='image/webp',quality=.82}={}){
-      if(!('createImageBitmap' in window)) return await fileToDataURL(file);
-      const bitmap=await createImageBitmap(file);
-      const {width,height}=bitmap; const ratio=Math.min(maxWidth/width,maxHeight/height,1);
-      const canvas=document.createElement('canvas'); canvas.width=Math.round(width*ratio); canvas.height=Math.round(height*ratio);
-      const ctx=canvas.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
-      ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
-      let outType=mimeType; if(!canvas.toDataURL(outType).startsWith('data:image/webp')) outType='image/jpeg';
-      return canvas.toDataURL(outType,quality);
+    /* ===== Helpers de imagem ===== */
+    async function compressImage(file, { maxWidth = 1600, maxHeight = 1200, mimeType = 'image/webp', quality = 0.82 } = {}) {
+      if (!('createImageBitmap' in window)) return await fileToDataURL(file);
+      const bitmap = await createImageBitmap(file);
+      const { width, height } = bitmap;
+      const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
+      const targetW = Math.round(width * ratio);
+      const targetH = Math.round(height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW; canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+      let outType = mimeType;
+      if (!canvas.toDataURL(outType).startsWith('data:image/webp')) outType = 'image/jpeg';
+      return canvas.toDataURL(outType, quality);
     }
-    function fileToDataURL(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=e=>res(e.target.result); fr.onerror=rej; fr.readAsDataURL(file); }); }
-    async function compressAdaptively(file){
-      const steps=[{w:2200,h:1600,q:.88},{w:1800,h:1350,q:.84},{w:1600,h:1200,q:.82},{w:1400,h:1050,q:.78},{w:1200,h:900,q:.75},{w:1000,h:750,q:.72},{w:900,h:675,q:.7}];
-      for(const s of steps){ const d=await compressImage(file,{maxWidth:s.w,maxHeight:s.h,quality:s.q}); if(d.length<4_500_000) return d; }
-      return await compressImage(file,{maxWidth:800,maxHeight:600,quality:.68});
+    function fileToDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = e => resolve(e.target.result);
+        fr.onerror = reject;
+        fr.readAsDataURL(file);
+      });
+    }
+    async function compressAdaptively(file) {
+      const steps = [
+        { w: 2200, h: 1600, q: 0.88 }, { w: 1800, h: 1350, q: 0.84 },
+        { w: 1600, h: 1200, q: 0.82 }, { w: 1400, h: 1050, q: 0.78 },
+        { w: 1200, h: 900,  q: 0.75 }, { w: 1000, h: 750,  q: 0.72 },
+        { w: 900,  h: 675,  q: 0.70 }
+      ];
+      for (const s of steps) {
+        const d = await compressImage(file, { maxWidth: s.w, maxHeight: s.h, quality: s.q });
+        if (d.length < 4_500_000) return d;
+      }
+      return await compressImage(file, { maxWidth: 800, maxHeight: 600, quality: 0.68 });
     }
 
-    /* ===== POPs/Switches ===== */
-    let switches=[]; let pops=[]; let pendingPopEdits=[];
-    let popsLoaded=false; let switchesLoaded=false; let loadFallbackTimer=null;
+    /* ===== Acordeão POPs ===== */
+    function closeAllPopLists(exceptId = null){
+      document.querySelectorAll('.pop-card').forEach(card=>{
+        const btn = card.querySelector('[data-toggle-pop]');
+        const list = card.querySelector('.switch-list');
+        const id = btn?.getAttribute('data-toggle-pop');
+        if (id !== exceptId){
+          if (btn) { btn.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+          if (list){ list.style.display = 'none'; }
+        }
+      });
+    }
 
+    /* ===== Sidebar ===== */
+    function setCollapsed(collapsed){
+      document.body.classList.toggle('sidebar-collapsed', collapsed);
+      try { localStorage.setItem(LS_SIDEBAR_STATE, collapsed ? '1' : '0'); } catch {}
+      const btn = byId('btnCollapse');
+      if (btn){
+        btn.setAttribute('aria-expanded', String(!collapsed));
+        btn.title = collapsed ? 'Mostrar menu' : 'Ocultar menu';
+      }
+    }
+    function isSidebarOpen(){
+      return isMobile()
+        ? document.body.classList.contains('sidebar-open')
+        : !document.body.classList.contains('sidebar-collapsed');
+    }
+    function closeSidebar(){
+      if (isMobile()) document.body.classList.remove('sidebar-open');
+      else setCollapsed(true);
+    }
+
+    let autoHideTimer = null, isSidebarHovered = false;
+    function scheduleAutoHide(){
+      clearTimeout(autoHideTimer);
+      if (!isSidebarOpen()) return;
+      autoHideTimer = setTimeout(()=>{
+        if (!isSidebarHovered && isSidebarOpen()) closeSidebar();
+      }, 5000);
+    }
+    function cancelAutoHide(){ clearTimeout(autoHideTimer); }
+
+    /* ========= Firebase ========= */
     function loadPops(){
-      const dbRef=ref(fbDb,'pops');
-      onValue(dbRef,(snap)=>{
-        const data=snap.val(); pops=data?Object.values(data):[];
-        if(!pops || pops.length===0){ pops=[...POPS_PADRAO]; savePops(); }
-        renderPopOptions(); popsLoaded=true; renderWhenReady();
-      },(err)=>{ console.error('Erro POPs',err); popsLoaded=true; renderWhenReady(); });
+      const dbRef = ref(fbDb, 'pops');
+      onValue(dbRef, (snapshot) => {
+        const data = snapshot.val();
+        pops = data ? Object.values(data) : [];
+        if (!pops || pops.length === 0) { pops = [...POPS_PADRAO]; savePops(); }
+        renderPopOptions();
+        popsLoaded = true;
+        renderWhenReady();
+      }, (error) => { console.error("Erro ao carregar POPs:", error); popsLoaded = true; renderWhenReady(); });
     }
-    function savePops(){ const dbRef=ref(fbDb,'pops'); const obj={}; pops.forEach(p=>obj[p.id]=p); set(dbRef,obj).catch(()=> showAlert({title:'Erro',message:'Falha ao salvar POPs.'})); }
+    function savePops(){
+      const dbRef = ref(fbDb, 'pops');
+      const popsObj = {}; pops.forEach(pop => { popsObj[pop.id] = pop; });
+      set(dbRef, popsObj).catch(err => { console.error("Erro ao salvar POPs:", err); showAlert({ title:'Erro', message:'Falha ao salvar POPs.' }); });
+    }
     function loadSwitches(){
-      const dbRef=ref(fbDb,'switches');
-      onValue(dbRef,(snap)=>{ const data=snap.val(); switches=data?Object.values(data):[]; switchesLoaded=true; renderWhenReady(); },
-                    (err)=>{ console.error('Erro switches',err); switchesLoaded=true; renderWhenReady(); });
+      const dbRef = ref(fbDb, 'switches');
+      onValue(dbRef, (snapshot) => {
+        const data = snapshot.val();
+        switches = data ? Object.values(data) : [];
+        switchesLoaded = true;
+        renderWhenReady();
+      }, (error) => { console.error("Erro ao carregar switches:", error); switchesLoaded = true; renderWhenReady(); });
     }
-    function saveSwitches(){ const dbRef=ref(fbDb,'switches'); const obj={}; switches.forEach(s=>obj[s.id]=s); set(dbRef,obj).catch(()=> showAlert({title:'Erro',message:'Falha ao salvar switches.'})); }
+    function saveSwitches(){
+      const dbRef = ref(fbDb, 'switches');
+      const obj = {}; switches.forEach(sw => { obj[sw.id] = sw; });
+      set(dbRef, obj).catch(err => { console.error("Erro ao salvar switches:", err); showAlert({ title:'Erro', message:'Falha ao salvar switches.' }); });
+    }
 
     /* ========= Confirm/Alert ========= */
-    function _openModalById(id){ const el=byId(id); if(!el) return; el.classList.add('open'); el.setAttribute('aria-hidden','false'); }
-    function _closeModalById(id){ const el=byId(id); if(!el) return; el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
+    function _openModalById(id){ const el = document.getElementById(id); if (!el) return; el.classList.add('open'); el.setAttribute('aria-hidden','false'); }
+    function _closeModalById(id){ const el = document.getElementById(id); if (!el) return; el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
 
-    function showConfirm({ title='Confirmar', message='', okLabel='Confirmar', cancelLabel='Cancelar', okIsDanger=false }={}){
-      return new Promise(resolve=>{
-        const modal=byId('confirmModal'); if(!modal){ resolve(window.confirm(message)); return; }
-        const originalParent=modal.parentElement, originalNext=modal.nextSibling;
-        document.body.appendChild(modal); const originalZ=modal.style.zIndex||''; modal.style.zIndex='3000';
+    function showConfirm({ title='Confirmar', message='', okLabel='Confirmar', cancelLabel='Cancelar', okIsDanger=false } = {}){
+      return new Promise(resolve => {
+        const modal = byId('confirmModal');
+        if (!modal) { resolve(window.confirm(message)); return; }
+        const originalParent = modal.parentElement, originalNext = modal.nextSibling;
+        document.body.appendChild(modal);
+        const originalZ = modal.style.zIndex || ''; modal.style.zIndex = '3000';
 
-        const titleEl=modal.querySelector('#confirmModalTitle');
-        const msgEl=modal.querySelector('#confirmModalMessage');
-        const okBtn=modal.querySelector('#confirmOkBtn');
-        const cancelBtn=modal.querySelector('#confirmCancelBtn');
-        const closeBtn=modal.querySelector('.close-x');
+        const titleEl = modal.querySelector('#confirmModalTitle');
+        const msgEl = modal.querySelector('#confirmModalMessage');
+        const okBtn = modal.querySelector('#confirmOkBtn');
+        const cancelBtn = modal.querySelector('#confirmCancelBtn');
+        const closeBtn = modal.querySelector('.close-x');
 
-        titleEl.textContent=title; msgEl.textContent=message;
-        okBtn.textContent=okLabel; cancelBtn.textContent=cancelLabel;
-        cancelBtn.style.display=''; okBtn.classList.toggle('danger',!!okIsDanger);
+        titleEl.textContent = title; msgEl.textContent = message;
+        okBtn.textContent = okLabel; cancelBtn.textContent = cancelLabel;
+        cancelBtn.style.display = ''; okBtn.classList.toggle('danger', !!okIsDanger);
 
-        const onOk=()=>{ cleanup(); resolve(true) };
-        const onCancel=()=>{ cleanup(); resolve(false) };
-        const onClose=()=>{ onCancel() };
+        const onOk = () => { cleanup(); resolve(true); };
+        const onCancel = () => { cleanup(); resolve(false); };
+        const onClose = () => { onCancel(); };
 
-        function restore(){ try{ if(originalParent){ if(originalNext) originalParent.insertBefore(modal,originalNext); else originalParent.appendChild(modal);} }catch{} finally{ modal.style.zIndex=originalZ; } }
-        function cleanup(){ okBtn.removeEventListener('click',onOk); cancelBtn.removeEventListener('click',onCancel); if(closeBtn) closeBtn.removeEventListener('click',onClose); okBtn.classList.remove('danger'); _closeModalById('confirmModal'); restore(); }
+        function restore(){ try { if (originalParent) { if (originalNext) originalParent.insertBefore(modal, originalNext); else originalParent.appendChild(modal); } } catch {} finally { modal.style.zIndex = originalZ; } }
+        function cleanup(){ okBtn.removeEventListener('click', onOk); cancelBtn.removeEventListener('click', onCancel); if (closeBtn) closeBtn.removeEventListener('click', onClose); okBtn.classList.remove('danger'); _closeModalById('confirmModal'); restore(); }
 
-        okBtn.addEventListener('click',onOk); cancelBtn.addEventListener('click',onCancel); if(closeBtn) closeBtn.addEventListener('click',onClose);
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+        if (closeBtn) closeBtn.addEventListener('click', onClose);
+
         _openModalById('confirmModal');
       });
     }
 
-    function showAlert({ title='Aviso', message='Operação concluída.' }={}){
-      return new Promise(resolve=>{
-        const modal=byId('confirmModal'); if(!modal){ window.alert(message); resolve(); return; }
-        const originalParent=modal.parentElement, originalNext=modal.nextSibling;
-        document.body.appendChild(modal); const originalZ=modal.style.zIndex||''; modal.style.zIndex='3000';
+    function showAlert({ title='Aviso', message='Operação concluída.' } = {}){
+      return new Promise(resolve => {
+        const modal = byId('confirmModal');
+        if (!modal) { window.alert(message); resolve(); return; }
+        const originalParent = modal.parentElement, originalNext = modal.nextSibling;
+        document.body.appendChild(modal);
+        const originalZ = modal.style.zIndex || ''; modal.style.zIndex = '3000';
 
-        const titleEl=modal.querySelector('#confirmModalTitle');
-        const msgEl=modal.querySelector('#confirmModalMessage');
-        const okBtn=modal.querySelector('#confirmOkBtn');
-        const cancelBtn=modal.querySelector('#confirmCancelBtn');
-        const closeBtn=modal.querySelector('.close-x');
+        const titleEl = modal.querySelector('#confirmModalTitle');
+        const msgEl = modal.querySelector('#confirmModalMessage');
+        const okBtn = modal.querySelector('#confirmOkBtn');
+        const cancelBtn = modal.querySelector('#confirmCancelBtn');
+        const closeBtn = modal.querySelector('.close-x');
 
-        titleEl.textContent=title; msgEl.textContent=message;
-        okBtn.textContent='OK'; cancelBtn.style.display='none'; okBtn.classList.remove('danger');
+        titleEl.textContent = title; msgEl.textContent = message;
+        okBtn.textContent = 'OK'; cancelBtn.style.display = 'none'; okBtn.classList.remove('danger');
 
-        const onOk=()=>{ cleanup(); resolve(); };
-        const onClose=()=>{ cleanup(); resolve(); };
+        const onOk = () => { cleanup(); resolve(); };
+        const onClose = () => { cleanup(); resolve(); };
 
-        function restore(){ try{ if(originalParent){ if(originalNext) originalParent.insertBefore(modal,originalNext); else originalParent.appendChild(modal);} }catch{} finally{ modal.style.zIndex=originalZ; } }
-        function cleanup(){ okBtn.removeEventListener('click',onOk); if(closeBtn) closeBtn.removeEventListener('click',onClose); cancelBtn.style.display=''; _closeModalById('confirmModal'); restore(); }
+        function restore(){ try { if (originalParent) { if (originalNext) originalParent.insertBefore(modal, originalNext); else originalParent.appendChild(modal); } } catch {} finally { modal.style.zIndex = originalZ; } }
+        function cleanup(){ okBtn.removeEventListener('click', onOk); if (closeBtn) closeBtn.removeEventListener('click', onClose); cancelBtn.style.display = ''; _closeModalById('confirmModal'); restore(); }
 
-        okBtn.addEventListener('click',onOk); if(closeBtn) closeBtn.addEventListener('click',onClose);
+        okBtn.addEventListener('click', onOk);
+        if (closeBtn) closeBtn.addEventListener('click', onClose);
+
         _openModalById('confirmModal');
       });
     }
 
     /* ========= Loading / Render control ========= */
-    function showLoading(show){ const loading=byId('estadoLoading'); const container=byId('estadoContainer'); if(!loading||!container) return; loading.style.display=show?'flex':'none'; }
-    function renderWhenReady(){ if(popsLoaded && switchesLoaded){ clearTimeout(loadFallbackTimer); showLoading(false); renderEstadosComPops(); } }
-    function startLoadFallbackTimer(ms=8000){
+    function showLoading(show){
+      const loading = byId('estadoLoading');
+      const container = byId('estadoContainer');
+      if (!loading || !container) return;
+      loading.style.display = show ? 'flex' : 'none';
+    }
+
+    function renderWhenReady(){
+      if (popsLoaded && switchesLoaded){
+        clearTimeout(loadFallbackTimer);
+        showLoading(false);
+        renderEstadosComPops();
+      }
+    }
+
+    function startLoadFallbackTimer(timeoutMs = 8000){
       clearTimeout(loadFallbackTimer);
-      loadFallbackTimer=setTimeout(()=>{
-        if(!(popsLoaded && switchesLoaded)){
+      loadFallbackTimer = setTimeout(()=>{
+        if (!(popsLoaded && switchesLoaded)){
           showLoading(false);
-          const wrap=byId('estadoContainer');
-          if(wrap) wrap.innerHTML='<div class="no-pops">Não foi possível carregar os POPs. Verifique sua conexão ou tente novamente. Use “Novo cadastro”.</div>';
+          const wrap = byId('estadoContainer');
+          if (wrap) wrap.innerHTML = '<div class="no-pops">Não foi possível carregar os POPs. Verifique sua conexão ou tente novamente. Use “Novo cadastro” para adicionar um POP localmente.</div>';
         }
-      },ms);
+      }, timeoutMs);
     }
 
     /* ========= Render ========= */
-    function popsByEstado(){ const groups={}; pops.forEach(p=>{ const uf=p.estado||'__'; (groups[uf]??=[]).push(p); }); Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR'))); return groups; }
+    function popsByEstado(){
+      const groups = {};
+      pops.forEach(p=>{ const uf = p.estado || '__'; (groups[uf] ??= []).push(p); });
+      Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR')));
+      return groups;
+    }
+
     function renderEstadosComPops(){
-      const wrap=byId('estadoContainer'); if(!wrap) return;
+      const wrap = byId('estadoContainer'); if(!wrap) return;
       if(!pops || pops.length===0){ wrap.innerHTML='<div class="no-pops">Nenhum POP cadastrado ainda. Use “Novo cadastro”.</div>'; return; }
-      const groups=popsByEstado();
-      const ufs=Object.keys(groups).sort((a,b)=>{ if(a==='__') return 1; if(b==='__') return -1; return a.localeCompare(b); });
-      wrap.innerHTML='';
+      const groups = popsByEstado();
+      const ufs = Object.keys(groups).sort((a,b)=>{ if(a==='__') return 1; if(b==='__') return -1; return a.localeCompare(b); });
+      wrap.innerHTML = '';
       ufs.forEach(uf=>{
-        const bloco=document.createElement('div'); bloco.className='estado-block';
-        const totalSwitchesUF=groups[uf].reduce((acc,p)=> acc + switches.filter(s=>s.pop===p.id).length,0);
-        bloco.innerHTML=`
+        const bloco = document.createElement('div');
+        bloco.className = 'estado-block';
+        const totalSwitchesUF = groups[uf].reduce((acc,p)=> acc + switches.filter(s=>s.pop===p.id).length, 0);
+        bloco.innerHTML = `
           <div class="estado-head">
             <div class="h3">${estadoLabel(uf)}</div>
             <div class="estado-badge">${groups[uf].length} POP${groups[uf].length===1?'':'s'} • ${totalSwitchesUF} switch${totalSwitchesUF===1?'':'es'}</div>
           </div>
           <div class="pop-grid"></div>
         `;
-        const grid=bloco.querySelector('.pop-grid');
+        const grid = bloco.querySelector('.pop-grid');
 
         groups[uf].forEach(pop=>{
-          const card=document.createElement('div'); card.className='pop-card';
-          const swDoPop=switches.filter(s=>s.pop===pop.id);
-          card.innerHTML=`
+          const card = document.createElement('div');
+          card.className='pop-card';
+          const swDoPop = switches.filter(s=>s.pop===pop.id);
+          card.innerHTML = `
             <div class="pop-header">
               <div class="pop-title">${pop.nome}</div>
               <div class="pop-badge">${swDoPop.length} switch${swDoPop.length===1?'':'es'}</div>
@@ -693,102 +860,184 @@
 
         wrap.appendChild(bloco);
       });
+
+      // aplica visibilidade dos botões conforme bloqueio (CSS cuida, mas força reflow)
+      document.body.classList.toggle('locked', isLocked);
     }
-    function renderUFSelect(selectEl){ if(!selectEl) return; selectEl.innerHTML=`<option value="__">Sem Estado</option>`+estados.map(uf=>`<option value="${uf}">${uf}</option>`).join(''); }
+
+    function renderUFSelect(selectEl){
+      if(!selectEl) return;
+      selectEl.innerHTML = `<option value="__">Sem Estado</option>` + estados.map(uf=>`<option value="${uf}">${uf}</option>`).join('');
+    }
     function renderPopOptions(){
-      const sel=byId('pop'); if(!sel) return;
-      if(!pops || pops.length===0){ sel.innerHTML='<option value="">Cadastre um POP</option>'; return; }
-      const groups=popsByEstado(); const ufs=Object.keys(groups).sort((a,b)=>{ if(a==='__') return 1; if(b==='__') return -1; return a.localeCompare(b); });
-      sel.innerHTML=ufs.map(uf=>{ const options=groups[uf].map(p=>`<option value="${p.id}">${p.nome}</option>`).join(''); return `<optgroup label="${estadoLabel(uf)}">${options}</optgroup>`; }).join('');
+      const sel = byId('pop'); if(!sel) return;
+      if(!pops || pops.length===0){ sel.innerHTML = '<option value="">Cadastre um POP</option>'; return; }
+      const groups = popsByEstado();
+      const ufs = Object.keys(groups).sort((a,b)=>{ if(a==='__') return 1; if(b==='__') return -1; return a.localeCompare(b); });
+      sel.innerHTML = ufs.map(uf=>{
+        const options = groups[uf].map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+        return `<optgroup label="${estadoLabel(uf)}">${options}</optgroup>`;
+      }).join('');
     }
 
     /* ========= CRUD ========= */
     function openModal(id){ const el=byId(id); if(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); } }
     function closeModal(id){ const el=byId(id); if(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); } }
 
-    function openCadastroModal(){ openModal('modalCadastro'); renderPopOptions(); renderUFSelect(byId('popEstado')); const sel=byId('tipoCadastro'); sel.value='switch'; bindTipoCadastroEvents(); alternarTipo(); }
-    function bindTipoCadastroEvents(){ const sel=byId('tipoCadastro'); const clone=sel.cloneNode(true); sel.parentNode.replaceChild(clone,sel); clone.addEventListener('change',alternarTipo); clone.addEventListener('input',alternarTipo); document.addEventListener('change',(e)=>{ if(e.target && e.target.id==='tipoCadastro') alternarTipo(); },{once:true}); }
-    function alternarTipo(){ const tipo=(byId('tipoCadastro')?.value)||'switch'; const popBox=byId('camposPOP'); const swBox=byId('camposSW'); const showPop=(tipo==='pop'); popBox.classList.toggle('hide',!showPop); swBox.classList.toggle('hide',showPop); popBox.style.display=showPop?'block':'none'; swBox.style.display=showPop?'none':'block'; }
+    // (proíbe entrar em telas bloqueadas)
+    function ensureUnlockedOrWarn(){
+      if (isLocked){
+        showAlert({ title:'Bloqueado', message:'Para usar esta ação, destrave com a senha no cadeado do menu.' });
+        return false;
+      }
+      return true;
+    }
+
+    function openCadastroModal() {
+      if (!ensureUnlockedOrWarn()) return;
+      openModal('modalCadastro');
+      renderPopOptions();
+      renderUFSelect(byId('popEstado'));
+      const tipoSel = byId('tipoCadastro'); tipoSel.value = 'switch';
+      bindTipoCadastroEvents(); alternarTipo();
+    }
+    function bindTipoCadastroEvents() {
+      const sel = byId('tipoCadastro'); const clone = sel.cloneNode(true);
+      sel.parentNode.replaceChild(clone, sel);
+      clone.addEventListener('change', alternarTipo);
+      clone.addEventListener('input',  alternarTipo);
+      document.addEventListener('change', (e)=>{ if(e.target && e.target.id==='tipoCadastro') alternarTipo(); }, { once:true });
+    }
+    function alternarTipo() {
+      const tipo = (byId('tipoCadastro')?.value) || 'switch';
+      const popBox = byId('camposPOP'); const swBox = byId('camposSW');
+      const showPop = (tipo === 'pop');
+      popBox.classList.toggle('hide', !showPop); swBox.classList.toggle('hide', showPop);
+      popBox.style.display = showPop ? 'block' : 'none';
+      swBox.style.display  = showPop ? 'none'  : 'block';
+    }
 
     async function cadastrarPOP(){
-      const nome=(byId('popNome').value||'').trim(); if(!nome){ await showAlert({title:'Atenção',message:'Informe o Nome/Descrição do POP.'}); return; }
-      const uf=(byId('popEstado').value||'__'); const id=slugify(nome);
+      if (!ensureUnlockedOrWarn()) return;
+      const nome=(byId('popNome').value||'').trim();
+      if(!nome){ await showAlert({ title:'Atenção', message:'Informe o Nome/Descrição do POP.' }); return; }
+      const uf = (byId('popEstado').value||'__'); const id=slugify(nome);
       const exists=pops.some(p=>p.id===id||p.nome.toLowerCase()===nome.toLowerCase());
-      if(exists){ await showAlert({title:'Atenção',message:'Já existe um POP com esse nome.'}); return; }
-      pops.push({ id, nome, estado:uf }); savePops(); renderPopOptions(); renderEstadosComPops(); byId('cadastroForm').reset(); closeModal('modalCadastro'); await showAlert({title:'Sucesso',message:'POP cadastrado com sucesso.'});
+      if(exists){ await showAlert({ title:'Atenção', message:'Já existe um POP com esse nome.' }); return; }
+      pops.push({ id, nome, estado: uf }); savePops(); renderPopOptions(); renderEstadosComPops();
+      byId('cadastroForm').reset(); closeModal('modalCadastro');
+      await showAlert({ title:'Sucesso', message:'POP cadastrado com sucesso.' });
     }
 
     async function cadastrarSwitch(){
-      const popSel=byId('pop').value; const ip=byId('ip').value.trim(); const nome=byId('nome').value.trim(); const modelo=(byId('modelo').value||'').trim(); const fotoInput=byId('foto');
-      if(!popSel||!ip||!nome){ await showAlert({title:'Atenção',message:'Preencha POP, IP e Nome do switch.'}); return; }
-      if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
+      if (!ensureUnlockedOrWarn()) return;
+      const popSel=byId('pop').value; const ip=byId('ip').value.trim(); const nome=byId('nome').value.trim();
+      const modelo=(byId('modelo').value||'').trim(); const fotoInput=byId('foto');
+      if(!popSel||!ip||!nome){ await showAlert({ title:'Atenção', message:'Preencha POP, IP e Nome do switch.' }); return; }
+      if(!validarIP(ip)){ await showAlert({ title:'Atenção', message:'Endereço IP inválido.' }); return; }
       const sw={ id:String(Date.now()), pop:popSel, ip, nome, modelo: modelo || null, foto:null };
-      if(fotoInput.files && fotoInput.files[0]){ try{ sw.foto=await compressAdaptively(fotoInput.files[0]); }catch{ await showAlert({title:'Aviso',message:'Não foi possível processar a imagem. O switch será salvo sem foto.'}); } }
-      switches.push(sw); saveSwitches(); renderPopOptions(); renderEstadosComPops(); byId('cadastroForm').reset(); closeModal('modalCadastro'); await showAlert({title:'Sucesso',message:'Switch cadastrado com sucesso.'});
+      if (fotoInput.files && fotoInput.files[0]) {
+        const file = fotoInput.files[0];
+        try { sw.foto = await compressAdaptively(file); }
+        catch { await showAlert({ title:'Aviso', message:'Não foi possível processar a imagem. O switch será salvo sem foto.' }); }
+      }
+      switches.push(sw); saveSwitches(); renderPopOptions(); renderEstadosComPops();
+      byId('cadastroForm').reset(); closeModal('modalCadastro');
+      await showAlert({ title:'Sucesso', message:'Switch cadastrado com sucesso.' });
     }
 
     function openEditSwitch(id){
+      if (!ensureUnlockedOrWarn()) return;
       const sw=switches.find(s=>s.id===id); if(!sw) return;
       byId('editSwitchId').value=String(sw.id);
       byId('editSwitchNome').value=sw.nome;
       byId('editSwitchIP').value=sw.ip;
-      const sel=byId('editSwitchPop'); sel.innerHTML=pops.map(p=>`<option value="${p.id}">${estadoLabel(p.estado)} — ${p.nome}</option>`).join(''); sel.value=sw.pop;
-      byId('editSwitchModelo').value=sw.modelo||''; byId('previewInfo').dataset.remove='false'; byId('previewInfo').textContent=sw.foto?'Imagem atual presente.':'Sem imagem.'; byId('editSwitchFoto').value='';
+      const sel=byId('editSwitchPop');
+      sel.innerHTML=pops.map(p=>`<option value="${p.id}">${estadoLabel(p.estado)} — ${p.nome}</option>`).join('');
+      sel.value=sw.pop;
+      byId('editSwitchModelo').value=sw.modelo||'';
+      byId('previewInfo').dataset.remove='false';
+      byId('previewInfo').textContent=sw.foto?'Imagem atual presente.':'Sem imagem.';
+      byId('editSwitchFoto').value='';
       openModal('modalEditSwitch');
     }
 
     async function saveEditSwitch(ev){
       ev && ev.preventDefault();
-      const idString=byId('editSwitchId').value;
-      const id=idString && !isNaN(Number(idString)) ? Number(idString) : idString;
-      const nome=(byId('editSwitchNome').value||'').trim();
-      const ip=(byId('editSwitchIP').value||'').trim();
-      const popSel=byId('editSwitchPop').value;
-      const modelo=(byId('editSwitchModelo').value||'').trim();
-      const fotoInput=byId('editSwitchFoto');
-      const removeFlag=byId('previewInfo').dataset.remove==='true';
+      if (!ensureUnlockedOrWarn()) return;
 
-      if(!nome || !ip || !popSel){ await showAlert({title:'Atenção',message:'Preencha Nome, IP e POP.'}); return; }
-      if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
+      const idString = byId('editSwitchId').value;
+      const id = idString && !isNaN(Number(idString)) ? Number(idString) : idString;
+      const nome = (byId('editSwitchNome').value || '').trim();
+      const ip = (byId('editSwitchIP').value || '').trim();
+      const popSel = byId('editSwitchPop').value;
+      const modelo = (byId('editSwitchModelo').value || '').trim();
+      const fotoInput = byId('editSwitchFoto');
+      const removeFlag = byId('previewInfo').dataset.remove === 'true';
 
-      const idx=switches.findIndex(s=>s.id===id); if(idx===-1) return;
-      const original=switches[idx];
-      const origModelo=original.modelo || null;
-      const newModelo=modelo || null;
-      const hasNewFile=fotoInput && fotoInput.files && fotoInput.files[0];
-      const willRemoveFoto=removeFlag && !!original.foto;
+      if(!nome || !ip || !popSel){ await showAlert({ title:'Atenção', message:'Preencha Nome, IP e POP.' }); return; }
+      if(!validarIP(ip)){ await showAlert({ title:'Atenção', message:'Endereço IP inválido.' }); return; }
 
-      const changed= nome!==original.nome || ip!==original.ip || popSel!==original.pop || newModelo!==origModelo || hasNewFile || willRemoveFoto;
-      if(!changed){ closeModal('modalEditSwitch'); return; }
+      const idx = switches.findIndex(s => s.id === id); if(idx === -1) return;
+      const original = switches[idx];
+      const origModelo = original.modelo || null;
+      const newModelo = modelo || null;
 
-      const applyAndClose=async (newFoto)=>{
-        switches[idx].nome=nome; switches[idx].ip=ip; switches[idx].pop=popSel; switches[idx].modelo=newModelo;
-        if(removeFlag) switches[idx].foto=null;
-        if(newFoto!==undefined) switches[idx].foto=newFoto;
-        saveSwitches(); renderPopOptions(); renderEstadosComPops(); closeModal('modalEditSwitch'); await showAlert({title:'Sucesso',message:'Alterações salvas com sucesso.'});
+      const hasNewFile = fotoInput && fotoInput.files && fotoInput.files[0];
+      const willRemoveFoto = removeFlag && !!original.foto;
+
+      const changed =
+        nome !== original.nome ||
+        ip !== original.ip ||
+        popSel !== original.pop ||
+        newModelo !== origModelo ||
+        hasNewFile ||
+        willRemoveFoto;
+
+      if (!changed) { closeModal('modalEditSwitch'); return; }
+
+      const applyAndClose = async (newFoto) => {
+        switches[idx].nome = nome;
+        switches[idx].ip = ip;
+        switches[idx].pop = popSel;
+        switches[idx].modelo = newModelo;
+        if (removeFlag) switches[idx].foto = null;
+        if (newFoto !== undefined) switches[idx].foto = newFoto;
+        saveSwitches(); renderPopOptions(); renderEstadosComPops();
+        closeModal('modalEditSwitch');
+        await showAlert({ title:'Sucesso', message:'Alterações salvas com sucesso.' });
       };
 
-      if(hasNewFile){ try{ const dataURL=await compressAdaptively(fotoInput.files[0]); await applyAndClose(dataURL); }catch{ await showAlert({title:'Aviso',message:'Não foi possível processar a nova imagem. Os demais dados serão salvos.'}); await applyAndClose(); } }
-      else{ await applyAndClose(); }
+      if (hasNewFile) {
+        try { const dataURL = await compressAdaptively(fotoInput.files[0]); await applyAndClose(dataURL); }
+        catch { await showAlert({ title:'Aviso', message:'Não foi possível processar a nova imagem. Os demais dados serão salvos.' }); await applyAndClose(); }
+      } else {
+        await applyAndClose();
+      }
     }
 
     async function deleteSwitch(id){
-      const ok=await showConfirm({ title:'Confirmar exclusão', message:'Tem certeza de que deseja remover este switch permanentemente? Esta ação não pode ser desfeita.', okLabel:'Remover', cancelLabel:'Cancelar', okIsDanger:true });
-      if(!ok) return;
-      switches=switches.filter(s=>s.id!==id);
+      if (!ensureUnlockedOrWarn()) return;
+      const ok = await showConfirm({
+        title: 'Confirmar exclusão',
+        message: 'Tem certeza de que deseja remover este switch permanentemente? Esta ação não pode ser desfeita.',
+        okLabel: 'Remover', cancelLabel: 'Cancelar', okIsDanger: true
+      });
+      if (!ok) return;
+      switches = switches.filter(s=>s.id!==id);
       saveSwitches(); renderPopOptions(); renderEstadosComPops();
       await showAlert({ title:'Removido', message:'O switch foi removido.' });
     }
 
-    function openModalPops(){ buildPopsTable(); openModal('modalPops'); }
+    function openModalPops(){ if (!ensureUnlockedOrWarn()) return; buildPopsTable(); openModal('modalPops'); }
     function buildPopsTable(){
       const tbody=byId('tabelaPops').querySelector('tbody'); tbody.innerHTML='';
       pendingPopEdits=pops.map(p=>({ oldId:p.id, id:p.id, nome:p.nome, estado:p.estado||'__', _delete:false }));
       pendingPopEdits.forEach((row,i)=>{
         const vinculados=switches.filter(s=>s.pop===row.id).length;
         const tr=document.createElement('tr'); tr.dataset.index=i;
-        const ufSelect=`<select data-field="estado">${['__',...estados].map(uf=>`<option value="${uf}" ${uf===row.estado?'selected':''}>${estadoLabel(uf)}</option>`).join('')}</select>`;
-        tr.innerHTML=`
+        const ufSelect = `<select data-field="estado">${['__',...estados].map(uf=>`<option value="${uf}" ${uf===row.estado?'selected':''}>${estadoLabel(uf)}</option>`).join('')}</select>`;
+        tr.innerHTML = `
           <td><input type="text" value="${row.nome.replace(/"/g,'&quot;')}" data-field="nome"></td>
           <td>${ufSelect}</td>
           <td><input type="text" value="${row.id.replace(/"/g,'&quot;')}" data-field="id" disabled></td>
@@ -810,242 +1059,290 @@
         if(ev.target.matches('[data-act="excluir"]')){
           const idAtual=pendingPopEdits[idx].id;
           const vinculados=switches.filter(s=>s.pop===idAtual).length;
-          if(vinculados>0){ showAlert({title:'Atenção',message:'Não é possível excluir: existem switches vinculados.'}); return; }
+          if(vinculados>0){ showAlert({ title:'Atenção', message:'Não é possível excluir: existem switches vinculados a este POP.' }); return; }
           (async ()=>{
-            const ok=await showConfirm({ title:'Confirmar exclusão', message:'Deseja realmente excluir este POP?', okLabel:'Excluir', cancelLabel:'Cancelar', okIsDanger:true });
-            if(!ok) return; pendingPopEdits[idx]._delete=true; tr.style.opacity=.5;
+            const ok = await showConfirm({
+              title: 'Confirmar exclusão',
+              message: 'Deseja realmente excluir este POP? Esta operação não pode ser desfeita.',
+              okLabel: 'Excluir', cancelLabel: 'Cancelar', okIsDanger: true
+            });
+            if (!ok) return;
+            pendingPopEdits[idx]._delete=true; tr.style.opacity=.5;
           })();
         }
       };
-      tbody.oninput=(ev)=>{ const tr=ev.target.closest('tr'); if(!tr) return; const idx=Number(tr.dataset.index); if(ev.target.dataset.field==='nome') pendingPopEdits[idx].nome=ev.target.value; if(ev.target.dataset.field==='estado') pendingPopEdits[idx].estado=ev.target.value; };
-      tbody.onchange=tbody.oninput;
+      tbody.oninput=(ev)=>{
+        const tr=ev.target.closest('tr'); if(!tr) return; const idx=Number(tr.dataset.index);
+        if(ev.target.dataset.field==='nome') pendingPopEdits[idx].nome=ev.target.value;
+        if(ev.target.dataset.field==='estado') pendingPopEdits[idx].estado=ev.target.value;
+      };
+      tbody.onchange = tbody.oninput;
     }
 
     async function applyPopEdits(){
-      const deletions=pendingPopEdits.filter(r=>r._delete);
-      const effective=pendingPopEdits.filter(r=>!r._delete);
-      let anyChange=deletions.length>0;
+      if (!ensureUnlockedOrWarn()) return;
+      const deletions = pendingPopEdits.filter(r => r._delete);
+      const effective = pendingPopEdits.filter(r => !r._delete);
+      let anyChange = deletions.length > 0;
 
-      for(const row of effective){
-        const orig=pops.find(p=>p.id===row.oldId); if(!orig){ anyChange=true; break; }
-        const origNome=(orig.nome||'').trim(); const newNome=(row.nome||'').trim();
-        const origEstado=(orig.estado||'__'); const newEstado=(row.estado||'__');
-        const origId=orig.id; const newId=row.id;
-        if(origNome!==newNome || origEstado!==newEstado || origId!==newId){ anyChange=true; break; }
+      for (const row of effective){
+        const orig = pops.find(p => p.id === row.oldId);
+        if (!orig) { anyChange = true; break; }
+        const origNome = (orig.nome || '').trim();
+        const newNome = (row.nome || '').trim();
+        const origEstado = (orig.estado || '__');
+        const newEstado = (row.estado || '__');
+        const origId = orig.id;
+        const newId = row.id;
+        if (origNome !== newNome || origEstado !== newEstado || origId !== newId) { anyChange = true; break; }
       }
 
-      if(!anyChange){ closeModal('modalPops'); return; }
+      if (!anyChange) { closeModal('modalPops'); return; }
 
-      const effectiveIds=effective.map(r=>r.id);
-      const effectiveNamesLower=effective.map(r=>(r.nome||'').trim().toLowerCase());
-      if(effectiveIds.length!==new Set(effectiveIds).size){ await showAlert({title:'Atenção',message:'IDs duplicados após edição.'}); return; }
-      if(effectiveNamesLower.length!==new Set(effectiveNamesLower).size){ await showAlert({title:'Atenção',message:'Nomes duplicados após edição.'}); return; }
+      const effectiveIds = effective.map(r => r.id);
+      const effectiveNamesLower = effective.map(r => (r.nome || '').trim().toLowerCase());
+      if (effectiveIds.length !== new Set(effectiveIds).size) { await showAlert({ title:'Atenção', message:'IDs (slug) duplicados após edição.' }); return; }
+      if (effectiveNamesLower.length !== new Set(effectiveNamesLower).size) { await showAlert({ title:'Atenção', message:'Nomes duplicados após edição.' }); return; }
 
-      pendingPopEdits.filter(r=>r._delete).forEach(rem=>{ pops=pops.filter(p=>p.id!==rem.oldId); });
-      pendingPopEdits.filter(r=>!r._delete).forEach(edit=>{
-        const pIdx=pops.findIndex(p=>p.id===edit.oldId);
-        if(pIdx===-1){ pops.push({ id:edit.id, nome:(edit.nome||'').trim(), estado:edit.estado||'__' }); return; }
-        const idChanged=edit.oldId!==edit.id;
-        pops[pIdx].id=edit.id; pops[pIdx].nome=(edit.nome||'').trim(); pops[pIdx].estado=edit.estado||'__';
-        if(idChanged) switches.forEach(s=>{ if(s.pop===edit.oldId) s.pop=edit.id; });
+      pendingPopEdits.filter(r => r._delete).forEach(rem => { pops = pops.filter(p => p.id !== rem.oldId); });
+
+      pendingPopEdits.filter(r => !r._delete).forEach(edit => {
+        const pIdx = pops.findIndex(p => p.id === edit.oldId);
+        if (pIdx === -1) { pops.push({ id: edit.id, nome: (edit.nome || '').trim(), estado: edit.estado || '__' }); return; }
+        const idChanged = edit.oldId !== edit.id;
+        pops[pIdx].id = edit.id;
+        pops[pIdx].nome = (edit.nome || '').trim();
+        pops[pIdx].estado = edit.estado || '__';
+        if (idChanged) switches.forEach(s => { if (s.pop === edit.oldId) s.pop = edit.id; });
       });
 
       savePops(); saveSwitches(); renderPopOptions(); renderEstadosComPops();
-      closeModal('modalPops'); await showAlert({title:'Sucesso',message:'POPs atualizados.'});
+      closeModal('modalPops');
+      await showAlert({ title:'Sucesso', message:'POPs atualizados.' });
     }
 
-    /* ========= Sidebar ========= */
-    function setCollapsed(collapsed){
-      document.body.classList.toggle('sidebar-collapsed',collapsed);
-      try{ localStorage.setItem(LS_SIDEBAR_STATE, collapsed?'1':'0'); }catch{}
-      const btn=byId('btnCollapse'); if(btn){ btn.setAttribute('aria-expanded', String(!collapsed)); btn.title=collapsed?'Mostrar menu':'Ocultar menu'; }
-    }
-    function isSidebarOpen(){ return isMobile() ? document.body.classList.contains('sidebar-open') : !document.body.classList.contains('sidebar-collapsed'); }
-    function closeSidebar(){ if(isMobile()) document.body.classList.remove('sidebar-open'); else setCollapsed(true); }
-    let autoHideTimer=null, isSidebarHovered=false;
-    function scheduleAutoHide(){ clearTimeout(autoHideTimer); if(!isSidebarOpen()) return; autoHideTimer=setTimeout(()=>{ if(!isSidebarHovered && isSidebarOpen()) closeSidebar(); },5000); }
-    function cancelAutoHide(){ clearTimeout(autoHideTimer); }
+    /* ========= LISTENERS GLOBAIS ========= */
+    // ======== BLOQUEIO (cadeado) ========
+    const LOCK_PASSWORD = '123456';
+    let isLocked = true; // sempre inicia bloqueado
 
-    /* ====== Modal de Senha (bonito) ====== */
-    function requestUnlockWithModal(){
-      return new Promise(resolve=>{
-        const modal=byId('passwordModal');
-        const form=byId('passwordForm');
-        const input=byId('passwordInput');
-        const errorEl=byId('passwordError');
-        const toggle=byId('togglePass');
-
-        if(!modal || !form || !input){ resolve(false); return; }
-        input.type='password'; input.value=''; errorEl.style.display='none';
-
-        const onSubmit=(e)=>{ e.preventDefault(); const val=(input.value||'').trim(); if(val==='123456'){ cleanup(); resolve(true); } else{ errorEl.style.display='block'; input.focus(); input.select(); } };
-        const onCancel=()=>{ cleanup(); resolve(false); };
-        const onToggle=()=>{ input.type = (input.type==='password') ? 'text' : 'password'; input.focus(); };
-
-        form.addEventListener('submit',onSubmit);
-        toggle.addEventListener('click',onToggle);
-        modal.querySelectorAll('[data-close="passwordModal"]').forEach(b=> b.addEventListener('click', onCancel, { once:true }));
-
-        openModal('passwordModal'); setTimeout(()=> input.focus(), 50);
-
-        function cleanup(){ form.removeEventListener('submit',onSubmit); toggle.removeEventListener('click',onToggle); closeModal('passwordModal'); }
-      });
-    }
-
-    /* ====== LOCK STATE ====== */
-    let isLocked=true; // sempre inicia travado
-    const ICON_LOCKED="https://cdn-icons-png.flaticon.com/512/7615/7615902.png";
-    const ICON_UNLOCK="https://cdn-icons-png.flaticon.com/512/7615/7615905.png";
-
-    function setLocked(state){
-      isLocked = !!state;
-      document.body.classList.toggle('locked', isLocked);
-      const icon=byId('lockIcon'); const txt=byId('lockText'); const badge=byId('lockBadge');
-      if(isLocked){
-        if(icon) icon.src = ICON_LOCKED;
-        if(txt)  txt.textContent = 'Bloqueado';
-        if(badge) badge.textContent = 'LOCK';
-      }else{
-        if(icon) icon.src = ICON_UNLOCK;
-        if(txt)  txt.textContent = 'Desbloqueado';
-        if(badge) badge.textContent = 'OPEN';
+    function applyLockUI(){
+      const icon = byId('lockIcon');
+      const text = byId('lockText');
+      if (isLocked){
+        icon.src = 'https://cdn-icons-png.flaticon.com/512/7615/7615902.png'; // travado
+        text.textContent = 'Bloqueado';
+        document.body.classList.add('locked');
+      } else {
+        icon.src = 'https://cdn-icons-png.flaticon.com/512/7615/7615905.png'; // destravado
+        text.textContent = 'Desbloqueado';
+        document.body.classList.remove('locked');
       }
     }
+    applyLockUI();
 
-    /* ========= Listeners globais ========= */
-    document.addEventListener('DOMContentLoaded', ()=>{
-      // Início: sidebar colapsada no desktop e sistema BLOQUEADO
-      if(!isMobile()) setCollapsed(true); else document.body.classList.remove('sidebar-open');
-      setLocked(true);
+    function openLockModal(){ openModal('lockModal'); byId('lockPassword').value=''; byId('lockError').style.display='none'; setTimeout(()=>byId('lockPassword').focus(),0); }
+    function closeLockModal(){ closeModal('lockModal'); }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!isMobile()) { setCollapsed(true); } else { document.body.classList.remove('sidebar-open'); }
 
       document.querySelectorAll('[data-close]').forEach(btn =>
         btn.addEventListener('click', (e)=> closeModal(e.currentTarget.getAttribute('data-close')))
       );
 
-      byId('btnCollapse').addEventListener('click', ()=>{
-        if(isMobile()) document.body.classList.toggle('sidebar-open');
+      byId('btnCollapse').addEventListener('click', () => {
+        if (isMobile()) document.body.classList.toggle('sidebar-open');
         else setCollapsed(!document.body.classList.contains('sidebar-collapsed'));
-        setTimeout(scheduleAutoHide,0);
+        setTimeout(scheduleAutoHide, 0);
       });
 
-      document.querySelector('.sidebar-overlay').addEventListener('click', ()=>{ document.body.classList.remove('sidebar-open'); cancelAutoHide(); });
+      document.querySelector('.sidebar-overlay').addEventListener('click', ()=>{
+        document.body.classList.remove('sidebar-open'); cancelAutoHide();
+      });
 
-      const edge=byId('edgeHitbox');
-      if(edge){
-        let startX=null;
-        edge.addEventListener('touchstart',(e)=>{ if(!isMobile()) return; startX=e.touches[0].clientX; });
-        edge.addEventListener('touchmove',(e)=>{ if(!isMobile()||startX===null) return; const dx=e.touches[0].clientX-startX; if(dx>12){ document.body.classList.add('sidebar-open'); startX=null; scheduleAutoHide(); } });
-        edge.addEventListener('click',()=>{ if(isMobile()){ document.body.classList.add('sidebar-open'); scheduleAutoHide(); } });
+      const edge = byId('edgeHitbox');
+      if (edge){
+        let startX = null;
+        edge.addEventListener('touchstart', (e)=>{ if (!isMobile()) return; startX = e.touches[0].clientX; });
+        edge.addEventListener('touchmove', (e)=>{
+          if (!isMobile() || startX===null) return;
+          const dx = e.touches[0].clientX - startX;
+          if (dx > 12){ document.body.classList.add('sidebar-open'); startX = null; scheduleAutoHide(); }
+        });
+        edge.addEventListener('click', ()=>{ if (isMobile()) { document.body.classList.add('sidebar-open'); scheduleAutoHide(); } });
       }
 
-      // Menu: se estiver bloqueado, exigir senha
-      byId('menuNovoCadastro').addEventListener('click', async ()=>{
-        if(isLocked){ const ok=await requestUnlockWithModal(); if(!ok) return; setLocked(false); }
+      // menu ações com bloqueio
+      byId('menuNovoCadastro').addEventListener('click', () => {
+        if (!ensureUnlockedOrWarn()) return;
         closeSidebar(); cancelAutoHide(); openCadastroModal();
       });
-      byId('menuGerenciarPops').addEventListener('click', async ()=>{
-        if(isLocked){ const ok=await requestUnlockWithModal(); if(!ok) return; setLocked(false); }
+      byId('menuGerenciarPops').addEventListener('click', () => {
+        if (!ensureUnlockedOrWarn()) return;
         closeSidebar(); cancelAutoHide(); openModalPops();
       });
 
-      // Botão de cadeado
-      byId('lockBtn').addEventListener('click', async ()=>{
-        if(isLocked){
-          const ok=await requestUnlockWithModal();
-          if(ok){ setLocked(false); await showAlert({ title:'Desbloqueado', message:'Funções liberadas.' }); }
-        }else{
-          setLocked(true);
-          await showAlert({ title:'Bloqueado', message:'Ações ocultadas e bloqueadas.' });
-        }
-      });
-
-      // Lista de estados/ações
       byId('btnSalvarCadastro').addEventListener('click', async (e)=>{ e.preventDefault(); const tipo=byId('tipoCadastro').value; if(tipo==='pop') await cadastrarPOP(); else await cadastrarSwitch(); });
       byId('btnSalvarEditSwitch').addEventListener('click', saveEditSwitch);
-      byId('btnRemoverFoto').addEventListener('click', ()=>{ byId('editSwitchFoto').value=''; byId('previewInfo').textContent='Imagem será removida ao salvar.'; byId('previewInfo').dataset.remove='true'; });
+      byId('btnRemoverFoto').addEventListener('click', () => { byId('editSwitchFoto').value=''; byId('previewInfo').textContent='Imagem será removida ao salvar.'; byId('previewInfo').dataset.remove='true'; });
       byId('btnSalvarPops').addEventListener('click', applyPopEdits);
 
-      // Container de POPs: bloquear editar/excluir quando travado
-      byId('estadoContainer').addEventListener('click', async (ev)=>{
-        const toggleBtn=ev.target.closest('[data-toggle-pop]');
-        if(toggleBtn){
-          const card=toggleBtn.closest('.pop-card'); const list=card.querySelector('.switch-list');
-          const popId=toggleBtn.getAttribute('data-toggle-pop');
-          const isOpen=list.style.display==='block';
-          if(isOpen){ toggleBtn.classList.remove('open'); toggleBtn.setAttribute('aria-expanded','false'); list.style.display='none'; }
-          else{ document.querySelectorAll('.pop-card .pop-toggle.open').forEach(b=>{ b.classList.remove('open'); b.setAttribute('aria-expanded','false'); b.closest('.pop-card').querySelector('.switch-list').style.display='none'; }); toggleBtn.classList.add('open'); toggleBtn.setAttribute('aria-expanded','true'); list.style.display='block'; }
+      // lista de estados/switches - proteger ações
+      byId('estadoContainer').addEventListener('click', (ev) => {
+        const toggleBtn = ev.target.closest('[data-toggle-pop]');
+        if (toggleBtn) {
+          const card = toggleBtn.closest('.pop-card');
+          const list = card.querySelector('.switch-list');
+          const popId = toggleBtn.getAttribute('data-toggle-pop');
+          const isOpen = list.style.display === 'block';
+          if (isOpen) { toggleBtn.classList.remove('open'); toggleBtn.setAttribute('aria-expanded','false'); list.style.display = 'none'; }
+          else { closeAllPopLists(popId); toggleBtn.classList.add('open'); toggleBtn.setAttribute('aria-expanded','true'); list.style.display = 'block'; }
           return;
         }
-        const swBtn=ev.target.closest('[data-action]');
-        if(swBtn){
-          const action=swBtn.dataset.action;
-          const swId=swBtn.closest('[data-switch-id]')?.dataset.switchId;
-          if(!swId) return;
-          if(isLocked){
-            const ok=await requestUnlockWithModal(); if(!ok) return; setLocked(false);
-          }
-          const isNumeric=!isNaN(Number(swId)); const swIdParsed=isNumeric?Number(swId):swId;
-          if(action==='edit') openEditSwitch(swIdParsed);
-          if(action==='delete') deleteSwitch(swIdParsed);
+        const swBtn = ev.target.closest('[data-action]');
+        if (swBtn) {
+          if (!ensureUnlockedOrWarn()) return;
+          const action = swBtn.dataset.action;
+          const swId = swBtn.closest('[data-switch-id]')?.dataset.switchId;
+          if (!swId) return;
+          const isNumeric = !isNaN(Number(swId));
+          const swIdParsed = isNumeric ? Number(swId) : swId;
+          if (action === 'edit') openEditSwitch(swIdParsed);
+          if (action === 'delete') deleteSwitch(swIdParsed);
         }
       });
 
-      const sidebarEl=document.querySelector('.sidebar');
-      if(sidebarEl){ sidebarEl.addEventListener('mouseenter',()=>{ isSidebarHovered=true; cancelAutoHide(); }); sidebarEl.addEventListener('mouseleave',()=>{ isSidebarHovered=false; scheduleAutoHide(); }); }
+      const sidebarEl = document.querySelector('.sidebar');
+      if (sidebarEl){
+        sidebarEl.addEventListener('mouseenter', ()=>{ isSidebarHovered = true; cancelAutoHide(); });
+        sidebarEl.addEventListener('mouseleave', ()=>{ isSidebarHovered = false; scheduleAutoHide(); });
+      }
 
-      const bodyObserver=new MutationObserver(()=>{ if(isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide(); });
-      bodyObserver.observe(document.body,{ attributes:true, attributeFilter:['class'] });
+      const bodyObserver = new MutationObserver(()=> { if (isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide(); });
+      bodyObserver.observe(document.body, { attributes:true, attributeFilter:['class'] });
 
-      window.addEventListener('resize', ()=>{
+      window.addEventListener('resize', () => {
         document.documentElement.classList.remove('js-ready');
-        if(!isMobile()){ document.body.classList.remove('sidebar-open'); setCollapsed(true); }
-        requestAnimationFrame(()=>{ document.documentElement.classList.add('js-ready'); if(isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide(); });
+        if (!isMobile()) { document.body.classList.remove('sidebar-open'); setCollapsed(true); }
+        requestAnimationFrame(() => {
+          document.documentElement.classList.add('js-ready');
+          if (isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide();
+        });
       });
 
-      document.addEventListener('keydown',(e)=>{
-        if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='b' && !isMobile()){
+      document.addEventListener('keydown', (e)=>{
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='b' && !isMobile()){
           e.preventDefault(); setCollapsed(!document.body.classList.contains('sidebar-collapsed'));
-          setTimeout(scheduleAutoHide,0);
+          setTimeout(scheduleAutoHide, 0);
         }
       });
+
+      // Botão do cadeado
+      byId('lockBtn').addEventListener('click', ()=>{
+        if (isLocked) openLockModal();
+        else {
+          isLocked = true; applyLockUI();
+          // Fecha telas sensíveis abertas
+          ['modalCadastro','modalEditSwitch','modalPops'].forEach(closeModal);
+        }
+      });
+      byId('lockForm').addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const pass = byId('lockPassword').value.trim();
+        if (pass === LOCK_PASSWORD){
+          isLocked = false; applyLockUI(); closeLockModal();
+        } else {
+          byId('lockError').style.display='block';
+        }
+      });
+      byId('lockSubmitBtn').addEventListener('click', (e)=>{ e.preventDefault(); byId('lockForm').requestSubmit(); });
 
       startLoadFallbackTimer(8000);
-      requestAnimationFrame(()=>{ document.documentElement.classList.add('js-ready'); });
+      requestAnimationFrame(() => { document.documentElement.classList.add('js-ready'); });
     });
   </script>
 
   <!-- ===== FAVICON ANIMADO VIA CANVAS ===== -->
   <script>
   (function(){
-    const link=document.querySelector('#dynamic-favicon');
-    const video=document.querySelector('#favVideo');
-    if(!link||!video) return;
-    const canvas=document.createElement('canvas');
-    const ctx=canvas.getContext('2d',{ willReadFrequently:true });
-    const FAV_W=32,FAV_H=32; canvas.width=FAV_W; canvas.height=FAV_H;
-    let running=false, rafId=null, lastUpdate=0; const FPS=10, FRAME_MS=1000/FPS;
+    const link = document.querySelector('#dynamic-favicon');
+    const video = document.querySelector('#favVideo');
+    if (!link || !video) return;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    const FAV_W = 32, FAV_H = 32;
+    canvas.width = FAV_W; canvas.height = FAV_H;
+
+    let running = false;
+    let rafId = null;
+    let lastUpdate = 0;
+    const FPS = 10;                 
+    const FRAME_MS = 1000 / FPS;
 
     function drawFrame(ts){
-      if(!running) return;
-      if(document.hidden){ rafId=requestAnimationFrame(drawFrame); return; }
-      if(ts-lastUpdate>=FRAME_MS){
-        lastUpdate=ts;
-        try{
-          ctx.clearRect(0,0,FAV_W,FAV_H);
-          const vW=video.videoWidth||256, vH=video.videoHeight||256;
-          if(vW&&vH){ const s=Math.min(vW,vH); const sx=(vW-s)/2, sy=(vH-s)/2; ctx.drawImage(video,sx,sy,s,s,0,0,FAV_W,FAV_H); }
-          else{ ctx.fillStyle='#111923'; ctx.fillRect(0,0,FAV_W,FAV_H); }
-          const url=canvas.toDataURL('image/png'); if(url && url.startsWith('data:image/png')) link.href=url;
-        }catch(e){ console.warn('[favicon] Falha ao animar (CORS?)',e); stop(); return; }
+      if (!running) return;
+      if (document.hidden) {        
+        rafId = requestAnimationFrame(drawFrame);
+        return;
       }
-      rafId=requestAnimationFrame(drawFrame);
+      if (ts - lastUpdate >= FRAME_MS) {
+        lastUpdate = ts;
+        try {
+          ctx.clearRect(0,0,FAV_W,FAV_H);
+          const vW = video.videoWidth || 256;
+          const vH = video.videoHeight || 256;
+          if (vW && vH) {
+            const s = Math.min(vW, vH);
+            const sx = (vW - s) / 2;
+            const sy = (vH - s) / 2;
+            ctx.drawImage(video, sx, sy, s, s, 0, 0, FAV_W, FAV_H);
+          } else {
+            ctx.fillStyle = '#111923';
+            ctx.fillRect(0,0,FAV_W,FAV_H);
+          }
+          const url = canvas.toDataURL('image/png');
+          if (url && url.startsWith('data:image/png')) {
+            link.href = url;
+          }
+        } catch (e) {
+          console.warn('[favicon] Falha ao animar (CORS?):', e);
+          stop();
+          return;
+        }
+      }
+      rafId = requestAnimationFrame(drawFrame);
     }
-    function start(){ if(running) return; running=true; const p=video.play(); if(p&&typeof p.then==='function'){ p.catch(()=>{}); } rafId=requestAnimationFrame(drawFrame); }
-    function stop(){ running=false; if(rafId) cancelAnimationFrame(rafId), rafId=null; }
-    if(video.readyState>=1) start(); else video.addEventListener('loadedmetadata', start, { once:true });
-    document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stop(); else start(); });
-    video.addEventListener('error', (e)=>{ console.warn('[favicon] Erro no vídeo:', e); stop(); });
-    window.addEventListener('pointerdown', ()=>{ if(!running) start(); }, { once:true });
+
+    function start(){
+      if (running) return;
+      running = true;
+      const p = video.play();
+      if (p && typeof p.then === 'function') {
+        p.catch(()=>{});
+      }
+      rafId = requestAnimationFrame(drawFrame);
+    }
+    function stop(){
+      running = false;
+      if (rafId) cancelAnimationFrame(rafId), rafId = null;
+    }
+
+    if (video.readyState >= 1) start();
+    else video.addEventListener('loadedmetadata', start, { once:true });
+
+    document.addEventListener('visibilitychange', ()=>{
+      if (document.hidden) stop(); else start();
+    });
+
+    video.addEventListener('error', (e)=>{
+      console.warn('[favicon] Erro no vídeo:', e);
+      stop();
+    });
+
+    window.addEventListener('pointerdown', ()=> { if (!running) start(); }, { once:true });
   })();
   </script>
 </body>
