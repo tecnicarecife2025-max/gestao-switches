@@ -340,7 +340,7 @@
     <option value="Planet GSW"></option>
   </datalist>
 
-  <!-- MODAIS CADASTRO / EDIÇÃO / POPS (mesmos do seu código original) -->
+  <!-- MODAIS CADASTRO / EDIÇÃO / POPS -->
   <div class="modal" id="modalCadastro" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
@@ -728,18 +728,37 @@
     }
 
     function openEditSwitch(id){
-      const sw=switches.find(s=>s.id===id); 
-      if(!sw) return;
-      byId('editSwitchId').value=String(sw.id);
-      byId('editSwitchNome').value=sw.nome;
-      byId('editSwitchIP').value=sw.ip;
-      const sel=byId('editSwitchPop'); 
-      sel.innerHTML=pops.map(p=>`<option value="${p.id}">${estadoLabel(p.estado)} — ${p.nome}</option>`).join(''); 
-      sel.value=sw.pop;
-      byId('editSwitchModelo').value=sw.modelo||''; 
-      byId('previewInfo').dataset.remove='false'; 
-      byId('previewInfo').textContent=sw.foto?'Imagem atual presente.':'Sem imagem.'; 
-      byId('editSwitchFoto').value='';
+      // Força string, mas aceita casos legados
+      const idStr = String(id);
+
+      // Tenta achar por string ou por número equivalente
+      const sw = switches.find(s => {
+        if (s.id === idStr) return true;
+        // casos antigos / inconsistentes
+        if (s.id != null && String(s.id) === idStr) return true;
+        return false;
+      });
+
+      if (!sw) {
+        console.warn('[openEditSwitch] Switch não encontrado para id:', id, 'lista atual:', switches);
+        return;
+      }
+
+      byId('editSwitchId').value = String(sw.id);
+      byId('editSwitchNome').value = sw.nome;
+      byId('editSwitchIP').value = sw.ip;
+
+      const sel = byId('editSwitchPop');
+      sel.innerHTML = pops
+        .map(p => `<option value="${p.id}">${estadoLabel(p.estado)} — ${p.nome}</option>`)
+        .join('');
+      sel.value = sw.pop;
+
+      byId('editSwitchModelo').value = sw.modelo || '';
+      byId('previewInfo').dataset.remove = 'false';
+      byId('previewInfo').textContent = sw.foto ? 'Imagem atual presente.' : 'Sem imagem.';
+      byId('editSwitchFoto').value = '';
+
       openModal('modalEditSwitch');
     }
 
@@ -756,8 +775,12 @@
       if(!nome || !ip || !popSel){ await showAlert({title:'Atenção',message:'Preencha Nome, IP e POP.'}); return; }
       if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
 
-      const idx=switches.findIndex(s=>s.id===id); 
-      if(idx===-1) return;
+      const idx = switches.findIndex(s => String(s.id) === String(id));
+      if(idx === -1){
+        console.warn('[saveEditSwitch] Switch não encontrado para id:', id);
+        return;
+      }
+
       const original=switches[idx];
       const origModelo=original.modelo || null;
       const newModelo=modelo || null;
@@ -973,26 +996,53 @@
 
       // Container de POPs: bloquear editar/excluir quando travado
       byId('estadoContainer').addEventListener('click', async (ev)=>{
-        const toggleBtn=ev.target.closest('[data-toggle-pop]');
-        if(toggleBtn){
-          const card=toggleBtn.closest('.pop-card'); const list=card.querySelector('.switch-list');
-          const popId=toggleBtn.getAttribute('data-toggle-pop');
-          const isOpen=list.style.display==='block';
-          if(isOpen){ toggleBtn.classList.remove('open'); toggleBtn.setAttribute('aria-expanded','false'); list.style.display='none'; }
-          else{ document.querySelectorAll('.pop-card .pop-toggle.open').forEach(b=>{ b.classList.remove('open'); b.setAttribute('aria-expanded','false'); b.closest('.pop-card').querySelector('.switch-list').style.display='none'; }); toggleBtn.classList.add('open'); toggleBtn.setAttribute('aria-expanded','true'); list.style.display='block'; }
+        const toggleBtn = ev.target.closest('[data-toggle-pop]');
+        if (toggleBtn) {
+          const card = toggleBtn.closest('.pop-card');
+          const list = card.querySelector('.switch-list');
+          const isOpen = list.style.display === 'block';
+          if (isOpen) {
+            toggleBtn.classList.remove('open');
+            toggleBtn.setAttribute('aria-expanded','false');
+            list.style.display='none';
+          } else {
+            document.querySelectorAll('.pop-card .pop-toggle.open').forEach(b=>{
+              b.classList.remove('open');
+              b.setAttribute('aria-expanded','false');
+              b.closest('.pop-card').querySelector('.switch-list').style.display='none';
+            });
+            toggleBtn.classList.add('open');
+            toggleBtn.setAttribute('aria-expanded','true');
+            list.style.display='block';
+          }
           return;
         }
-        const swBtn=ev.target.closest('[data-action]');
-        if(swBtn){
-          const action=swBtn.dataset.action;
-          const swId=swBtn.closest('[data-switch-id]')?.dataset.switchId;
-          if(!swId) return;
-          if(isLocked){
-            const ok=await requestUnlockWithModal(); if(!ok) return; setLocked(false);
+
+        const swBtn = ev.target.closest('[data-action]');
+        if (swBtn) {
+          const action = swBtn.dataset.action;
+          const swRow = swBtn.closest('[data-switch-id]');
+          const swId = swRow ? swRow.dataset.switchId : null;
+
+          if (!swId) {
+            console.warn('[EDIT/DELETE] switch sem data-switch-id');
+            return;
           }
-          // CORREÇÃO: não converter para Number, manter como string
-          if(action==='edit') openEditSwitch(swId);
-          if(action==='delete') deleteSwitch(swId);
+
+          if (isLocked) {
+            const ok = await requestUnlockWithModal();
+            if (!ok) return;
+            setLocked(false);
+          }
+
+          if (action === 'edit') {
+            console.debug('[EDIT] clicado para ID:', swId);
+            openEditSwitch(swId);
+          }
+          if (action === 'delete') {
+            console.debug('[DELETE] clicado para ID:', swId);
+            deleteSwitch(swId);
+          }
         }
       });
 
