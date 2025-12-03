@@ -217,16 +217,6 @@
       align-items:center;
       justify-content:center;
       position:relative;
-      cursor:pointer;
-      transition:all .2s;
-    }
-    .mini-thumb:hover{
-      border-color:#3498db;
-      transform:scale(1.05);
-    }
-    .mini-thumb.selected{
-      border-color:#4CAF50;
-      border-width:3px;
     }
     .mini-thumb img{
       max-width:100%;
@@ -237,25 +227,6 @@
     .mini-thumb span{
       font-size:11px;
       color:#7f8c8d;
-    }
-    
-    .existing-images-section{
-      margin-top:20px;
-      padding-top:20px;
-      border-top:2px solid #e9ecef;
-    }
-    .existing-images-section h4{
-      color:#2c3e50;
-      margin-bottom:10px;
-      font-size:14px;
-      font-weight:600;
-    }
-    .no-images-message{
-      color:#999;
-      font-style:italic;
-      padding:10px;
-      text-align:center;
-      font-size:13px;
     }
   </style>
 </head>
@@ -501,11 +472,6 @@
             <!-- MINI GALERIA DE FOTOS (EDIÇÃO) -->
             <div id="galleryEdit" class="mini-gallery"></div>
           </div>
-          <!-- NOVA SEÇÃO: IMAGENS EXISTENTES DE OUTROS SWITCHES -->
-          <div class="existing-images-section">
-            <h4>Imagens de Outros Switches:</h4>
-            <div id="galleryExistingImages" class="mini-gallery"></div>
-          </div>
         </form>
       </div>
       <div class="modal-footer">
@@ -613,7 +579,6 @@
     /* ===== POPs/Switches ===== */
     let switches=[]; let pops=[]; let pendingPopEdits=[];
     let popsLoaded=false; let switchesLoaded=false; let loadFallbackTimer=null;
-    let selectedExistingImage=null; // NOVA VARIÁVEL PARA ARMAZENAR IMAGEM SELECIONADA
 
     function loadPops(){
       const dbRef=ref(fbDb,'pops');
@@ -774,244 +739,490 @@
     function openModal(id){ const el=byId(id); if(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); } }
     function closeModal(id){ const el=byId(id); if(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); } }
 
-    function openEditSwitch(swId){
-      const sw=switches.find(s=>s.id===swId); if(!sw) return;
-      byId('editSwitchId').value=sw.id;
-      byId('editSwitchNome').value=sw.nome||'';
-      byId('editSwitchIP').value=sw.ip||'';
-      byId('editSwitchModelo').value=sw.modelo||'';
+    function openCadastroModal(){ 
+      openModal('modalCadastro'); 
+      renderPopOptions(); 
+      renderUFSelect(byId('popEstado')); 
+      const sel=byId('tipoCadastro'); 
+      sel.value='switch'; 
+      bindTipoCadastroEvents(); 
+      alternarTipo();
+      
+      // Limpa a galeria ao abrir
+      const galleryCadastro = byId('galleryCadastro');
+      if(galleryCadastro) galleryCadastro.innerHTML = '';
+    }
+    
+    function bindTipoCadastroEvents(){ const sel=byId('tipoCadastro'); const clone=sel.cloneNode(true); sel.parentNode.replaceChild(clone,sel); clone.addEventListener('change',alternarTipo); clone.addEventListener('input',alternarTipo); document.addEventListener('change',(e)=>{ if(e.target && e.target.id==='tipoCadastro') alternarTipo(); },{once:true}); }
+    function alternarTipo(){ const tipo=(byId('tipoCadastro')?.value)||'switch'; const popBox=byId('camposPOP'); const swBox=byId('camposSW'); const showPop=(tipo==='pop'); popBox.classList.toggle('hide',!showPop); swBox.classList.toggle('hide',showPop); popBox.style.display=showPop?'block':'none'; swBox.style.display=showPop?'none':'block'; }
 
-      const selPop=byId('editSwitchPop');
-      if(selPop){
-        selPop.innerHTML='';
-        const groups=popsByEstado();
-        const ufs=Object.keys(groups).sort((a,b)=>{ if(a==='__') return 1; if(b==='__') return -1; return a.localeCompare(b); });
-        ufs.forEach(uf=>{
-          const optgroup=document.createElement('optgroup'); optgroup.label=estadoLabel(uf);
-          groups[uf].forEach(p=>{
-            const opt=document.createElement('option'); opt.value=p.id; opt.textContent=p.nome;
-            if(p.id===sw.pop) opt.selected=true;
-            optgroup.appendChild(opt);
-          });
-          selPop.appendChild(optgroup);
-        });
+    async function cadastrarPOP(){
+      const nome=(byId('popNome').value||'').trim(); if(!nome){ await showAlert({title:'Atenção',message:'Informe o Nome/Descrição do POP.'}); return; }
+      const uf=(byId('popEstado').value||'__'); const id=slugify(nome);
+      const exists=pops.some(p=>p.id===id||p.nome.toLowerCase()===nome.toLowerCase());
+      if(exists){ await showAlert({title:'Atenção',message:'Já existe um POP com esse nome.'}); return; }
+      pops.push({ id, nome, estado:uf }); savePops(); renderPopOptions(); renderEstadosComPops(); byId('cadastroForm').reset(); closeModal('modalCadastro'); await showAlert({title:'Sucesso',message:'POP cadastrado com sucesso.'});
+    }
+
+    async function cadastrarSwitch(){
+      const popSel=byId('pop').value; const ip=byId('ip').value.trim(); const nome=byId('nome').value.trim(); const modelo=(byId('modelo').value||'').trim(); const fotoInput=byId('foto');
+      if(!popSel||!ip||!nome){ await showAlert({title:'Atenção',message:'Preencha POP, IP e Nome do switch.'}); return; }
+      if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
+      const sw={ id:String(Date.now()), pop:popSel, ip, nome, modelo: modelo || null, foto:null };
+      if(fotoInput.files && fotoInput.files[0]){ try{ sw.foto=await compressAdaptively(fotoInput.files[0]); }catch{ await showAlert({title:'Aviso',message:'Não foi possível processar a imagem. O switch será salvo sem foto.'}); } }
+      switches.push(sw); saveSwitches(); renderPopOptions(); renderEstadosComPops(); byId('cadastroForm').reset(); closeModal('modalCadastro'); await showAlert({title:'Sucesso',message:'Switch cadastrado com sucesso.'});
+    }
+
+    function openEditSwitch(id){
+      const idStr = String(id);
+      const sw = switches.find(s => {
+        if (s.id === idStr) return true;
+        if (s.id != null && String(s.id) === idStr) return true;
+        return false;
+      });
+
+      if (!sw) {
+        console.warn('[openEditSwitch] Switch não encontrado para id:', id, 'lista atual:', switches);
+        return;
       }
 
-      const galleryEdit=byId('galleryEdit');
-      if(galleryEdit){
-        galleryEdit.innerHTML='';
-        if(sw.foto){
-          const thumb=document.createElement('div'); thumb.className='mini-thumb';
-          const img=document.createElement('img'); img.src=sw.foto; img.alt='Foto atual';
-          thumb.appendChild(img);
-          galleryEdit.appendChild(thumb);
-        } else {
-          galleryEdit.innerHTML='<span style="color:#7f8c8d;font-size:12px">Nenhuma foto cadastrada</span>';
-        }
-      }
+      byId('editSwitchId').value = String(sw.id);
+      byId('editSwitchNome').value = sw.nome;
+      byId('editSwitchIP').value = sw.ip;
 
-      // NOVA FUNCIONALIDADE: Populate existing images from other switches
-      const galleryExisting=byId('galleryExistingImages');
-      if(galleryExisting){
-        galleryExisting.innerHTML='';
-        selectedExistingImage=null; // Reset selection
-        
-        const otherSwitchesWithPhotos=switches.filter((s,i)=> s.id!==sw.id && s.foto);
-        
-        if(otherSwitchesWithPhotos.length>0){
-          otherSwitchesWithPhotos.forEach((s,i)=>{
-            const thumb=document.createElement('div');
-            thumb.className='mini-thumb';
-            thumb.dataset.photoData=s.foto;
-            thumb.title=`Foto de ${s.nome}`;
-            
-            const img=document.createElement('img');
-            img.src=s.foto;
-            img.alt=`Foto de ${s.nome}`;
-            
-            thumb.appendChild(img);
-            
-            // Add click event to select image
-            thumb.addEventListener('click',function(){
-              // Remove selection from all images
-              galleryExisting.querySelectorAll('.mini-thumb').forEach(t=>t.classList.remove('selected'));
-              // Select this image
-              this.classList.add('selected');
-              selectedExistingImage=this.dataset.photoData;
-            });
-            
-            galleryExisting.appendChild(thumb);
-          });
-        } else {
-          galleryExisting.innerHTML='<p class="no-images-message">Nenhuma imagem de outros switches.</p>';
+      const sel = byId('editSwitchPop');
+      sel.innerHTML = pops
+        .map(p => `<option value="${p.id}">${estadoLabel(p.estado)} — ${p.nome}</option>`)
+        .join('');
+      sel.value = sw.pop;
+
+      byId('editSwitchModelo').value = sw.modelo || '';
+      byId('previewInfo').dataset.remove = 'false';
+      byId('previewInfo').textContent = sw.foto ? 'Imagem atual presente.' : 'Sem imagem.';
+      byId('editSwitchFoto').value = '';
+
+      // --------- MINI GALERIA NA EDIÇÃO ---------
+      const galleryEdit = byId('galleryEdit');
+      if (galleryEdit) {
+        galleryEdit.innerHTML = '';
+
+        // Miniatura da imagem já salva (se existir)
+        if (sw.foto) {
+          const thumbAtual = document.createElement('div');
+          thumbAtual.className = 'mini-thumb';
+          thumbAtual.innerHTML = `<img src="${sw.foto}" alt="Imagem atual do switch">`;
+          galleryEdit.appendChild(thumbAtual);
         }
       }
 
       openModal('modalEditSwitch');
     }
 
-    byId('btnSalvarEditSwitch')?.addEventListener('click',async()=>{
-      const swId=byId('editSwitchId').value;
-      const sw=switches.find(s=>s.id===swId); if(!sw) return;
+    async function saveEditSwitch(ev){
+      ev && ev.preventDefault();
+      const id = byId('editSwitchId').value;
+      const nome=(byId('editSwitchNome').value||'').trim();
+      const ip=(byId('editSwitchIP').value||'').trim();
+      const popSel=byId('editSwitchPop').value;
+      const modelo=(byId('editSwitchModelo').value||'').trim();
+      const fotoInput=byId('editSwitchFoto');
+      const removeFlag=byId('previewInfo').dataset.remove==='true';
 
-      const nome=byId('editSwitchNome').value.trim();
-      const ip=byId('editSwitchIP').value.trim();
-      const modelo=byId('editSwitchModelo').value.trim();
-      const popId=byId('editSwitchPop').value;
+      if(!nome || !ip || !popSel){ await showAlert({title:'Atenção',message:'Preencha Nome, IP e POP.'}); return; }
+      if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
 
-      if(!nome||!ip){ await showAlert({title:'Erro',message:'Nome e IP são obrigatórios.'}); return; }
-      if(!validarIP(ip)){ await showAlert({title:'Erro',message:'IP inválido.'}); return; }
-
-      const photoFile=byId('editSwitchFoto').files[0];
-      let photoData=sw.foto;
-
-      // Priority: new upload > selected existing image > keep current
-      if(photoFile){
-        photoData=await compressAdaptively(photoFile);
-      } else if(selectedExistingImage){
-        photoData=selectedExistingImage;
+      const idx = switches.findIndex(s => String(s.id) === String(id));
+      if(idx === -1){
+        console.warn('[saveEditSwitch] Switch não encontrado para id:', id);
+        return;
       }
 
-      sw.nome=nome; sw.ip=ip; sw.modelo=modelo; sw.pop=popId; sw.foto=photoData;
-      saveSwitches(); renderEstadosComPops(); closeModal('modalEditSwitch');
-      await showAlert({title:'Sucesso',message:'Switch atualizado com sucesso!'});
-    });
+      const original=switches[idx];
+      const origModelo=original.modelo || null;
+      const newModelo=modelo || null;
+      const hasNewFile=fotoInput && fotoInput.files && fotoInput.files[0];
+      const willRemoveFoto=removeFlag && !!original.foto;
 
-    /* ========= Event Delegation ========= */
-    document.addEventListener('click',e=>{
-      const t=e.target;
-      if(t.matches('[data-close]')){ const id=t.getAttribute('data-close'); closeModal(id); }
-      if(t.matches('[data-toggle-pop]')){
-        const popId=t.getAttribute('data-toggle-pop');
-        const list=t.nextElementSibling;
-        if(list && list.classList.contains('switch-list')){
-          const isOpen=list.style.display==='block';
-          list.style.display=isOpen?'none':'block';
-          t.classList.toggle('open',!isOpen);
-          t.setAttribute('aria-expanded',!isOpen);
-        }
-      }
-      if(t.matches('[data-action="edit"]')){
-        const row=t.closest('.switch-row');
-        if(row){ const swId=row.getAttribute('data-switch-id'); openEditSwitch(swId); }
-      }
-      if(t.matches('[data-action="delete"]')){
-        const row=t.closest('.switch-row');
-        if(row){
-          const swId=row.getAttribute('data-switch-id');
-          const sw=switches.find(s=>s.id===swId);
-          if(sw){
-            showConfirm({title:'Confirmar exclusão',message:`Deseja realmente excluir o switch "${sw.nome}"?`,okLabel:'Excluir',okIsDanger:true})
-            .then(ok=>{ if(ok){ switches=switches.filter(s=>s.id!==swId); saveSwitches(); renderEstadosComPops(); } });
-          }
-        }
-      }
-    });
+      const changed= nome!==original.nome || ip!==original.ip || popSel!==original.pop || newModelo!==origModelo || hasNewFile || willRemoveFoto;
+      if(!changed){ closeModal('modalEditSwitch'); return; }
 
-    /* ========= Sidebar ========= */
-    const btnCollapse=byId('btnCollapse');
-    const edgeHitbox=byId('edgeHitbox');
-    function toggleSidebar(){ document.body.classList.toggle('sidebar-collapsed'); const collapsed=document.body.classList.contains('sidebar-collapsed'); localStorage.setItem(LS_SIDEBAR_STATE,collapsed?'1':'0'); btnCollapse?.setAttribute('aria-expanded',collapsed?'false':'true'); btnCollapse?.setAttribute('title',collapsed?'Mostrar menu':'Ocultar menu'); }
-    btnCollapse?.addEventListener('click',toggleSidebar);
-    edgeHitbox?.addEventListener('mouseenter',()=>{ if(isMobile()) document.body.classList.add('sidebar-open'); });
+      const applyAndClose=async (newFoto)=>{
+        switches[idx].nome=nome; switches[idx].ip=ip; switches[idx].pop=popSel; switches[idx].modelo=newModelo;
+        if(removeFlag) switches[idx].foto=null;
+        if(newFoto!==undefined) switches[idx].foto=newFoto;
+        saveSwitches(); renderPopOptions(); renderEstadosComPops(); closeModal('modalEditSwitch'); await showAlert({title:'Sucesso',message:'Alterações salvas com sucesso.'});
+      };
 
-    /* ========= Lock/Unlock ========= */
-    const SENHA_CORRETA='1234';
-    const lockBtn=byId('lockBtn'); const lockIcon=byId('lockIcon'); const lockText=byId('lockText'); const lockBadge=byId('lockBadge');
-    function isLocked(){ return document.body.classList.contains('locked'); }
-    function lock(){ document.body.classList.add('locked'); if(lockIcon) lockIcon.src='https://cdn-icons-png.flaticon.com/512/7615/7615902.png'; if(lockText) lockText.textContent='Bloqueado'; if(lockBadge) lockBadge.textContent='LOCK'; }
-    function unlock(){ document.body.classList.remove('locked'); if(lockIcon) lockIcon.src='https://cdn-icons-png.flaticon.com/512/3064/3064155.png'; if(lockText) lockText.textContent='Desbloqueado'; if(lockBadge) lockBadge.textContent='OPEN'; }
-    lockBtn?.addEventListener('click',()=>{ if(isLocked()){ openModal('passwordModal'); byId('passwordInput').value=''; byId('passwordError').style.display='none'; } else { lock(); } });
-    byId('passwordForm')?.addEventListener('submit',e=>{ e.preventDefault(); const val=byId('passwordInput').value; if(val===SENHA_CORRETA){ unlock(); closeModal('passwordModal'); } else { byId('passwordError').style.display='block'; } });
-    byId('togglePass')?.addEventListener('click',()=>{ const inp=byId('passwordInput'); inp.type=inp.type==='password'?'text':'password'; });
+      if(hasNewFile){ try{ const dataURL=await compressAdaptively(fotoInput.files[0]); await applyAndClose(dataURL); }catch{ await showAlert({title:'Aviso',message:'Não foi possível processar a nova imagem. Os demais dados serão salvos.'}); await applyAndClose(); } }
+      else{ await applyAndClose(); }
+    }
 
-    /* ========= Menu Items ========= */
-    byId('menuNovoCadastro')?.addEventListener('click',()=>{ openModal('modalCadastro'); byId('tipoCadastro').value='switch'; byId('camposSW').style.display='block'; byId('camposPOP').style.display='none'; });
-    byId('menuGerenciarPops')?.addEventListener('click',()=>{ openModal('modalPops'); renderTabelaPops(); });
+    async function deleteSwitch(id){
+      const ok=await showConfirm({ title:'Confirmar exclusão', message:'Tem certeza de que deseja remover este switch permanentemente? Esta ação não pode ser desfeita.', okLabel:'Remover', cancelLabel:'Cancelar', okIsDanger:true });
+      if(!ok) return;
+      switches=switches.filter(s=>s.id!==id);
+      saveSwitches(); renderPopOptions(); renderEstadosComPops();
+      await showAlert({ title:'Removido', message:'O switch foi removido.' });
+    }
 
-    byId('tipoCadastro')?.addEventListener('change',e=>{ const val=e.target.value; byId('camposSW').style.display=val==='switch'?'block':'none'; byId('camposPOP').style.display=val==='pop'?'block':'none'; });
-
-    byId('btnSalvarCadastro')?.addEventListener('click',async()=>{
-      const tipo=byId('tipoCadastro').value;
-      if(tipo==='pop'){
-        const nome=byId('popNome').value.trim(); const uf=byId('popEstado').value;
-        if(!nome){ await showAlert({title:'Erro',message:'Nome do POP é obrigatório.'}); return; }
-        const id=slugify(nome); if(pops.find(p=>p.id===id)){ await showAlert({title:'Erro',message:'Já existe um POP com este nome.'}); return; }
-        pops.push({id,nome,estado:uf}); savePops(); renderPopOptions(); renderEstadosComPops(); closeModal('modalCadastro');
-        await showAlert({title:'Sucesso',message:'POP cadastrado com sucesso!'});
-      } else {
-        const nome=byId('nome').value.trim(); const ip=byId('ip').value.trim(); const modelo=byId('modelo').value.trim(); const popId=byId('pop').value;
-        if(!nome||!ip){ await showAlert({title:'Erro',message:'Nome e IP são obrigatórios.'}); return; }
-        if(!validarIP(ip)){ await showAlert({title:'Erro',message:'IP inválido.'}); return; }
-        const photoFile=byId('foto').files[0]; let photoData=null;
-        if(photoFile) photoData=await compressAdaptively(photoFile);
-        const id=slugify(nome+'-'+Date.now()); switches.push({id,nome,ip,modelo,pop:popId,foto:photoData}); saveSwitches(); renderEstadosComPops(); closeModal('modalCadastro');
-        await showAlert({title:'Sucesso',message:'Switch cadastrado com sucesso!'});
-      }
-    });
-
-    byId('btnRemoverFoto')?.addEventListener('click',()=>{ const swId=byId('editSwitchId').value; const sw=switches.find(s=>s.id===swId); if(sw){ sw.foto=null; byId('galleryEdit').innerHTML='<span style="color:#7f8c8d;font-size:12px">Nenhuma foto cadastrada</span>'; } });
-
-    function renderTabelaPops(){
-      const tbody=byId('tabelaPops')?.querySelector('tbody'); if(!tbody) return;
-      tbody.innerHTML='';
-      pops.forEach(p=>{
-        const swCount=switches.filter(s=>s.pop===p.id).length;
-        const tr=document.createElement('tr');
+    function openModalPops(){ buildPopsTable(); openModal('modalPops'); }
+    function buildPopsTable(){
+      const tbody=byId('tabelaPops').querySelector('tbody'); tbody.innerHTML='';
+      pendingPopEdits=pops.map(p=>({ oldId:p.id, id:p.id, nome:p.nome, estado:p.estado||'__', _delete:false }));
+      pendingPopEdits.forEach((row,i)=>{
+        const vinculados=switches.filter(s=>s.pop===row.id).length;
+        const tr=document.createElement('tr'); tr.dataset.index=i;
+        const ufSelect=`<select data-field="estado">${['__',...estados].map(uf=>`<option value="${uf}" ${uf===row.estado?'selected':''}>${estadoLabel(uf)}</option>`).join('')}</select>`;
         tr.innerHTML=`
-          <td><input type="text" value="${p.nome}" data-pop-id="${p.id}" data-field="nome" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></td>
-          <td><select data-pop-id="${p.id}" data-field="estado" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px">${`<option value="__">Sem Estado</option>`+estados.map(uf=>`<option value="${uf}" ${p.estado===uf?'selected':''}>${uf}</option>`).join('')}</select></td>
-          <td style="color:#7f8c8d;font-size:13px">${p.id}</td>
-          <td style="text-align:center">${swCount}</td>
-          <td><button class="btn danger small" data-delete-pop="${p.id}">Excluir</button></td>
-        `;
+          <td><input type="text" value="${row.nome.replace(/"/g,'&quot;')}" data-field="nome"></td>
+          <td>${ufSelect}</td>
+          <td><input type="text" value="${row.id.replace(/"/g,'&quot;')}" data-field="id" disabled></td>
+          <td>${vinculados}</td>
+          <td class="row-actions">
+            <button class="btn small" data-act="renomear">Gerar ID</button>
+            <button class="btn danger small" data-act="excluir">Excluir</button>
+          </td>`;
         tbody.appendChild(tr);
       });
+      tbody.onclick=(ev)=>{
+        const tr=ev.target.closest('tr'); if(!tr) return; const idx=Number(tr.dataset.index);
+        if(ev.target.matches('[data-act="renomear"]')){
+          const nomeInput=tr.querySelector('input[data-field="nome"]');
+          const idInput=tr.querySelector('input[data-field="id"]');
+          const novoId=slugify(nomeInput.value.trim());
+          idInput.value=novoId; pendingPopEdits[idx].id=novoId; pendingPopEdits[idx].nome=nomeInput.value.trim();
+        }
+        if(ev.target.matches('[data-act="excluir"]')){
+          const idAtual=pendingPopEdits[idx].id;
+          const vinculados=switches.filter(s=>s.pop===idAtual).length;
+          if(vinculados>0){ showAlert({title:'Atenção',message:'Não é possível excluir: existem switches vinculados.'}); return; }
+          (async ()=>{
+            const ok=await showConfirm({ title:'Confirmar exclusão', message:'Deseja realmente excluir este POP?', okLabel:'Excluir', cancelLabel:'Cancelar', okIsDanger:true });
+            if(!ok) return; pendingPopEdits[idx]._delete=true; tr.style.opacity=.5;
+          })();
+        }
+      };
+      tbody.oninput=(ev)=>{ const tr=ev.target.closest('tr'); if(!tr) return; const idx=Number(tr.dataset.index); if(ev.target.dataset.field==='nome') pendingPopEdits[idx].nome=ev.target.value; if(ev.target.dataset.field==='estado') pendingPopEdits[idx].estado=ev.target.value; };
+      tbody.onchange=tbody.oninput;
     }
 
-    byId('tabelaPops')?.addEventListener('click',e=>{
-      if(e.target.matches('[data-delete-pop]')){
-        const popId=e.target.getAttribute('data-delete-pop');
-        const pop=pops.find(p=>p.id===popId); if(!pop) return;
-        const swCount=switches.filter(s=>s.pop===popId).length;
-        if(swCount>0){ showAlert({title:'Erro',message:`Não é possível excluir o POP "${pop.nome}" pois ele possui ${swCount} switch(es) vinculado(s).`}); return; }
-        showConfirm({title:'Confirmar exclusão',message:`Deseja realmente excluir o POP "${pop.nome}"?`,okLabel:'Excluir',okIsDanger:true})
-        .then(ok=>{ if(ok){ pops=pops.filter(p=>p.id!==popId); savePops(); renderTabelaPops(); renderPopOptions(); renderEstadosComPops(); } });
+    async function applyPopEdits(){
+      const deletions=pendingPopEdits.filter(r=>r._delete);
+      const effective=pendingPopEdits.filter(r=>!r._delete);
+      let anyChange=deletions.length>0;
+
+      for(const row of effective){
+        const orig=pops.find(p=>p.id===row.oldId); if(!orig){ anyChange=true; break; }
+        const origNome=(orig.nome||'').trim(); const newNome=(row.nome||'').trim();
+        const origEstado=(orig.estado||'__'); const newEstado=(row.estado||'__');
+        const origId=orig.id; const newId=row.id;
+        if(origNome!==newNome || origEstado!==newEstado || origId!==newId){ anyChange=true; break; }
       }
-    });
 
-    byId('btnSalvarPops')?.addEventListener('click',()=>{
-      const inputs=byId('tabelaPops')?.querySelectorAll('[data-pop-id]');
-      inputs?.forEach(inp=>{
-        const popId=inp.getAttribute('data-pop-id'); const field=inp.getAttribute('data-field'); const val=inp.value.trim();
-        const pop=pops.find(p=>p.id===popId); if(!pop) return;
-        if(field==='nome' && val!==pop.nome){
-          const newId=slugify(val); pop.nome=val;
-          switches.filter(s=>s.pop===pop.id).forEach(s=>s.pop=newId);
-          pop.id=newId;
-        } else if(field==='estado'){ pop.estado=val; }
+      if(!anyChange){ closeModal('modalPops'); return; }
+
+      const effectiveIds=effective.map(r=>r.id);
+      const effectiveNamesLower=effective.map(r=>(r.nome||'').trim().toLowerCase());
+      if(effectiveIds.length!==new Set(effectiveIds).size){ await showAlert({title:'Atenção',message:'IDs duplicados após edição.'}); return; }
+      if(effectiveNamesLower.length!==new Set(effectiveNamesLower).size){ await showAlert({title:'Atenção',message:'Nomes duplicados após edição.'}); return; }
+
+      pendingPopEdits.filter(r=>r._delete).forEach(rem=>{ pops=pops.filter(p=>p.id!==rem.oldId); });
+      pendingPopEdits.filter(r=>!r._delete).forEach(edit=>{
+        const pIdx=pops.findIndex(p=>p.id===edit.oldId);
+        if(pIdx===-1){ pops.push({ id:edit.id, nome:(edit.nome||'').trim(), estado:edit.estado||'__' }); return; }
+        const idChanged=edit.oldId!==edit.id;
+        pops[pIdx].id=edit.id; pops[pIdx].nome=(edit.nome||'').trim(); pops[pIdx].estado=edit.estado||'__';
+        if(idChanged) switches.forEach(s=>{ if(s.pop===edit.oldId) s.pop=edit.id; });
       });
-      savePops(); saveSwitches(); renderTabelaPops(); renderPopOptions(); renderEstadosComPops();
-      showAlert({title:'Sucesso',message:'Alterações salvas com sucesso!'});
-    });
 
-    /* ========= Favicon Animado ========= */
-    const favVideo=byId('favVideo'); const favLink=byId('dynamic-favicon');
-    if(favVideo && favLink){
-      favVideo.addEventListener('loadeddata',()=>{
-        const canvas=document.createElement('canvas'); canvas.width=256; canvas.height=256; const ctx=canvas.getContext('2d');
-        function updateFavicon(){ ctx.clearRect(0,0,256,256); ctx.drawImage(favVideo,0,0,256,256); favLink.href=canvas.toDataURL('image/png'); }
-        favVideo.addEventListener('play',()=>{ const interval=setInterval(()=>{ if(favVideo.paused||favVideo.ended) clearInterval(interval); else updateFavicon(); },100); });
-        favVideo.play().catch(()=>{});
+      savePops(); saveSwitches(); renderPopOptions(); renderEstadosComPops();
+      closeModal('modalPops'); await showAlert({title:'Sucesso',message:'POPs atualizados.'});
+    }
+
+    /* ========= Sidebar ========= */
+    function setCollapsed(collapsed){
+      document.body.classList.toggle('sidebar-collapsed',collapsed);
+      try{ localStorage.setItem(LS_SIDEBAR_STATE, collapsed?'1':'0'); }catch{}
+      const btn=byId('btnCollapse'); if(btn){ btn.setAttribute('aria-expanded', String(!collapsed)); btn.title=collapsed?'Mostrar menu':'Ocultar menu'; }
+    }
+    function isSidebarOpen(){ return isMobile() ? document.body.classList.contains('sidebar-open') : !document.body.classList.contains('sidebar-collapsed'); }
+    function closeSidebar(){ if(isMobile()) document.body.classList.remove('sidebar-open'); else setCollapsed(true); }
+    let autoHideTimer=null, isSidebarHovered=false;
+    function scheduleAutoHide(){ clearTimeout(autoHideTimer); if(!isSidebarOpen()) return; autoHideTimer=setTimeout(()=>{ if(!isSidebarHovered && isSidebarOpen()) closeSidebar(); },5000); }
+    function cancelAutoHide(){ clearTimeout(autoHideTimer); }
+
+    /* ====== Modal de Senha (bonito) ====== */
+    function requestUnlockWithModal(){
+      return new Promise(resolve=>{
+        const modal=byId('passwordModal');
+        const form=byId('passwordForm');
+        const input=byId('passwordInput');
+        const errorEl=byId('passwordError');
+        const toggle=byId('togglePass');
+
+        if(!modal || !form || !input){ resolve(false); return; }
+        input.type='password'; input.value=''; errorEl.style.display='none';
+
+        const onSubmit=(e)=>{ e.preventDefault(); const val=(input.value||'').trim(); if(val==='123456'){ cleanup(); resolve(true); } else{ errorEl.style.display='block'; input.focus(); input.select(); } };
+        const onCancel=()=>{ cleanup(); resolve(false); };
+        const onToggle=()=>{ input.type = (input.type==='password') ? 'text' : 'password'; input.focus(); };
+
+        form.addEventListener('submit',onSubmit);
+        toggle.addEventListener('click',onToggle);
+        modal.querySelectorAll('[data-close="passwordModal"]').forEach(b=> b.addEventListener('click', onCancel, { once:true }));
+
+        openModal('passwordModal'); setTimeout(()=> input.focus(), 50);
+
+        function cleanup(){ form.removeEventListener('submit',onSubmit); toggle.removeEventListener('click',onToggle); closeModal('passwordModal'); }
       });
     }
 
-    /* ========= Init ========= */
-    renderUFSelect(byId('popEstado'));
-    const savedCollapsed=localStorage.getItem(LS_SIDEBAR_STATE);
-    if(savedCollapsed==='0'){ document.body.classList.remove('sidebar-collapsed'); btnCollapse?.setAttribute('aria-expanded','true'); btnCollapse?.setAttribute('title','Ocultar menu'); }
-    document.documentElement.classList.add('js-ready');
-    startLoadFallbackTimer();
+    /* ====== LOCK STATE ====== */
+    let isLocked=true;
+    const ICON_LOCKED="https://cdn-icons-png.flaticon.com/512/7615/7615902.png";
+    const ICON_UNLOCK="https://cdn-icons-png.flaticon.com/512/7615/7615905.png";
+
+    function setLocked(state){
+      isLocked = !!state;
+      document.body.classList.toggle('locked', isLocked);
+      const icon=byId('lockIcon'); const txt=byId('lockText'); const badge=byId('lockBadge');
+      if(isLocked){
+        if(icon) icon.src = ICON_LOCKED;
+        if(txt)  txt.textContent = 'Bloqueado';
+        if(badge) badge.textContent = 'LOCK';
+      }else{
+        if(icon) icon.src = ICON_UNLOCK;
+        if(txt)  txt.textContent = 'Desbloqueado';
+        if(badge) badge.textContent = 'OPEN';
+      }
+    }
+
+    /* ========= Listeners globais ========= */
+    document.addEventListener('DOMContentLoaded', ()=>{
+      if(!isMobile()) setCollapsed(true); else document.body.classList.remove('sidebar-open');
+      setLocked(true);
+
+      document.querySelectorAll('[data-close]').forEach(btn =>
+        btn.addEventListener('click', (e)=> closeModal(e.currentTarget.getAttribute('data-close')))
+      );
+
+      byId('btnCollapse').addEventListener('click', ()=>{
+        if(isMobile()) document.body.classList.toggle('sidebar-open');
+        else setCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+        setTimeout(scheduleAutoHide,0);
+      });
+
+      document.querySelector('.sidebar-overlay').addEventListener('click', ()=>{ document.body.classList.remove('sidebar-open'); cancelAutoHide(); });
+
+      const edge=byId('edgeHitbox');
+      if(edge){
+        let startX=null;
+        edge.addEventListener('touchstart',(e)=>{ if(!isMobile()) return; startX=e.touches[0].clientX; });
+        edge.addEventListener('touchmove',(e)=>{ if(!isMobile()||startX===null) return; const dx=e.touches[0].clientX-startX; if(dx>12){ document.body.classList.add('sidebar-open'); startX=null; scheduleAutoHide(); } });
+        edge.addEventListener('click',()=>{ if(isMobile()){ document.body.classList.add('sidebar-open'); scheduleAutoHide(); } });
+      }
+
+      byId('menuNovoCadastro').addEventListener('click', async ()=>{
+        if(isLocked){ const ok=await requestUnlockWithModal(); if(!ok) return; setLocked(false); }
+        closeSidebar(); cancelAutoHide(); openCadastroModal();
+      });
+      byId('menuGerenciarPops').addEventListener('click', async ()=>{
+        if(isLocked){ const ok=await requestUnlockWithModal(); if(!ok) return; setLocked(false); }
+        closeSidebar(); cancelAutoHide(); openModalPops();
+      });
+
+      byId('lockBtn').addEventListener('click', async ()=>{
+        if(isLocked){
+          const ok=await requestUnlockWithModal();
+          if(ok){ setLocked(false); await showAlert({ title:'Desbloqueado', message:'Funções liberadas.' }); }
+        }else{
+          setLocked(true);
+          await showAlert({ title:'Bloqueado', message:'Ações ocultadas e bloqueadas.' });
+        }
+      });
+
+      byId('btnSalvarCadastro').addEventListener('click', async (e)=>{ e.preventDefault(); const tipo=byId('tipoCadastro').value; if(tipo==='pop') await cadastrarPOP(); else await cadastrarSwitch(); });
+      byId('btnSalvarEditSwitch').addEventListener('click', saveEditSwitch);
+      
+      byId('btnRemoverFoto').addEventListener('click', ()=>{ 
+        byId('editSwitchFoto').value=''; 
+        byId('previewInfo').textContent='Imagem será removida ao salvar.'; 
+        byId('previewInfo').dataset.remove='true';
+        
+        const galleryEdit = byId('galleryEdit');
+        if (galleryEdit) {
+          galleryEdit.innerHTML = '';
+          const placeholder = document.createElement('div');
+          placeholder.className = 'mini-thumb';
+          placeholder.innerHTML = `<span>Sem imagem</span>`;
+          galleryEdit.appendChild(placeholder);
+        }
+      });
+      
+      byId('btnSalvarPops').addEventListener('click', applyPopEdits);
+
+      byId('estadoContainer').addEventListener('click', async (ev)=>{
+        const toggleBtn = ev.target.closest('[data-toggle-pop]');
+        if (toggleBtn) {
+          const card = toggleBtn.closest('.pop-card');
+          const list = card.querySelector('.switch-list');
+          const isOpen = list.style.display === 'block';
+          if (isOpen) {
+            toggleBtn.classList.remove('open');
+            toggleBtn.setAttribute('aria-expanded','false');
+            list.style.display='none';
+          } else {
+            document.querySelectorAll('.pop-card .pop-toggle.open').forEach(b=>{
+              b.classList.remove('open');
+              b.setAttribute('aria-expanded','false');
+              b.closest('.pop-card').querySelector('.switch-list').style.display='none';
+            });
+            toggleBtn.classList.add('open');
+            toggleBtn.setAttribute('aria-expanded','true');
+            list.style.display='block';
+          }
+          return;
+        }
+
+        const swBtn = ev.target.closest('[data-action]');
+        if (swBtn) {
+          const action = swBtn.dataset.action;
+          const swRow = swBtn.closest('[data-switch-id]');
+          const swId = swRow ? swRow.dataset.switchId : null;
+
+          if (!swId) {
+            console.warn('[EDIT/DELETE] switch sem data-switch-id');
+            return;
+          }
+
+          if (isLocked) {
+            const ok = await requestUnlockWithModal();
+            if (!ok) return;
+            setLocked(false);
+          }
+
+          if (action === 'edit') {
+            console.debug('[EDIT] clicado para ID:', swId);
+            openEditSwitch(swId);
+          }
+          if (action === 'delete') {
+            console.debug('[DELETE] clicado para ID:', swId);
+            deleteSwitch(swId);
+          }
+        }
+      });
+
+      // ------- Preview da imagem em NOVO CADASTRO -------
+      const fotoCadastroInput = byId('foto');
+      const galleryCadastro   = byId('galleryCadastro');
+
+      if (fotoCadastroInput && galleryCadastro) {
+        fotoCadastroInput.addEventListener('change', () => {
+          galleryCadastro.innerHTML = '';
+          const file = fotoCadastroInput.files && fotoCadastroInput.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const url = e.target.result;
+            const thumb = document.createElement('div');
+            thumb.className = 'mini-thumb';
+            thumb.innerHTML = `<img src="${url}" alt="Preview do switch">`;
+            galleryCadastro.appendChild(thumb);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // ------- Preview da imagem em EDITAR SWITCH -------
+      const editFotoInput = byId('editSwitchFoto');
+      const galleryEdit   = byId('galleryEdit');
+
+      if (editFotoInput && galleryEdit) {
+        editFotoInput.addEventListener('change', () => {
+          const file = editFotoInput.files && editFotoInput.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const url = e.target.result;
+
+            // Remove qualquer miniatura "nova" anterior
+            galleryEdit.querySelectorAll('.mini-thumb[data-type="novo"]').forEach(el => el.remove());
+
+            const thumbNova = document.createElement('div');
+            thumbNova.className = 'mini-thumb';
+            thumbNova.dataset.type = 'novo';
+            thumbNova.innerHTML = `<img src="${url}" alt="Nova imagem do switch">`;
+            galleryEdit.appendChild(thumbNova);
+
+            const info = byId('previewInfo');
+            if (info) {
+              info.textContent = 'Nova imagem selecionada. Será aplicada ao salvar.';
+              info.dataset.remove = 'false';
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const sidebarEl=document.querySelector('.sidebar');
+      if(sidebarEl){ sidebarEl.addEventListener('mouseenter',()=>{ isSidebarHovered=true; cancelAutoHide(); }); sidebarEl.addEventListener('mouseleave',()=>{ isSidebarHovered=false; scheduleAutoHide(); }); }
+
+      const bodyObserver=new MutationObserver(()=>{ if(isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide(); });
+      bodyObserver.observe(document.body,{ attributes:true, attributeFilter:['class'] });
+
+      window.addEventListener('resize', ()=>{
+        document.documentElement.classList.remove('js-ready');
+        if(!isMobile()){ document.body.classList.remove('sidebar-open'); setCollapsed(true); }
+        requestAnimationFrame(()=>{ document.documentElement.classList.add('js-ready'); if(isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide(); });
+      });
+
+      document.addEventListener('keydown',(e)=>{
+        if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='b' && !isMobile()){
+          e.preventDefault(); setCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+          setTimeout(scheduleAutoHide,0);
+        }
+      });
+
+      startLoadFallbackTimer(8000);
+      requestAnimationFrame(()=>{ document.documentElement.classList.add('js-ready'); });
+    });
+  </script>
+
+  <!-- ===== FAVICON ANIMADO VIA CANVAS ===== -->
+  <script>
+  (function(){
+    const link=document.querySelector('#dynamic-favicon');
+    const video=document.querySelector('#favVideo');
+    if(!link||!video) return;
+    const canvas=document.createElement('canvas');
+    const ctx=canvas.getContext('2d',{ willReadFrequently:true });
+    const FAV_W=32,FAV_H=32; canvas.width=FAV_W; canvas.height=FAV_H;
+    let running=false, rafId=null, lastUpdate=0; const FPS=10, FRAME_MS=1000/FPS;
+
+    function drawFrame(ts){
+      if(!running) return;
+      if(document.hidden){ rafId=requestAnimationFrame(drawFrame); return; }
+      if(ts-lastUpdate>=FRAME_MS){
+        lastUpdate=ts;
+        try{
+          ctx.clearRect(0,0,FAV_W,FAV_H);
+          const vW=video.videoWidth||256, vH=video.videoHeight||256;
+          if(vW&&vH){ const s=Math.min(vW,vH); const sx=(vW-s)/2, sy=(vH-s)/2; ctx.drawImage(video,sx,sy,s,s,0,0,FAV_W,FAV_H); }
+          else{ ctx.fillStyle='#111923'; ctx.fillRect(0,0,FAV_W,FAV_H); }
+          const url=canvas.toDataURL('image/png'); if(url && url.startsWith('data:image/png')) link.href=url;
+        }catch(e){ console.warn('[favicon] Falha ao animar (CORS?)',e); stop(); return; }
+      }
+      rafId=requestAnimationFrame(drawFrame);
+    }
+    function start(){ if(running) return; running=true; const p=video.play(); if(p&&typeof p.then==='function'){ p.catch(()=>{}); } rafId=requestAnimationFrame(drawFrame); }
+    function stop(){ running=false; if(rafId) cancelAnimationFrame(rafId), rafId=null; }
+    if(video.readyState>=1) start(); else video.addEventListener('loadedmetadata', start, { once:true });
+    document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stop(); else start(); });
+    video.addEventListener('error', (e)=>{ console.warn('[favicon] Erro no vídeo:', e); stop(); });
+    window.addEventListener('pointerdown', ()=>{ if(!running) start(); }, { once:true });
+  })();
   </script>
 </body>
 </html>
