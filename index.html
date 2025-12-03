@@ -62,13 +62,13 @@
 
     /* Rodapé fixo na sidebar: botão de cadeado */
     .sidebar-footer{
-  padding:10px 6px 10px 6px; /* diminui o espaço da esquerda */
-  border-top:1px solid rgba(255,255,255,.06);
-  display:flex;
-  gap:8px; /* pode diminuir para 4 se quiser mais juntinho */
-  align-items:center;
-  justify-content:flex-start; /* garante alinhamento para a esquerda */
-}
+      padding:10px 6px 10px 6px;
+      border-top:1px solid rgba(255,255,255,.06);
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:flex-start;
+    }
     .lock-btn{
       display:flex; align-items:center; gap:10px; width:100%;
       background:#ffffff14; border:1px solid #ffffff24; color:#fff; cursor:pointer;
@@ -183,11 +183,10 @@
     @keyframes indeterminate{ 0%{left:-40%; width:40%} 50%{left:30%; width:30%} 100%{left:100%; width:40%} }
 
     /* ====== BLOQUEIO VISUAL ====== */
-    /* Esconde as ações e itens de menu quando bloqueado */
     body.locked .row-actions{ display:none !important }
     body.locked #menuNovoCadastro,
     body.locked #menuGerenciarPops{ display:none !important }
-    body.locked .lock-badge{ background:#2a0f12 } /* só pra diferenciar corzinha */
+    body.locked .lock-badge{ background:#2a0f12 }
 
     /* ====== Modal de Senha ====== */
     .password-field{ position:relative }
@@ -199,6 +198,36 @@
     }
     .password-field .eye:hover{ background:#ecf0f1 }
     .input-hint{ color:#e74c3c; margin-top:8px; font-size:14px }
+
+    /* ====== MINI GALERIA ====== */
+    .mini-gallery{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+    .mini-thumb{
+      width:70px;
+      height:50px;
+      border-radius:4px;
+      overflow:hidden;
+      border:1px solid #ddd;
+      background:#f4f4f4;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+    }
+    .mini-thumb img{
+      max-width:100%;
+      max-height:100%;
+      display:block;
+      object-fit:cover;
+    }
+    .mini-thumb span{
+      font-size:11px;
+      color:#7f8c8d;
+    }
   </style>
 </head>
 
@@ -392,6 +421,8 @@
                 <div class="file-input-button">Selecionar imagem</div>
                 <input type="file" id="foto" accept="image/*">
               </div>
+              <!-- MINI GALERIA DE FOTOS (NOVO CADASTRO) -->
+              <div id="galleryCadastro" class="mini-gallery"></div>
             </div>
           </div>
         </form>
@@ -438,6 +469,8 @@
               <button type="button" class="btn ghost small" id="btnRemoverFoto">Remover imagem</button>
             </div>
             <div class="muted" id="previewInfo" style="margin-top:8px"></div>
+            <!-- MINI GALERIA DE FOTOS (EDIÇÃO) -->
+            <div id="galleryEdit" class="mini-gallery"></div>
           </div>
         </form>
       </div>
@@ -706,7 +739,20 @@
     function openModal(id){ const el=byId(id); if(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); } }
     function closeModal(id){ const el=byId(id); if(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); } }
 
-    function openCadastroModal(){ openModal('modalCadastro'); renderPopOptions(); renderUFSelect(byId('popEstado')); const sel=byId('tipoCadastro'); sel.value='switch'; bindTipoCadastroEvents(); alternarTipo(); }
+    function openCadastroModal(){ 
+      openModal('modalCadastro'); 
+      renderPopOptions(); 
+      renderUFSelect(byId('popEstado')); 
+      const sel=byId('tipoCadastro'); 
+      sel.value='switch'; 
+      bindTipoCadastroEvents(); 
+      alternarTipo();
+      
+      // Limpa a galeria ao abrir
+      const galleryCadastro = byId('galleryCadastro');
+      if(galleryCadastro) galleryCadastro.innerHTML = '';
+    }
+    
     function bindTipoCadastroEvents(){ const sel=byId('tipoCadastro'); const clone=sel.cloneNode(true); sel.parentNode.replaceChild(clone,sel); clone.addEventListener('change',alternarTipo); clone.addEventListener('input',alternarTipo); document.addEventListener('change',(e)=>{ if(e.target && e.target.id==='tipoCadastro') alternarTipo(); },{once:true}); }
     function alternarTipo(){ const tipo=(byId('tipoCadastro')?.value)||'switch'; const popBox=byId('camposPOP'); const swBox=byId('camposSW'); const showPop=(tipo==='pop'); popBox.classList.toggle('hide',!showPop); swBox.classList.toggle('hide',showPop); popBox.style.display=showPop?'block':'none'; swBox.style.display=showPop?'none':'block'; }
 
@@ -728,13 +774,9 @@
     }
 
     function openEditSwitch(id){
-      // Força string, mas aceita casos legados
       const idStr = String(id);
-
-      // Tenta achar por string ou por número equivalente
       const sw = switches.find(s => {
         if (s.id === idStr) return true;
-        // casos antigos / inconsistentes
         if (s.id != null && String(s.id) === idStr) return true;
         return false;
       });
@@ -759,12 +801,26 @@
       byId('previewInfo').textContent = sw.foto ? 'Imagem atual presente.' : 'Sem imagem.';
       byId('editSwitchFoto').value = '';
 
+      // --------- MINI GALERIA NA EDIÇÃO ---------
+      const galleryEdit = byId('galleryEdit');
+      if (galleryEdit) {
+        galleryEdit.innerHTML = '';
+
+        // Miniatura da imagem já salva (se existir)
+        if (sw.foto) {
+          const thumbAtual = document.createElement('div');
+          thumbAtual.className = 'mini-thumb';
+          thumbAtual.innerHTML = `<img src="${sw.foto}" alt="Imagem atual do switch">`;
+          galleryEdit.appendChild(thumbAtual);
+        }
+      }
+
       openModal('modalEditSwitch');
     }
 
     async function saveEditSwitch(ev){
       ev && ev.preventDefault();
-      const id = byId('editSwitchId').value;  // sempre string
+      const id = byId('editSwitchId').value;
       const nome=(byId('editSwitchNome').value||'').trim();
       const ip=(byId('editSwitchIP').value||'').trim();
       const popSel=byId('editSwitchPop').value;
@@ -922,7 +978,7 @@
     }
 
     /* ====== LOCK STATE ====== */
-    let isLocked=true; // sempre inicia travado
+    let isLocked=true;
     const ICON_LOCKED="https://cdn-icons-png.flaticon.com/512/7615/7615902.png";
     const ICON_UNLOCK="https://cdn-icons-png.flaticon.com/512/7615/7615905.png";
 
@@ -943,7 +999,6 @@
 
     /* ========= Listeners globais ========= */
     document.addEventListener('DOMContentLoaded', ()=>{
-      // Início: sidebar colapsada no desktop e sistema BLOQUEADO
       if(!isMobile()) setCollapsed(true); else document.body.classList.remove('sidebar-open');
       setLocked(true);
 
@@ -967,7 +1022,6 @@
         edge.addEventListener('click',()=>{ if(isMobile()){ document.body.classList.add('sidebar-open'); scheduleAutoHide(); } });
       }
 
-      // Menu: se estiver bloqueado, exigir senha
       byId('menuNovoCadastro').addEventListener('click', async ()=>{
         if(isLocked){ const ok=await requestUnlockWithModal(); if(!ok) return; setLocked(false); }
         closeSidebar(); cancelAutoHide(); openCadastroModal();
@@ -977,7 +1031,6 @@
         closeSidebar(); cancelAutoHide(); openModalPops();
       });
 
-      // Botão de cadeado
       byId('lockBtn').addEventListener('click', async ()=>{
         if(isLocked){
           const ok=await requestUnlockWithModal();
@@ -988,13 +1041,26 @@
         }
       });
 
-      // Lista de estados/ações
       byId('btnSalvarCadastro').addEventListener('click', async (e)=>{ e.preventDefault(); const tipo=byId('tipoCadastro').value; if(tipo==='pop') await cadastrarPOP(); else await cadastrarSwitch(); });
       byId('btnSalvarEditSwitch').addEventListener('click', saveEditSwitch);
-      byId('btnRemoverFoto').addEventListener('click', ()=>{ byId('editSwitchFoto').value=''; byId('previewInfo').textContent='Imagem será removida ao salvar.'; byId('previewInfo').dataset.remove='true'; });
+      
+      byId('btnRemoverFoto').addEventListener('click', ()=>{ 
+        byId('editSwitchFoto').value=''; 
+        byId('previewInfo').textContent='Imagem será removida ao salvar.'; 
+        byId('previewInfo').dataset.remove='true';
+        
+        const galleryEdit = byId('galleryEdit');
+        if (galleryEdit) {
+          galleryEdit.innerHTML = '';
+          const placeholder = document.createElement('div');
+          placeholder.className = 'mini-thumb';
+          placeholder.innerHTML = `<span>Sem imagem</span>`;
+          galleryEdit.appendChild(placeholder);
+        }
+      });
+      
       byId('btnSalvarPops').addEventListener('click', applyPopEdits);
 
-      // Container de POPs: bloquear editar/excluir quando travado
       byId('estadoContainer').addEventListener('click', async (ev)=>{
         const toggleBtn = ev.target.closest('[data-toggle-pop]');
         if (toggleBtn) {
@@ -1045,6 +1111,60 @@
           }
         }
       });
+
+      // ------- Preview da imagem em NOVO CADASTRO -------
+      const fotoCadastroInput = byId('foto');
+      const galleryCadastro   = byId('galleryCadastro');
+
+      if (fotoCadastroInput && galleryCadastro) {
+        fotoCadastroInput.addEventListener('change', () => {
+          galleryCadastro.innerHTML = '';
+          const file = fotoCadastroInput.files && fotoCadastroInput.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const url = e.target.result;
+            const thumb = document.createElement('div');
+            thumb.className = 'mini-thumb';
+            thumb.innerHTML = `<img src="${url}" alt="Preview do switch">`;
+            galleryCadastro.appendChild(thumb);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // ------- Preview da imagem em EDITAR SWITCH -------
+      const editFotoInput = byId('editSwitchFoto');
+      const galleryEdit   = byId('galleryEdit');
+
+      if (editFotoInput && galleryEdit) {
+        editFotoInput.addEventListener('change', () => {
+          const file = editFotoInput.files && editFotoInput.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const url = e.target.result;
+
+            // Remove qualquer miniatura "nova" anterior
+            galleryEdit.querySelectorAll('.mini-thumb[data-type="novo"]').forEach(el => el.remove());
+
+            const thumbNova = document.createElement('div');
+            thumbNova.className = 'mini-thumb';
+            thumbNova.dataset.type = 'novo';
+            thumbNova.innerHTML = `<img src="${url}" alt="Nova imagem do switch">`;
+            galleryEdit.appendChild(thumbNova);
+
+            const info = byId('previewInfo');
+            if (info) {
+              info.textContent = 'Nova imagem selecionada. Será aplicada ao salvar.';
+              info.dataset.remove = 'false';
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      }
 
       const sidebarEl=document.querySelector('.sidebar');
       if(sidebarEl){ sidebarEl.addEventListener('mouseenter',()=>{ isSidebarHovered=true; cancelAutoHide(); }); sidebarEl.addEventListener('mouseleave',()=>{ isSidebarHovered=false; scheduleAutoHide(); }); }
