@@ -144,7 +144,7 @@
     .pop-toggle.open i{ transform:rotate(180deg) }
 
     .switch-list{ display:none; padding:8px 16px 16px 16px; overflow:visible; position:relative }
-    .switch-row{ background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible }
+    .switch-row{ background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible; margin-bottom:8px }
     .switch-info-wrap{ display:flex; flex-direction:column; gap:2px }
     .switch-name{ font-weight:700; color:#2c3e50 }
     .switch-meta{ font-size:14px; color:#7f8c8d }
@@ -156,6 +156,21 @@
     .hover-preview::after{ content:""; position:absolute; left:50%; bottom:-15px; transform:translateX(-50%); border-width:8px; border-style:solid; border-color:#fff transparent transparent transparent }
     .hover-preview img{ width:100%; height:auto; display:block; border-radius:6px; object-fit:cover; max-height:240px }
     .hover-preview .noimg{ color:#7f8c8d; font-size:14px; text-align:center; padding:18px 6px }
+
+    /* Galeria no hover preview */
+    .hover-preview .preview-gallery{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      max-height:240px;
+      overflow:auto;
+    }
+    .hover-preview .preview-gallery img{
+      width:calc(50% - 3px);
+      height:auto;
+      border-radius:4px;
+      object-fit:cover;
+    }
 
     .modal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:1200 }
     .modal.open{ display:flex }
@@ -227,6 +242,26 @@
     .mini-thumb span{
       font-size:11px;
       color:#7f8c8d;
+    }
+    .mini-thumb .remove-thumb{
+      position:absolute;
+      top:2px;
+      right:2px;
+      width:18px;
+      height:18px;
+      background:rgba(231,76,60,.9);
+      color:#fff;
+      border:0;
+      border-radius:50%;
+      cursor:pointer;
+      font-size:12px;
+      line-height:1;
+      display:none;
+      align-items:center;
+      justify-content:center;
+    }
+    .mini-thumb:hover .remove-thumb{
+      display:flex;
     }
   </style>
 </head>
@@ -416,10 +451,10 @@
               <input type="text" id="ip" placeholder="Ex: 192.168.1.100">
             </div>
             <div class="form-group">
-              <label for="foto">Foto do Switch</label>
+              <label for="foto">Fotos do Switch (múltiplas)</label>
               <div class="file-input-wrapper">
-                <div class="file-input-button">Selecionar imagem</div>
-                <input type="file" id="foto" accept="image/*">
+                <div class="file-input-button">Selecionar imagens</div>
+                <input type="file" id="foto" accept="image/*" multiple>
               </div>
               <!-- MINI GALERIA DE FOTOS (NOVO CADASTRO) -->
               <div id="galleryCadastro" class="mini-gallery"></div>
@@ -460,13 +495,10 @@
             <select id="editSwitchPop"></select>
           </div>
           <div class="form-group">
-            <label for="editSwitchFoto">Foto do Switch</label>
-            <div class="row-actions">
-              <div class="file-input-wrapper" style="flex:1">
-                <div class="file-input-button">Selecionar imagem</div>
-                <input type="file" id="editSwitchFoto" accept="image/*">
-              </div>
-              <button type="button" class="btn ghost small" id="btnRemoverFoto">Remover imagem</button>
+            <label for="editSwitchFoto">Adicionar mais fotos</label>
+            <div class="file-input-wrapper">
+              <div class="file-input-button">Selecionar imagens</div>
+              <input type="file" id="editSwitchFoto" accept="image/*" multiple>
             </div>
             <div class="muted" id="previewInfo" style="margin-top:8px"></div>
             <!-- MINI GALERIA DE FOTOS (EDIÇÃO) -->
@@ -589,11 +621,27 @@
       },(err)=>{ console.error('Erro POPs',err); popsLoaded=true; renderWhenReady(); });
     }
     function savePops(){ const dbRef=ref(fbDb,'pops'); const obj={}; pops.forEach(p=>obj[p.id]=p); set(dbRef,obj).catch(()=> showAlert({title:'Erro',message:'Falha ao salvar POPs.'})); }
+    
     function loadSwitches(){
       const dbRef=ref(fbDb,'switches');
-      onValue(dbRef,(snap)=>{ const data=snap.val(); switches=data?Object.values(data):[]; switchesLoaded=true; renderWhenReady(); },
-                    (err)=>{ console.error('Erro switches',err); switchesLoaded=true; renderWhenReady(); });
+      onValue(dbRef,(snap)=>{ 
+        const data=snap.val(); 
+        switches=data?Object.values(data):[];
+        
+        // Migração: converte foto antiga para fotos[]
+        switches.forEach(sw => {
+          if(sw.foto && !sw.fotos) {
+            sw.fotos = [sw.foto];
+            delete sw.foto;
+          }
+          if(!sw.fotos) sw.fotos = [];
+        });
+        
+        switchesLoaded=true; 
+        renderWhenReady(); 
+      }, (err)=>{ console.error('Erro switches',err); switchesLoaded=true; renderWhenReady(); });
     }
+    
     function saveSwitches(){ const dbRef=ref(fbDb,'switches'); const obj={}; switches.forEach(s=>obj[s.id]=s); set(dbRef,obj).catch(()=> showAlert({title:'Erro',message:'Falha ao salvar switches.'})); }
 
     /* ========= Confirm/Alert ========= */
@@ -670,6 +718,7 @@
 
     /* ========= Render ========= */
     function popsByEstado(){ const groups={}; pops.forEach(p=>{ const uf=p.estado||'__'; (groups[uf]??=[]).push(p); }); Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR'))); return groups; }
+    
     function renderEstadosComPops(){
       const wrap=byId('estadoContainer'); if(!wrap) return;
       if(!pops || pops.length===0){ wrap.innerHTML='<div class="no-pops">Nenhum POP cadastrado ainda. Use "Novo cadastro".</div>'; return; }
@@ -703,22 +752,29 @@
               ${
                 swDoPop.length===0
                 ? `<div class="no-switches" style="padding:16px">Nenhum switch vinculado a este POP.</div>`
-                : swDoPop.map(sw=>`
+                : swDoPop.map(sw=>{
+                    const fotos = sw.fotos || [];
+                    const totalFotos = fotos.length;
+                    return `
                     <div class="switch-row" data-switch-id="${sw.id}">
                       <div class="switch-info-wrap">
                         <div class="switch-name">${sw.nome}</div>
                         <div class="switch-meta">IP: ${sw.ip}</div>
                         <div class="switch-meta">Modelo: ${sw.modelo ? sw.modelo : '—'}</div>
+                        <div class="switch-meta">${totalFotos} foto${totalFotos===1?'':'s'}</div>
                       </div>
                       <div class="row-actions">
                         <button class="btn small" data-action="edit">Editar</button>
                         <button class="btn danger small" data-action="delete">Excluir</button>
                       </div>
                       <div class="hover-preview">
-                        ${ sw.foto ? `<img src="${sw.foto}" alt="Foto de ${sw.nome}">` : `<div class="noimg">Sem imagem para este switch</div>` }
+                        ${ totalFotos > 0 
+                          ? `<div class="preview-gallery">${fotos.map(f => `<img src="${f}" alt="Foto de ${sw.nome}">`).join('')}</div>` 
+                          : `<div class="noimg">Sem imagens para este switch</div>` 
+                        }
                       </div>
                     </div>
-                  `).join('')
+                  `}).join('')
               }
             </div>`;
           grid.appendChild(card);
@@ -727,6 +783,7 @@
         wrap.appendChild(bloco);
       });
     }
+    
     function renderUFSelect(selectEl){ if(!selectEl) return; selectEl.innerHTML=`<option value="__">Sem Estado</option>`+estados.map(uf=>`<option value="${uf}">${uf}</option>`).join(''); }
     function renderPopOptions(){
       const sel=byId('pop'); if(!sel) return;
@@ -765,12 +822,35 @@
     }
 
     async function cadastrarSwitch(){
-      const popSel=byId('pop').value; const ip=byId('ip').value.trim(); const nome=byId('nome').value.trim(); const modelo=(byId('modelo').value||'').trim(); const fotoInput=byId('foto');
+      const popSel=byId('pop').value; 
+      const ip=byId('ip').value.trim(); 
+      const nome=byId('nome').value.trim(); 
+      const modelo=(byId('modelo').value||'').trim(); 
+      const fotoInput=byId('foto');
+      
       if(!popSel||!ip||!nome){ await showAlert({title:'Atenção',message:'Preencha POP, IP e Nome do switch.'}); return; }
       if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
-      const sw={ id:String(Date.now()), pop:popSel, ip, nome, modelo: modelo || null, foto:null };
-      if(fotoInput.files && fotoInput.files[0]){ try{ sw.foto=await compressAdaptively(fotoInput.files[0]); }catch{ await showAlert({title:'Aviso',message:'Não foi possível processar a imagem. O switch será salvo sem foto.'}); } }
-      switches.push(sw); saveSwitches(); renderPopOptions(); renderEstadosComPops(); byId('cadastroForm').reset(); closeModal('modalCadastro'); await showAlert({title:'Sucesso',message:'Switch cadastrado com sucesso.'});
+      
+      const sw={ id:String(Date.now()), pop:popSel, ip, nome, modelo: modelo || null, fotos:[] };
+      
+      if(fotoInput.files && fotoInput.files.length > 0){ 
+        try{
+          for(let i = 0; i < fotoInput.files.length; i++){
+            const compressed = await compressAdaptively(fotoInput.files[i]);
+            sw.fotos.push(compressed);
+          }
+        }catch{ 
+          await showAlert({title:'Aviso',message:'Não foi possível processar algumas imagens. O switch será salvo com as imagens processadas.'}); 
+        } 
+      }
+      
+      switches.push(sw); 
+      saveSwitches(); 
+      renderPopOptions(); 
+      renderEstadosComPops(); 
+      byId('cadastroForm').reset(); 
+      closeModal('modalCadastro'); 
+      await showAlert({title:'Sucesso',message:'Switch cadastrado com sucesso.'});
     }
 
     function openEditSwitch(id){
@@ -797,22 +877,26 @@
       sel.value = sw.pop;
 
       byId('editSwitchModelo').value = sw.modelo || '';
-      byId('previewInfo').dataset.remove = 'false';
-      byId('previewInfo').textContent = sw.foto ? 'Imagem atual presente.' : 'Sem imagem.';
       byId('editSwitchFoto').value = '';
+
+      const fotos = sw.fotos || [];
+      byId('previewInfo').textContent = fotos.length > 0 ? `${fotos.length} imagem${fotos.length===1?'':'ns'} atual${fotos.length===1?'':'is'}.` : 'Sem imagens.';
 
       // --------- MINI GALERIA NA EDIÇÃO ---------
       const galleryEdit = byId('galleryEdit');
       if (galleryEdit) {
         galleryEdit.innerHTML = '';
 
-        // Miniatura da imagem já salva (se existir)
-        if (sw.foto) {
+        fotos.forEach((fotoUrl, idx) => {
           const thumbAtual = document.createElement('div');
           thumbAtual.className = 'mini-thumb';
-          thumbAtual.innerHTML = `<img src="${sw.foto}" alt="Imagem atual do switch">`;
+          thumbAtual.dataset.index = idx;
+          thumbAtual.innerHTML = `
+            <img src="${fotoUrl}" alt="Imagem ${idx+1}">
+            <button class="remove-thumb" data-remove-index="${idx}" title="Remover esta imagem">×</button>
+          `;
           galleryEdit.appendChild(thumbAtual);
-        }
+        });
       }
 
       openModal('modalEditSwitch');
@@ -826,7 +910,6 @@
       const popSel=byId('editSwitchPop').value;
       const modelo=(byId('editSwitchModelo').value||'').trim();
       const fotoInput=byId('editSwitchFoto');
-      const removeFlag=byId('previewInfo').dataset.remove==='true';
 
       if(!nome || !ip || !popSel){ await showAlert({title:'Atenção',message:'Preencha Nome, IP e POP.'}); return; }
       if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
@@ -838,23 +921,39 @@
       }
 
       const original=switches[idx];
-      const origModelo=original.modelo || null;
-      const newModelo=modelo || null;
-      const hasNewFile=fotoInput && fotoInput.files && fotoInput.files[0];
-      const willRemoveFoto=removeFlag && !!original.foto;
+      
+      // Atualiza dados básicos
+      switches[idx].nome=nome; 
+      switches[idx].ip=ip; 
+      switches[idx].pop=popSel; 
+      switches[idx].modelo=modelo || null;
 
-      const changed= nome!==original.nome || ip!==original.ip || popSel!==original.pop || newModelo!==origModelo || hasNewFile || willRemoveFoto;
-      if(!changed){ closeModal('modalEditSwitch'); return; }
+      // Processa remoções de fotos
+      const galleryEdit = byId('galleryEdit');
+      if(galleryEdit){
+        const remainingThumbs = Array.from(galleryEdit.querySelectorAll('.mini-thumb:not([data-type="novo"])'));
+        const remainingIndices = remainingThumbs.map(t => parseInt(t.dataset.index)).filter(i => !isNaN(i));
+        const originalFotos = original.fotos || [];
+        switches[idx].fotos = remainingIndices.map(i => originalFotos[i]).filter(f => f);
+      }
 
-      const applyAndClose=async (newFoto)=>{
-        switches[idx].nome=nome; switches[idx].ip=ip; switches[idx].pop=popSel; switches[idx].modelo=newModelo;
-        if(removeFlag) switches[idx].foto=null;
-        if(newFoto!==undefined) switches[idx].foto=newFoto;
-        saveSwitches(); renderPopOptions(); renderEstadosComPops(); closeModal('modalEditSwitch'); await showAlert({title:'Sucesso',message:'Alterações salvas com sucesso.'});
-      };
+      // Adiciona novas fotos
+      if(fotoInput.files && fotoInput.files.length > 0){
+        try{
+          for(let i = 0; i < fotoInput.files.length; i++){
+            const compressed = await compressAdaptively(fotoInput.files[i]);
+            switches[idx].fotos.push(compressed);
+          }
+        }catch{
+          await showAlert({title:'Aviso',message:'Não foi possível processar algumas novas imagens.'});
+        }
+      }
 
-      if(hasNewFile){ try{ const dataURL=await compressAdaptively(fotoInput.files[0]); await applyAndClose(dataURL); }catch{ await showAlert({title:'Aviso',message:'Não foi possível processar a nova imagem. Os demais dados serão salvos.'}); await applyAndClose(); } }
-      else{ await applyAndClose(); }
+      saveSwitches(); 
+      renderPopOptions(); 
+      renderEstadosComPops(); 
+      closeModal('modalEditSwitch'); 
+      await showAlert({title:'Sucesso',message:'Alterações salvas com sucesso.'});
     }
 
     async function deleteSwitch(id){
@@ -1043,22 +1142,6 @@
 
       byId('btnSalvarCadastro').addEventListener('click', async (e)=>{ e.preventDefault(); const tipo=byId('tipoCadastro').value; if(tipo==='pop') await cadastrarPOP(); else await cadastrarSwitch(); });
       byId('btnSalvarEditSwitch').addEventListener('click', saveEditSwitch);
-      
-      byId('btnRemoverFoto').addEventListener('click', ()=>{ 
-        byId('editSwitchFoto').value=''; 
-        byId('previewInfo').textContent='Imagem será removida ao salvar.'; 
-        byId('previewInfo').dataset.remove='true';
-        
-        const galleryEdit = byId('galleryEdit');
-        if (galleryEdit) {
-          galleryEdit.innerHTML = '';
-          const placeholder = document.createElement('div');
-          placeholder.className = 'mini-thumb';
-          placeholder.innerHTML = `<span>Sem imagem</span>`;
-          galleryEdit.appendChild(placeholder);
-        }
-      });
-      
       byId('btnSalvarPops').addEventListener('click', applyPopEdits);
 
       byId('estadoContainer').addEventListener('click', async (ev)=>{
@@ -1112,57 +1195,74 @@
         }
       });
 
-      // ------- Preview da imagem em NOVO CADASTRO -------
+      // ------- Preview da imagem em NOVO CADASTRO (múltiplas) -------
       const fotoCadastroInput = byId('foto');
       const galleryCadastro   = byId('galleryCadastro');
 
       if (fotoCadastroInput && galleryCadastro) {
         fotoCadastroInput.addEventListener('change', () => {
           galleryCadastro.innerHTML = '';
-          const file = fotoCadastroInput.files && fotoCadastroInput.files[0];
-          if (!file) return;
+          const files = fotoCadastroInput.files;
+          if (!files || files.length === 0) return;
 
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const url = e.target.result;
-            const thumb = document.createElement('div');
-            thumb.className = 'mini-thumb';
-            thumb.innerHTML = `<img src="${url}" alt="Preview do switch">`;
-            galleryCadastro.appendChild(thumb);
-          };
-          reader.readAsDataURL(file);
+          for(let i = 0; i < files.length; i++){
+            const file = files[i];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const url = e.target.result;
+              const thumb = document.createElement('div');
+              thumb.className = 'mini-thumb';
+              thumb.innerHTML = `<img src="${url}" alt="Preview ${i+1}">`;
+              galleryCadastro.appendChild(thumb);
+            };
+            reader.readAsDataURL(file);
+          }
         });
       }
 
-      // ------- Preview da imagem em EDITAR SWITCH -------
+      // ------- Preview e remoção em EDITAR SWITCH -------
       const editFotoInput = byId('editSwitchFoto');
       const galleryEdit   = byId('galleryEdit');
 
       if (editFotoInput && galleryEdit) {
         editFotoInput.addEventListener('change', () => {
-          const file = editFotoInput.files && editFotoInput.files[0];
-          if (!file) return;
+          const files = editFotoInput.files;
+          if (!files || files.length === 0) return;
 
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const url = e.target.result;
+          for(let i = 0; i < files.length; i++){
+            const file = files[i];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const url = e.target.result;
+              const thumbNova = document.createElement('div');
+              thumbNova.className = 'mini-thumb';
+              thumbNova.dataset.type = 'novo';
+              thumbNova.innerHTML = `<img src="${url}" alt="Nova imagem">`;
+              galleryEdit.appendChild(thumbNova);
+            };
+            reader.readAsDataURL(file);
+          }
 
-            // Remove qualquer miniatura "nova" anterior
-            galleryEdit.querySelectorAll('.mini-thumb[data-type="novo"]').forEach(el => el.remove());
+          const info = byId('previewInfo');
+          if (info) {
+            info.textContent = `${files.length} nova${files.length===1?'':'s'} imagem${files.length===1?'':'ns'} selecionada${files.length===1?'':'s'}.`;
+          }
+        });
 
-            const thumbNova = document.createElement('div');
-            thumbNova.className = 'mini-thumb';
-            thumbNova.dataset.type = 'novo';
-            thumbNova.innerHTML = `<img src="${url}" alt="Nova imagem do switch">`;
-            galleryEdit.appendChild(thumbNova);
+        // Delegação de evento para remover fotos
+        galleryEdit.addEventListener('click', (e) => {
+          const removeBtn = e.target.closest('.remove-thumb');
+          if(!removeBtn) return;
+          
+          const thumb = removeBtn.closest('.mini-thumb');
+          if(thumb) thumb.remove();
 
-            const info = byId('previewInfo');
-            if (info) {
-              info.textContent = 'Nova imagem selecionada. Será aplicada ao salvar.';
-              info.dataset.remove = 'false';
-            }
-          };
-          reader.readAsDataURL(file);
+          // Atualiza contador
+          const remaining = galleryEdit.querySelectorAll('.mini-thumb:not([data-type="novo"])').length;
+          const info = byId('previewInfo');
+          if(info){
+            info.textContent = remaining > 0 ? `${remaining} imagem${remaining===1?'':'ns'} atual${remaining===1?'':'is'}.` : 'Sem imagens.';
+          }
         });
       }
 
