@@ -372,7 +372,7 @@
             <div class="form-group">
               <label for="pop">POP (Ponto de Presença)</label>
               <select id="pop"></select>
-              <div class="muted" style="margin-top:6px">Se o POP não existir, selecione “POP” acima e cadastre.</div>
+              <div class="muted" style="margin-top:6px">Se o POP não existir, selecione "POP" acima e cadastre.</div>
             </div>
             <div class="form-group">
               <label for="modelo">Modelo</label>
@@ -630,7 +630,7 @@
         if(!(popsLoaded && switchesLoaded)){
           showLoading(false);
           const wrap=byId('estadoContainer');
-          if(wrap) wrap.innerHTML='<div class="no-pops">Não foi possível carregar os POPs. Verifique sua conexão ou tente novamente. Use “Novo cadastro”.</div>';
+          if(wrap) wrap.innerHTML='<div class="no-pops">Não foi possível carregar os POPs. Verifique sua conexão ou tente novamente. Use "Novo cadastro".</div>';
         }
       },ms);
     }
@@ -639,7 +639,7 @@
     function popsByEstado(){ const groups={}; pops.forEach(p=>{ const uf=p.estado||'__'; (groups[uf]??=[]).push(p); }); Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR'))); return groups; }
     function renderEstadosComPops(){
       const wrap=byId('estadoContainer'); if(!wrap) return;
-      if(!pops || pops.length===0){ wrap.innerHTML='<div class="no-pops">Nenhum POP cadastrado ainda. Use “Novo cadastro”.</div>'; return; }
+      if(!pops || pops.length===0){ wrap.innerHTML='<div class="no-pops">Nenhum POP cadastrado ainda. Use "Novo cadastro".</div>'; return; }
       const groups=popsByEstado();
       const ufs=Object.keys(groups).sort((a,b)=>{ if(a==='__') return 1; if(b==='__') return -1; return a.localeCompare(b); });
       wrap.innerHTML='';
@@ -728,19 +728,24 @@
     }
 
     function openEditSwitch(id){
-      const sw=switches.find(s=>s.id===id); if(!sw) return;
+      const sw=switches.find(s=>s.id===id); 
+      if(!sw) return;
       byId('editSwitchId').value=String(sw.id);
       byId('editSwitchNome').value=sw.nome;
       byId('editSwitchIP').value=sw.ip;
-      const sel=byId('editSwitchPop'); sel.innerHTML=pops.map(p=>`<option value="${p.id}">${estadoLabel(p.estado)} — ${p.nome}</option>`).join(''); sel.value=sw.pop;
-      byId('editSwitchModelo').value=sw.modelo||''; byId('previewInfo').dataset.remove='false'; byId('previewInfo').textContent=sw.foto?'Imagem atual presente.':'Sem imagem.'; byId('editSwitchFoto').value='';
+      const sel=byId('editSwitchPop'); 
+      sel.innerHTML=pops.map(p=>`<option value="${p.id}">${estadoLabel(p.estado)} — ${p.nome}</option>`).join(''); 
+      sel.value=sw.pop;
+      byId('editSwitchModelo').value=sw.modelo||''; 
+      byId('previewInfo').dataset.remove='false'; 
+      byId('previewInfo').textContent=sw.foto?'Imagem atual presente.':'Sem imagem.'; 
+      byId('editSwitchFoto').value='';
       openModal('modalEditSwitch');
     }
 
     async function saveEditSwitch(ev){
       ev && ev.preventDefault();
-      const idString=byId('editSwitchId').value;
-      const id=idString && !isNaN(Number(idString)) ? Number(idString) : idString;
+      const id = byId('editSwitchId').value;  // sempre string
       const nome=(byId('editSwitchNome').value||'').trim();
       const ip=(byId('editSwitchIP').value||'').trim();
       const popSel=byId('editSwitchPop').value;
@@ -751,7 +756,8 @@
       if(!nome || !ip || !popSel){ await showAlert({title:'Atenção',message:'Preencha Nome, IP e POP.'}); return; }
       if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
 
-      const idx=switches.findIndex(s=>s.id===id); if(idx===-1) return;
+      const idx=switches.findIndex(s=>s.id===id); 
+      if(idx===-1) return;
       const original=switches[idx];
       const origModelo=original.modelo || null;
       const newModelo=modelo || null;
@@ -984,9 +990,9 @@
           if(isLocked){
             const ok=await requestUnlockWithModal(); if(!ok) return; setLocked(false);
           }
-          const isNumeric=!isNaN(Number(swId)); const swIdParsed=isNumeric?Number(swId):swId;
-          if(action==='edit') openEditSwitch(swIdParsed);
-          if(action==='delete') deleteSwitch(swIdParsed);
+          // CORREÇÃO: não converter para Number, manter como string
+          if(action==='edit') openEditSwitch(swId);
+          if(action==='delete') deleteSwitch(swId);
         }
       });
 
