@@ -261,6 +261,62 @@
             display: none;
         }
 
+        .image-gallery-container {
+            margin-top: 15px;
+            padding: 15px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background-color: #f8f9ff;
+        }
+
+        .gallery-title {
+            margin: 0 0 10px 0;
+            font-weight: bold;
+            font-size: 14px;
+            color: #667eea;
+        }
+
+        .gallery-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .gallery-image-wrapper {
+            position: relative;
+            cursor: pointer;
+            border: 3px solid transparent;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .gallery-image-wrapper:hover {
+            border-color: #ccc;
+        }
+
+        .gallery-image-wrapper.selected {
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+        }
+
+        .gallery-image {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .gallery-empty {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
+        }
+
         .modal-actions {
             display: flex;
             gap: 15px;
@@ -358,10 +414,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="image">Imagem do Switch</label>
+                    <label for="image">Imagem do Switch (Upload Nova)</label>
                     <input type="file" id="image" accept="image/*" onchange="previewImage(event)">
                     <img id="imagePreview" class="image-preview">
                 </div>
+
+                <!-- Container da galeria será inserido aqui -->
+                <div id="imageGalleryContainer"></div>
 
                 <div class="modal-actions">
                     <button type="button" class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
@@ -403,6 +462,7 @@
                         ...childSnapshot.val()
                     });
                 });
+                console.log('Switches carregados:', switches);
                 displaySwitches(switches);
             });
         }
@@ -504,6 +564,11 @@
                     const preview = document.getElementById('imagePreview');
                     preview.src = e.target.result;
                     preview.style.display = 'block';
+                    
+                    // Remover seleção da galeria
+                    document.querySelectorAll('.gallery-image-wrapper').forEach(wrapper => {
+                        wrapper.classList.remove('selected');
+                    });
                 };
                 reader.readAsDataURL(file);
             }
@@ -513,119 +578,88 @@
         function getAllUploadedImages() {
             const images = new Set();
             switches.forEach(sw => {
-                if (sw.image && sw.image.trim() !== '') {
+                if (sw.image && sw.image.trim() !== '' && !sw.image.includes('placeholder')) {
                     images.add(sw.image);
                 }
             });
+            console.log('Imagens encontradas:', Array.from(images));
             return Array.from(images);
         }
 
         // Nova função para exibir a galeria de imagens
         function displayImageGallery(currentImage = null) {
             const uploadedImages = getAllUploadedImages();
+            const galleryContainer = document.getElementById('imageGalleryContainer');
             
-            let galleryContainer = document.getElementById('imageGalleryContainer');
-            
-            // Se o container não existe, criar
-            if (!galleryContainer) {
-                galleryContainer = document.createElement('div');
-                galleryContainer.id = 'imageGalleryContainer';
-                galleryContainer.style.cssText = `
-                    margin-top: 10px;
-                    padding: 10px;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    background-color: #f9f9f9;
-                `;
-                
-                // Inserir após o input de imagem
-                const imageInput = document.getElementById('image');
-                imageInput.parentNode.insertBefore(galleryContainer, imageInput.nextSibling);
-            }
+            console.log('displayImageGallery chamada. Imagens:', uploadedImages.length);
             
             // Limpar conteúdo anterior
             galleryContainer.innerHTML = '';
             
             if (uploadedImages.length === 0) {
-                galleryContainer.innerHTML = '<p style="margin: 0; color: #666; font-size: 14px;">Nenhuma imagem cadastrada ainda.</p>';
+                galleryContainer.innerHTML = `
+                    <div class="image-gallery-container">
+                        <p class="gallery-empty">Nenhuma imagem cadastrada ainda.</p>
+                    </div>
+                `;
                 return;
             }
             
-            // Título da galeria
-            const title = document.createElement('p');
-            title.textContent = 'Imagens já cadastradas (clique para selecionar):';
-            title.style.cssText = 'margin: 0 0 10px 0; font-weight: bold; font-size: 14px;';
-            galleryContainer.appendChild(title);
+            // Criar estrutura da galeria
+            const galleryDiv = document.createElement('div');
+            galleryDiv.className = 'image-gallery-container';
             
-            // Container das imagens
+            const title = document.createElement('p');
+            title.className = 'gallery-title';
+            title.textContent = '📷 Imagens já cadastradas (clique para selecionar):';
+            galleryDiv.appendChild(title);
+            
             const imagesContainer = document.createElement('div');
-            imagesContainer.style.cssText = `
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-                gap: 10px;
-                max-height: 200px;
-                overflow-y: auto;
-            `;
+            imagesContainer.className = 'gallery-images';
             
             uploadedImages.forEach(imageUrl => {
                 const imageWrapper = document.createElement('div');
-                imageWrapper.style.cssText = `
-                    position: relative;
-                    cursor: pointer;
-                    border: 3px solid ${imageUrl === currentImage ? '#667eea' : 'transparent'};
-                    border-radius: 4px;
-                    overflow: hidden;
-                    transition: all 0.3s;
-                `;
+                imageWrapper.className = 'gallery-image-wrapper';
+                if (imageUrl === currentImage) {
+                    imageWrapper.classList.add('selected');
+                }
                 
                 const img = document.createElement('img');
                 img.src = imageUrl;
-                img.style.cssText = `
-                    width: 100%;
-                    height: 100px;
-                    object-fit: cover;
-                    display: block;
-                `;
+                img.className = 'gallery-image';
+                img.alt = 'Imagem do switch';
                 
                 imageWrapper.appendChild(img);
                 
                 // Evento de clique para selecionar a imagem
                 imageWrapper.addEventListener('click', function() {
+                    console.log('Imagem selecionada:', imageUrl);
+                    
                     // Atualizar preview
-                    document.getElementById('imagePreview').src = imageUrl;
-                    document.getElementById('imagePreview').style.display = 'block';
+                    const preview = document.getElementById('imagePreview');
+                    preview.src = imageUrl;
+                    preview.style.display = 'block';
                     
                     // Limpar o input de arquivo
                     document.getElementById('image').value = '';
                     
-                    // Atualizar bordas
-                    imagesContainer.querySelectorAll('div').forEach(div => {
-                        div.style.border = '3px solid transparent';
+                    // Atualizar seleção visual
+                    document.querySelectorAll('.gallery-image-wrapper').forEach(wrapper => {
+                        wrapper.classList.remove('selected');
                     });
-                    imageWrapper.style.border = '3px solid #667eea';
-                });
-                
-                imageWrapper.addEventListener('mouseenter', function() {
-                    if (imageUrl !== currentImage) {
-                        imageWrapper.style.border = '3px solid #ccc';
-                    }
-                });
-                
-                imageWrapper.addEventListener('mouseleave', function() {
-                    const preview = document.getElementById('imagePreview');
-                    if (preview.src !== imageUrl) {
-                        imageWrapper.style.border = '3px solid transparent';
-                    }
+                    imageWrapper.classList.add('selected');
                 });
                 
                 imagesContainer.appendChild(imageWrapper);
             });
             
-            galleryContainer.appendChild(imagesContainer);
+            galleryDiv.appendChild(imagesContainer);
+            galleryContainer.appendChild(galleryDiv);
         }
 
         // Abrir modal para adicionar
         window.openAddSwitch = function() {
+            console.log('openAddSwitch chamada');
             document.getElementById('modalTitle').textContent = 'Novo Switch';
             document.getElementById('switchForm').reset();
             document.getElementById('switchId').value = '';
@@ -695,10 +729,12 @@
             
             // Se um arquivo foi selecionado, fazer upload
             if (imageFile) {
+                console.log('Fazendo upload de nova imagem...');
                 imageUrl = await uploadImage(imageFile);
             } 
             // Se não há arquivo mas há preview (imagem da galeria selecionada), usar o src do preview
             else if (imagePreview.style.display === 'block' && imagePreview.src) {
+                console.log('Usando imagem da galeria:', imagePreview.src);
                 imageUrl = imagePreview.src;
             }
             
