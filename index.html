@@ -1245,7 +1245,7 @@
             await navigator.clipboard.writeText(texto);
             await showAlert({
               title: 'Copiado',
-              message: `Copiado para a área de transferência:\n${texto}`
+              message: `\n${texto}`
             });
           }catch(e){
             console.warn('[copy] erro ao copiar', e);
