@@ -150,12 +150,18 @@
     .switch-meta{ font-size:14px; color:#7f8c8d }
     .row-actions{ display:flex; gap:8px; align-items:center }
 
-    .hover-preview{ position:absolute; left:50%; bottom:calc(100% + 10px); transform:translate(-50%, 6px) scale(.98); width:340px; max-width:90vw; max-height:260px; background:#fff; border:1px solid #e6e9ef; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,.18); padding:10px; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:999 }
-    .switch-row:hover .hover-preview{ opacity:1; transform:translate(-50%,0) scale(1) }
+    .hover-preview{ position:absolute; left:50%; bottom:calc(100% + 10px); transform:translate(-50%, 6px) scale(.98); width:340px; max-width:90vw; max-height:300px; background:#fff; border:1px solid #e6e9ef; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,.18); padding:10px; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:999 }
+    .switch-row:hover .hover-preview{ opacity:1; transform:translate(-50%,0) scale(1); pointer-events:auto }
     .hover-preview::before{ content:""; position:absolute; left:50%; bottom:-16px; transform:translateX(-50%); border-width:8px; border-style:solid; border-color:#e6e9ef transparent transparent transparent }
     .hover-preview::after{ content:""; position:absolute; left:50%; bottom:-15px; transform:translateX(-50%); border-width:8px; border-style:solid; border-color:#fff transparent transparent transparent }
     .hover-preview img{ width:100%; height:auto; display:block; border-radius:6px; object-fit:cover; max-height:240px }
     .hover-preview .noimg{ color:#7f8c8d; font-size:14px; text-align:center; padding:18px 6px }
+    .hover-preview .copy-btn{
+      margin-top:8px;
+      width:100%;
+      justify-content:center;
+      pointer-events:auto;
+    }
 
     .modal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:1200 }
     .modal.open{ display:flex }
@@ -761,7 +767,10 @@
                 swDoPop.length===0
                 ? `<div class="no-switches" style="padding:16px">Nenhum switch vinculado a este POP.</div>`
                 : swDoPop.map(sw=>`
-                    <div class="switch-row" data-switch-id="${sw.id}">
+                    <div class="switch-row"
+                         data-switch-id="${sw.id}"
+                         data-switch-nome="${sw.nome.replace(/"/g,'&quot;')}"
+                         data-switch-ip="${sw.ip.replace(/"/g,'&quot;')}">
                       <div class="switch-info-wrap">
                         <div class="switch-name">${sw.nome}</div>
                         <div class="switch-meta">IP: ${sw.ip}</div>
@@ -773,6 +782,7 @@
                       </div>
                       <div class="hover-preview">
                         ${ sw.foto ? `<img src="${sw.foto}" alt="Foto de ${sw.nome}">` : `<div class="noimg">Sem imagem para este switch</div>` }
+                        <button class="btn small ghost copy-btn" type="button">Copiar</button>
                       </div>
                     </div>
                   `).join('')
@@ -1217,6 +1227,32 @@
             toggleBtn.classList.add('open');
             toggleBtn.setAttribute('aria-expanded','true');
             list.style.display='block';
+          }
+          return;
+        }
+
+        // Botão "Copiar" dentro do hover
+        const copyBtn = ev.target.closest('.copy-btn');
+        if (copyBtn) {
+          const row = copyBtn.closest('.switch-row');
+          if (!row) return;
+
+          const nome = row.dataset.switchNome || '';
+          const ip   = row.dataset.switchIp   || '';
+          const texto = `${nome} IP: ${ip}`;
+
+          try{
+            await navigator.clipboard.writeText(texto);
+            await showAlert({
+              title: 'Copiado',
+              message: `Copiado para a área de transferência:\n${texto}`
+            });
+          }catch(e){
+            console.warn('[copy] erro ao copiar', e);
+            await showAlert({
+              title: 'Erro',
+              message: 'Não foi possível copiar automaticamente. Copie manualmente: ' + texto
+            });
           }
           return;
         }
