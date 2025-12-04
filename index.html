@@ -1,1551 +1,1302 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestão de Switches de Rede</title>
-
-  <!-- Favicon base (fallback) -->
-  <link id="dynamic-favicon" rel="icon" type="image/png"
-        href="https://cdn-icons-png.flaticon.com/512/3749/3749786.png" />
-  <meta name="theme-color" content="#111923">
-
-  <!-- Anti-flicker: inicia colapsado via variáveis e sem animações até .js-ready -->
-  <style>
-    html:not(.js-ready) * { transition: none !important; animation: none !important; }
-    html { --sbw: 52px; --sbw-collapsed: 52px; }
-    html.js-ready { --sbw: 260px; --sbw-collapsed: 52px; }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão de POPs e Switches</title>
 
   <style>
-    :root{ --sbw:260px; --sbw-collapsed:52px }
-    *{ margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif }
-    body{ background:#f5f7fa; color:#333 }
-    .container{ max-width:1200px; margin:0 auto; padding:20px }
+    :root {
+      --bg-body: #f4f5f7;
+      --bg-surface: #ffffff;
+      --bg-surface-alt: #f8fafc;
+      --bg-header: linear-gradient(135deg, #f9fafb, #e5edff);
+      --border-subtle: #dde3ec;
+      --shadow-soft: 0 8px 24px rgba(15, 23, 42, 0.06);
 
-    /* ===== Sidebar ===== */
-    .sidebar{
-      position:fixed; left:0; top:0; bottom:0; width:var(--sbw);
-      background:linear-gradient(180deg,#1a2530,#111923);
-      color:#e5e7eb; box-shadow:2px 0 12px rgba(0,0,0,.15); z-index:1100;
-      transition:width .25s ease, transform .25s ease;
-      will-change:width, transform; overflow-x:hidden;
-      display:flex; flex-direction:column;
-    }
-    .brand{ display:flex; align-items:center; gap:10px; justify-content:space-between;
-      padding:12px; border-bottom:1px solid rgba(255,255,255,.06); min-height:56px }
-    .brand-left{ display:flex; align-items:center; gap:10px; min-width:0 }
-    .logo{ width:36px; height:36px; border-radius:10px; background:#2b3b4a;
-      display:grid; place-items:center; font-weight:800; color:#a7c7ff;
-      box-shadow:inset 0 0 0 1px rgba(255,255,255,.08) }
-    .title{ font-size:14px; line-height:1.15; white-space:nowrap; transition:opacity .2s ease }
-    .title b{ display:block; font-size:15px; color:#fff }
-    .collapse-btn{
-      background:#ffffff1a; border:1px solid #ffffff24; color:#fff;
-      padding:8px 10px; border-radius:8px; cursor:pointer; transition:.2s;
-      display:inline-flex; align-items:center; gap:8px; white-space:nowrap
-    }
-    .collapse-btn:hover{ background:#ffffff2d }
-    .collapse-btn svg{ width:18px; height:18px; transition:transform .25s ease }
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --text-soft: #9ca3af;
+      --text-on-primary: #ffffff;
 
-    .menu{ padding:10px; overflow:auto; flex:1 }
-    .menu h4{ font-size:12px; color:#9fb0c2; letter-spacing:.06em; text-transform:uppercase;
-      margin:10px 10px 6px; white-space:nowrap; transition:opacity .2s ease }
-    .menu .item{
-      display:flex; align-items:center; gap:10px; padding:12px 14px; margin:6px 6px;
-      border-radius:10px; cursor:pointer; color:#e5e7eb; transition:.18s background, .18s transform;
-      position:relative; white-space:nowrap; line-height:1;
-    }
-    .menu .item:hover{ background:rgba(255,255,255,.09) }
-    .menu .item .icon{ width:22px; height:22px; display:grid; place-items:center; flex:0 0 22px; opacity:.95 }
-    .menu .item .icon svg{ width:20px; height:20px }
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --accent-strong: #1d4ed8;
 
-    /* Rodapé fixo na sidebar: botão de cadeado */
-    .sidebar-footer{
-      padding:10px 6px 10px 6px;
-      border-top:1px solid rgba(255,255,255,.06);
-      display:flex;
-      gap:8px;
-      align-items:center;
-      justify-content:flex-start;
-    }
-    .lock-btn{
-      display:flex; align-items:center; gap:10px; width:100%;
-      background:#ffffff14; border:1px solid #ffffff24; color:#fff; cursor:pointer;
-      padding:10px 12px; border-radius:10px; transition:background .2s ease, transform .1s ease
-    }
-    .lock-btn:hover{ background:#ffffff26 }
-    .lock-btn:active{ transform:translateY(1px) }
-    .lock-btn img{ width:20px; height:20px }
-    .lock-badge{ margin-left:auto; font-size:12px; padding:.2rem .5rem; border-radius:999px; background:#0d1a24; border:1px solid #ffffff24 }
+      --success: #16a34a;
+      --success-soft: #dcfce7;
 
-    /* Layout principal deslocado pela sidebar */
-    .with-sidebar{ margin-left:var(--sbw); transition:margin-left .25s ease }
+      --warning: #f97316;
+      --warning-soft: #ffedd5;
 
-    /* Estado colapsado (desktop) */
-    body.sidebar-collapsed .sidebar{ width:var(--sbw-collapsed) }
-    body.sidebar-collapsed .with-sidebar{ margin-left:var(--sbw-collapsed) }
-    body.sidebar-collapsed .title{ opacity:0; pointer-events:none }
-    body.sidebar-collapsed .brand{ justify-content:center; gap:0 }
-    body.sidebar-collapsed .logo{ display:none }
-    body.sidebar-collapsed .collapse-btn span{ display:none }
-    body.sidebar-collapsed .collapse-btn{ padding:8px }
-    body.sidebar-collapsed .collapse-btn svg{ transform:rotate(180deg) }
-    body.sidebar-collapsed .menu{ padding:8px 6px }
-    body.sidebar-collapsed .menu h4{ height:0; margin:0; padding:0; opacity:0; overflow:hidden }
-    body.sidebar-collapsed .menu .item{ justify-content:center; gap:0; padding:10px; margin:4px 6px; border-radius:12px }
-    body.sidebar-collapsed .menu .item span{ display:none }
+      --danger: #dc2626;
+      --danger-soft: #fee2e2;
 
-    /* Mobile */
-    @media (max-width: 900px){
-      .sidebar { transform:translateX(-100%) }
-      body.sidebar-open .sidebar { transform:none }
-      .with-sidebar { margin-left:0 }
-      .sidebar-overlay{ content:""; position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; z-index:1000 }
-      body.sidebar-open .sidebar-overlay{ display:block }
-      .edge-hitbox{ position:fixed; left:0; top:0; bottom:0; width:18px; z-index:900; background:transparent }
-    }
-    @media (min-width:901px){ .edge-hitbox{ display:none } }
+      --badge-pop: #f97316;
+      --badge-switch: #0f766e;
 
-    /* Header/Sections */
-    header{ background:linear-gradient(135deg,#2c3e50,#1a2530); color:#fff; padding:20px; border-radius:10px; margin-bottom:30px; box-shadow:0 4px 12px rgba(0,0,0,.1) }
-    .header-row{ text-align:center; display:block }
-    h1{ margin-bottom:6px }
-    .subtitle{ opacity:.9; font-weight:300; white-space:nowrap }
+      --sidebar-bg: #ffffff;
+      --sidebar-border: #e5e7eb;
+      --sidebar-hover: #eff6ff;
+      --sidebar-active: #dbeafe;
 
-    .btn{ background:#3498db; color:#fff; border:0; padding:12px 16px; border-radius:6px; cursor:pointer; font-weight:600; transition:.25s; display:inline-flex; align-items:center; gap:8px }
-    .btn:hover{ background:#2980b9 }
-    .btn.ghost{ background:#ecf0f1; color:#2c3e50 }
-    .btn.ghost:hover{ background:#d5dbdb }
-    .btn.danger{ background:#e74c3c }
-    .btn.danger:hover{ background:#c0392b }
-    .btn.small{ padding:8px 10px; font-size:14px }
-
-    .main-content{ display:flex; gap:30px; flex-wrap:wrap }
-    .switches-section{ background:#fff; padding:25px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,.05); flex:1; min-width:320px }
-    h2{ color:#2c3e50; margin-bottom:20px; padding-bottom:10px; border-bottom:2px solid #eee }
-    .h3{ color:#2c3e50; margin:18px 0 10px; font-size:18px; font-weight:800 }
-    .muted{ color:#7f8c8d; font-size:14px }
-    .no-switches,.no-pops{ text-align:center; padding:40px; color:#7f8c8d; font-style:italic }
-
-    .estado-block{ margin-bottom:32px }
-    .estado-head{ display:flex; align-items:center; justify-content:space-between }
-    .estado-badge{ background:#eef3f7; border:1px solid #e3e8ee; color:#2c3e50; font-weight:700; padding:4px 10px; border-radius:999px; font-size:12px }
-
-    .pop-grid{ display:flex; flex-wrap:wrap; gap:20px; margin-top:12px; align-items:flex-start }
-    .pop-card{ flex:1 1 320px; max-width:420px; background:#f8f9fa; border-radius:8px; overflow:visible; box-shadow:0 2px 8px rgba(0,0,0,.1); transition:transform .3s, box-shadow .3s }
-    .pop-card:hover{ transform:translateY(-5px); box-shadow:0 5px 15px rgba(0,0,0,.1) }
-    .pop-header{ display:flex; align-items:center; justify-content:space-between; padding:16px }
-    .pop-title{ font-size:18px; font-weight:700; color:#2c3e50 }
-    .pop-badge{ background:#ecf0f1; padding:4px 10px; border-radius:999px; font-size:12px; color:#2c3e50 }
-    .pop-toggle{ width:100%; text-align:left; background:#eef3f7; border-top:1px solid #e3e8ee; padding:12px 16px; cursor:pointer; display:flex; align-items:center; justify-content:space-between }
-    .pop-toggle span{ font-weight:600; color:#2c3e50 }
-    .pop-toggle i{ transition:transform .2s }
-    .pop-toggle.open i{ transform:rotate(180deg) }
-
-    .switch-list{ display:none; padding:8px 16px 16px 16px; overflow:visible; position:relative }
-    .switch-row{ background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible }
-    .switch-info-wrap{ display:flex; flex-direction:column; gap:2px }
-    .switch-name{ font-weight:700; color:#2c3e50 }
-    .switch-meta{ font-size:14px; color:#7f8c8d }
-    .row-actions{ display:flex; gap:8px; align-items:center }
-
-    .hover-preview{ 
-      position:absolute; 
-      top:50%; 
-      left:100%; 
-      transform:translate(10px, -50%) scale(.98); 
-      width:340px; 
-      max-width:90vw; 
-      max-height:300px; 
-      background:#fff; 
-      border:1px solid #e6e9ef; 
-      border-radius:10px; 
-      box-shadow:0 10px 28px rgba(20,30,50,.18); 
-      padding:10px; 
-      opacity:0; 
-      pointer-events:none; 
-      transition:opacity .15s ease, transform .15s ease; 
-      z-index:999 
-    }
-    .switch-row:hover .hover-preview{ 
-      opacity:1; 
-      transform:translate(10px, -50%) scale(1); 
-      pointer-events:auto 
-    }
-    .hover-preview::before{ 
-      content:""; 
-      position:absolute; 
-      top:50%; 
-      left:-16px; 
-      transform:translateY(-50%); 
-      border-width:8px; 
-      border-style:solid; 
-      border-color:transparent #e6e9ef transparent transparent 
-    }
-    .hover-preview::after{ 
-      content:""; 
-      position:absolute; 
-      top:50%; 
-      left:-15px; 
-      transform:translateY(-50%); 
-      border-width:8px; 
-      border-style:solid; 
-      border-color:transparent #fff transparent transparent 
-    }
-    .hover-preview img{ width:100%; height:auto; display:block; border-radius:6px; object-fit:cover; max-height:240px }
-    .hover-preview .noimg{ color:#7f8c8d; font-size:14px; text-align:center; padding:18px 6px }
-    .hover-preview .copy-btn{
-      margin-top:8px;
-      width:100%;
-      justify-content:center;
-      pointer-events:auto;
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-pill: 999px;
     }
 
-    .modal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:1200 }
-    .modal.open{ display:flex }
-    .modal-content{ background:#fff; width:min(900px, 100%); max-height:90vh; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:auto }
-    .modal-header{ padding:16px 20px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between }
-    .modal-title{ font-size:18px; font-weight:700 }
-    .modal-body{ padding:20px }
-    .modal-footer{ padding:16px 20px; border-top:1px solid #eee; display:flex; gap:10px; justify-content:flex-end }
-    .close-x{ background:transparent; border:0; font-size:20px; cursor:pointer }
-
-    .form-group{ margin-bottom:16px }
-    label{ display:block; margin-bottom:8px; font-weight:600; color:#2c3e50 }
-    input,select{ width:100%; padding:12px; border:1px solid:#ddd; border-radius:5px; transition:border-color .3s }
-    input:focus,select:focus{ border-color:#3498db; outline:0; box-shadow:0 0 0 2px rgba(52,152,219,.2) }
-    .file-input-wrapper{ position:relative; overflow:hidden; display:inline-block; width:100% }
-    .file-input-wrapper input[type=file]{ position:absolute; left:0; top:0; opacity:0; width:100%; height:100%; cursor:pointer }
-    .file-input-button{ display:block; padding:12px; background:#ecf0f1; border:1px solid #ddd; border-radius:5px; text-align:center; cursor:pointer; transition:background .3s }
-    .file-input-button:hover{ background:#d5dbdb }
-
-    .hide{ display:none !important }
-
-    .loading-wrap{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px; min-height:140px }
-    .progress{ width:100%; max-width:420px; height:10px; background:#e8eef6; border-radius:999px; overflow:hidden; position:relative }
-    .progress .indeterminate{ position:absolute; left:-40%; top:0; bottom:0; width:40%; background:linear-gradient(90deg,#3498db,#6fb3ff); animation:indeterminate 1.2s infinite linear }
-    @keyframes indeterminate{ 0%{left:-40%; width:40%} 50%{left:30%; width:30%} 100%{left:100%; width:40%} }
-
-    /* ====== BLOQUEIO VISUAL ====== */
-    body.locked .row-actions{ display:none !important }
-    body.locked #menuNovoCadastro,
-    body.locked #menuGerenciarPops{ display:none !important }
-    body.locked .lock-badge{ background:#2a0f12 }
-
-    /* ====== Modal de Senha ====== */
-    .password-field{ position:relative }
-    .password-field input{ width:100%; padding-right:44px }
-    .password-field .eye{
-      position:absolute; right:8px; top:50%; transform:translateY(-50%);
-      width:34px; height:34px; border:0; background:transparent; cursor:pointer;
-      border-radius:8px; display:grid; place-items:center; color:#2c3e50;
+    * {
+      box-sizing: border-box;
     }
-    .password-field .eye:hover{ background:#ecf0f1 }
-    .input-hint{ color:#e74c3c; margin-top:8px; font-size:14px }
 
-    /* ====== MINI GALERIA ====== */
-    .mini-gallery{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-top:10px;
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg-body);
+      color: var(--text-main);
     }
-    .mini-thumb{
-      width:70px;
-      height:50px;
-      border-radius:4px;
-      overflow:hidden;
-      border:1px solid #ddd;
-      background:#f4f4f4;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      position:relative;
-      cursor:pointer;
-      transition:transform .2s, box-shadow .2s, border-color .2s;
+
+    .app-container {
+      display: flex;
+      min-height: 100vh;
     }
-    .mini-thumb:hover{
-      transform:scale(1.05);
-      box-shadow:0 2px 8px rgba(0,0,0,.2);
+
+    /* SIDEBAR */
+
+    .sidebar {
+      width: 250px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--sidebar-border);
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
     }
-    .mini-thumb.selected{
-      border-color:#3498db;
-      box-shadow:0 0 0 2px rgba(52,152,219,.5);
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 6px 16px;
+      border-bottom: 1px solid #e5e7eb;
+      margin-bottom: 10px;
     }
-    .mini-thumb img{
-      max-width:100%;
-      max-height:100%;
-      display:block;
-      object-fit:cover;
+
+    .sidebar-logo {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: linear-gradient(145deg, #2563eb, #4f46e5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #f9fafb;
+      font-weight: 700;
+      font-size: 17px;
     }
-    .mini-thumb span{
-      font-size:11px;
-      color:#7f8c8d;
+
+    .sidebar-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .sidebar-subtitle {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .sidebar-nav {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      color: #4b5563;
+      font-size: 13px;
+      transition: background 0.15s ease, color 0.15s ease, transform 0.08s ease;
+    }
+
+    .sidebar-item:hover {
+      background: var(--sidebar-hover);
+      color: #111827;
+      transform: translateX(1px);
+    }
+
+    .sidebar-item.active {
+      background: var(--sidebar-active);
+      color: #1d4ed8;
+      font-weight: 500;
+    }
+
+    .sidebar-item-icon {
+      width: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    /* CONTENT */
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 18px 22px;
+      gap: 16px;
+    }
+
+    .header {
+      background: var(--bg-header);
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .header-subtitle {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .summary-pill {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 999px;
+      padding: 6px 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+      color: #4b5563;
+      border: 1px solid rgba(209, 213, 219, 0.8);
+    }
+
+    .summary-pill span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .summary-pill strong {
+      color: #111827;
+      font-weight: 600;
+    }
+
+    .status-badge {
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--success-soft);
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+    /* FILTERS / TOOLBAR */
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .toolbar-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 5px 10px;
+      border: 1px solid var(--border-subtle);
+      background: #ffffff;
+      color: var(--text-muted);
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .chip:hover {
+      background: #f9fafb;
+      border-color: #cbd5f5;
+    }
+
+    .chip.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: #1d4ed8;
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
+    }
+
+    .chip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    /* LAYOUT PRINCIPAL */
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2.4fr) minmax(0, 1.6fr);
+      gap: 14px;
+    }
+
+    @media (max-width: 1024px) {
+      .app-container {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        overflow-x: auto;
+      }
+      .sidebar-header {
+        border-bottom: none;
+        margin-bottom: 0;
+        margin-right: 10px;
+        padding-bottom: 0;
+      }
+      .sidebar-nav {
+        flex-direction: row;
+        margin-top: 0;
+      }
+      .sidebar-item {
+        white-space: nowrap;
+      }
+      .content-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* CARDS */
+
+    .card {
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      padding: 12px 14px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .card-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* POPs LIST */
+
+    .pops-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 420px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .pop-item {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface-alt);
+      padding: 9px 10px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.4fr) auto;
+      column-gap: 10px;
+      row-gap: 6px;
+      align-items: center;
+      font-size: 12px;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, transform 0.08s ease;
+      cursor: pointer;
+    }
+
+    .pop-item:hover {
+      border-color: #bfdbfe;
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+      background: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .pop-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .pop-name-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pop-name {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .pop-uf {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .pop-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    .badge {
+      border-radius: var(--radius-pill);
+      padding: 2px 8px;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge-pop {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge-switches {
+      background: #ecfdf3;
+      color: #166534;
+    }
+
+    .pop-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .pop-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .more-link {
+      font-size: 11px;
+      color: #2563eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: #eff6ff;
+    }
+
+    .more-link svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    /* HOVER PREVIEW DOS SWITCHES */
+
+    .hover-preview {
+      position: fixed;
+      pointer-events: none;
+      z-index: 50;
+      transform: translate(10px, 8px);
+      max-width: 320px;
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 14px;
+      padding: 10px 11px;
+      border: 1px solid rgba(209, 213, 219, 0.9);
+      box-shadow: 0 16px 38px rgba(15, 23, 42, 0.18);
+      backdrop-filter: blur(8px);
+    }
+
+    .hover-preview-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 6px;
+    }
+
+    .switch-list-mini {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 260px;
+      overflow: auto;
+    }
+
+    .switch-item-mini {
+      display: flex;
+      gap: 8px;
+      padding: 6px 7px;
+      border-radius: 9px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      font-size: 11px;
+    }
+
+    .switch-mini-thumb {
+      width: 46px;
+      height: 34px;
+      border-radius: 6px;
+      background: #e5e7eb;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .switch-mini-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .switch-mini-body {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .switch-mini-title {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .switch-mini-meta {
+      color: #6b7280;
+    }
+
+    .switch-mini-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .tag {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      color: #4b5563;
+    }
+
+    /* TABELA / DETALHES LADO DIREITO */
+
+    .details-card {
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      padding: 10px 12px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 260px;
+    }
+
+    .details-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .details-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .details-subtitle {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .table-wrapper {
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      overflow: hidden;
+      background: #f9fafb;
+      max-height: 360px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    thead {
+      background: #edf2ff;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    th, td {
+      padding: 7px 8px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    th {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: #6b7280;
+    }
+
+    tbody tr:nth-child(odd) {
+      background: #ffffff;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f9fafb;
+    }
+
+    tbody tr:hover {
+      background: #eff6ff;
+    }
+
+    /* BOTÕES GERAIS */
+
+    button,
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.12s ease, box-shadow 0.12s ease, transform 0.05s ease;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--text-on-primary);
+      box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-strong);
+      transform: translateY(-0.5px);
+    }
+
+    .btn-ghost {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .btn-ghost:hover {
+      background: #e5e7eb;
+    }
+
+    button:focus-visible,
+    .btn:focus-visible {
+      outline: 2px solid rgba(37, 99, 235, 0.9);
+      outline-offset: 2px;
+    }
+
+    /* MODAL */
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      backdrop-filter: blur(2px);
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      background: #ffffff;
+      border-radius: 16px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow: auto;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.3);
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, #f9fafb, #e5edff);
+      padding: 14px 16px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+    }
+
+    .modal-close:hover {
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    .modal-body {
+      padding: 14px 16px;
+    }
+
+    .modal-footer {
+      padding: 10px 16px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 4px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      background: #ffffff;
+      color: #111827;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    /* LOADING SPINNER */
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .spinner {
+      border: 3px solid #e5e7eb;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      animation: spin 0.8s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
+<body>
 
-<!-- Começa colapsado e BLOQUEADO -->
-<body class="sidebar-collapsed locked">
-  <!-- VIDEO OCULTO PARA FAVICON ANIMADO -->
-  <video id="favVideo" width="256" height="256" preload="auto" muted playsinline loop
-         autoplay crossorigin="anonymous"
-         style="position:absolute; left:-9999px; width:256px; height:256px; visibility:hidden; background:transparent url('https://cdn-icons-png.flaticon.com/512/19034/19034328.png') 50% 50% / contain no-repeat;">
-    <source src="https://cdn-icons-mp4.flaticon.com/512/19034/19034328.mp4" type="video/mp4">
-  </video>
-
-  <div class="sidebar-overlay" onclick="document.body.classList.remove('sidebar-open')"></div>
-  <div class="edge-hitbox" id="edgeHitbox" aria-hidden="true"></div>
-
-  <aside class="sidebar" aria-label="Menu lateral">
-    <div class="brand">
-      <div class="brand-left">
-        <div class="logo">GR</div>
-        <div class="title"><b>MENU</b></div>
+  <div class="app-container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">P</div>
+        <div>
+          <div class="sidebar-title">POPs Manager</div>
+          <div class="sidebar-subtitle">v1.0</div>
+        </div>
       </div>
-      <button class="collapse-btn" id="btnCollapse" aria-expanded="false" title="Mostrar menu">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
-      </button>
-    </div>
-
-    <nav class="menu">
-      <h4>Ações</h4>
-      <div class="item" id="menuNovoCadastro" data-label="Novo cadastro" role="button" tabindex="0">
-        <span class="icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
-        </span>
-        <span>Novo cadastro</span>
+      <nav class="sidebar-nav">
+        <div class="sidebar-item active" data-view="dashboard">
+          <span class="sidebar-item-icon">📊</span>
+          <span>Dashboard</span>
+        </div>
+        <div class="sidebar-item" data-view="pops">
+          <span class="sidebar-item-icon">🏢</span>
+          <span>POPs</span>
+        </div>
+        <div class="sidebar-item" data-view="switches">
+          <span class="sidebar-item-icon">🔌</span>
+          <span>Switches</span>
+        </div>
+        <div class="sidebar-item" data-view="fotos">
+          <span class="sidebar-item-icon">📷</span>
+          <span>Galeria</span>
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        © 2025 POPs Manager
       </div>
+    </aside>
 
-      <div class="item" id="menuGerenciarPops" data-label="Gerenciar POPs" role="button" tabindex="0">
-        <span class="icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.07a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.07c.18 0 .35-.04.51-.11.61-.25 1-.85 1-1.51V9c0-.66-.39-1.26-1-1.51A2 2 0 1 1 5.93 4.1l.06.06c.51.51 1.23.66 1.89.45H9c.66 0 1.24-.39 1.51-1V3a2 2 0 1 1 4 0v.07c.27.6.85.99 1.51 1h.1c.66 0 1.27-.26 1.72-.71l.06-.06A2 2 0 1 1 20.93 6.1l-.06.06c-.34.47-.49 1.06-.45 1.64V9c0 .66.39 1.26 1 1.51.16.07.33.11.51.11H21a2 2 0 1 1 0 4h-.07c-.18 0-.35.04-.51.11-.61.25-1 .85-1 1.51z"></path>
-          </svg>
-        </span>
-        <span>Gerenciar POPs</span>
-      </div>
-    </nav>
-
-    <!-- Rodapé com botão de cadeado -->
-    <div class="sidebar-footer">
-      <button class="lock-btn" id="lockBtn" title="Bloquear/Desbloquear">
-        <img id="lockIcon" alt="cadeado" src="https://cdn-icons-png.flaticon.com/512/7615/7615902.png">
-        <span id="lockText">Bloqueado</span>
-        <span class="lock-badge" id="lockBadge">LOCK</span>
-      </button>
-    </div>
-  </aside>
-
-  <div class="with-sidebar">
-    <div class="container">
-      <header>
-        <div class="header-row">
-          <h1>Gestão de Switches de Rede</h1>
-          <p class="subtitle">Todos → Switches de POPs</p>
+    <!-- MAIN CONTENT -->
+    <main class="main">
+      <!-- HEADER -->
+      <header class="header">
+        <div class="header-left">
+          <div class="header-title">Gestão de POPs e Switches</div>
+          <div class="header-subtitle">Visão geral da infraestrutura de rede</div>
+        </div>
+        <div class="header-right">
+          <div class="summary-pill">
+            <span>POPs: <strong id="totalPops">0</strong></span>
+            <span>Switches: <strong id="totalSwitches">0</strong></span>
+          </div>
+          <div class="status-badge">
+            <span class="status-dot"></span>
+            Online
+          </div>
         </div>
       </header>
 
-      <div class="main-content">
-        <section class="switches-section">
-          <h2>POPs Cadastrados</h2>
-          <div id="estadoContainer">
-            <div id="estadoLoading" class="loading-wrap" role="status" aria-live="polite" aria-busy="true">
-              <div class="progress" aria-hidden="true"><div class="indeterminate"></div></div>
-              <div class="muted" style="text-align:center;margin-top:12px">Carregando…</div>
-            </div>
+      <!-- TOOLBAR / FILTROS -->
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <div class="chip active" data-filter="all">
+            <span class="chip-dot"></span>
+            Todos
           </div>
-        </section>
-      </div>
-    </div>
-  </div>
-
-  <!-- Confirm/Alert modal reutilizável -->
-  <div class="modal" id="confirmModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
-    <div class="modal-content" style="max-width:600px">
-      <div class="modal-header">
-        <div class="modal-title" id="confirmModalTitle">Confirmar</div>
-        <button class="close-x" data-close="confirmModal" aria-label="Fechar">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p id="confirmModalMessage" style="margin:0; color:#333; line-height:1.4"></p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn ghost" id="confirmCancelBtn">Cancelar</button>
-        <button class="btn danger" id="confirmOkBtn">Remover</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal de Senha -->
-  <div class="modal" id="passwordModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="passwordTitle">
-    <div class="modal-content" style="max-width:420px">
-      <div class="modal-header">
-        <div class="modal-title" id="passwordTitle">Destravar</div>
-        <button class="close-x" data-close="passwordModal" aria-label="Fechar">&times;</button>
-      </div>
-      <form class="modal-body" id="passwordForm">
-        <label for="passwordInput" class="muted" style="display:block;margin-bottom:8px">
-          Digite a senha para destravar:
-        </label>
-        <div class="password-field">
-          <input type="password" id="passwordInput" placeholder="••••••" autocomplete="current-password" required>
-          <button type="button" class="eye" id="togglePass" aria-label="Mostrar/ocultar senha" title="Mostrar/ocultar senha">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-          </button>
+          <div class="chip" data-filter="uf">
+            <span>🗺️</span>
+            Por UF
+          </div>
+          <div class="chip" data-filter="cidade">
+            <span>🏙️</span>
+            Por Cidade
+          </div>
         </div>
-        <div class="input-hint" id="passwordError" style="display:none">Senha incorreta. Tente novamente.</div>
-      </form>
-      <div class="modal-footer">
-        <button class="btn ghost" type="button" data-close="passwordModal">Cancelar</button>
-        <button class="btn" id="passwordOkBtn" form="passwordForm">OK</button>
+        <button class="btn btn-primary" onclick="openAddPopModal()">
+          ➕ Novo POP
+        </button>
       </div>
-    </div>
+
+      <!-- CONTENT GRID -->
+      <div class="content-grid">
+        <!-- LISTA DE POPs -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">POPs Cadastrados</div>
+              <div class="card-subtitle">Clique para ver detalhes</div>
+            </div>
+          </div>
+          <div id="popsContainer" class="pops-list">
+            <div class="loading">
+              <div class="spinner"></div>
+              Carregando POPs...
+            </div>
+          </div>
+        </div>
+
+        <!-- DETALHES / TABELA -->
+        <div class="details-card">
+          <div class="details-header">
+            <div>
+              <div class="details-title">Detalhes</div>
+              <div class="details-subtitle">Selecione um POP</div>
+            </div>
+          </div>
+          <div id="detailsContainer">
+            <p style="font-size: 12px; color: #9ca3af; text-align: center; margin-top: 40px;">
+              Nenhum POP selecionado
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 
-  <!-- SUGESTÕES DE MODELOS -->
-  <datalist id="modelosBase">
-    <option value="Datacom DM3000"></option>
-    <option value="Datacom DM4100"></option>
-    <option value="Datacom EDD 2104"></option>
-    <option value="Cisco Catalyst 2960"></option>
-    <option value="Cisco Catalyst 9200"></option>
-    <option value="Huawei S5720"></option>
-    <option value="HP/Aruba 2530"></option>
-    <option value="MikroTik CRS326"></option>
-    <option value="Juniper EX3300"></option>
-    <option value="Planet GSW"></option>
-  </datalist>
+  <!-- HOVER PREVIEW (switches) -->
+  <div id="hoverPreview" class="hover-preview" style="display: none;">
+    <div class="hover-preview-title">Switches neste POP</div>
+    <div id="hoverPreviewContent" class="switch-list-mini"></div>
+  </div>
 
-  <!-- MODAIS CADASTRO / EDIÇÃO / POPS -->
-  <div class="modal" id="modalCadastro" aria-hidden="true">
-    <div class="modal-content">
+  <!-- MODAL ADICIONAR POP -->
+  <div id="addPopModal" class="modal-overlay">
+    <div class="modal">
       <div class="modal-header">
-        <div class="modal-title">Novo cadastro</div>
-        <button class="close-x" data-close="modalCadastro" aria-label="Fechar">&times;</button>
+        <div class="modal-title">Novo POP</div>
+        <button class="modal-close" onclick="closeAddPopModal()">×</button>
       </div>
       <div class="modal-body">
-        <form id="cadastroForm">
+        <form id="addPopForm">
           <div class="form-group">
-            <label for="tipoCadastro">O que deseja cadastrar?</label>
-            <select id="tipoCadastro" required>
-              <option value="switch">Switch</option>
-              <option value="pop">POP</option>
-            </select>
+            <label>Nome do POP</label>
+            <input type="text" name="nome" required>
           </div>
-
-          <div id="camposPOP" class="hide" style="display:none">
-            <div class="form-group">
-              <label for="popNome">Nome/Descrição do POP</label>
-              <input type="text" id="popNome" placeholder="Ex: São Paulo (POP-SP)">
-            </div>
-            <div class="form-group">
-              <label for="popEstado">Estado (UF)</label>
-              <select id="popEstado"></select>
-            </div>
+          <div class="form-group">
+            <label>UF</label>
+            <input type="text" name="uf" maxlength="2" required>
           </div>
-
-          <div id="camposSW" style="display:block">
-            <div class="form-group">
-              <label for="pop">POP (Ponto de Presença)</label>
-              <select id="pop"></select>
-              <div class="muted" style="margin-top:6px">Se o POP não existir, selecione "POP" acima e cadastre.</div>
-            </div>
-            <div class="form-group">
-              <label for="modelo">Modelo</label>
-              <input type="text" id="modelo" list="modelosBase" placeholder="Ex: DM3000">
-            </div>
-            <div class="form-group">
-              <label for="nome">Nome do Switch</label>
-              <input type="text" id="nome" placeholder="Ex: SWAC01-RCE03">
-            </div>
-            <div class="form-group">
-              <label for="ip">Endereço IP</label>
-              <input type="text" id="ip" placeholder="Ex: 192.168.1.100">
-            </div>
-            <div class="form-group">
-              <label for="foto">Foto do Switch</label>
-              <div class="file-input-wrapper">
-                <div class="file-input-button">Selecionar imagem</div>
-                <input type="file" id="foto" accept="image/*">
-              </div>
-              <!-- MINI GALERIA DE FOTOS (NOVO CADASTRO) -->
-              <div id="galleryCadastro" class="mini-gallery"></div>
-              <div class="muted" style="margin-top:4px">
-                Ou clique em uma imagem já cadastrada abaixo para reutilizar.
-              </div>
-            </div>
+          <div class="form-group">
+            <label>Cidade</label>
+            <input type="text" name="cidade" required>
+          </div>
+          <div class="form-group">
+            <label>Endereço</label>
+            <textarea name="endereco"></textarea>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button class="btn ghost" data-close="modalCadastro">Cancelar</button>
-        <button class="btn" id="btnSalvarCadastro">Cadastrar</button>
+        <button class="btn btn-ghost" onclick="closeAddPopModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="submitAddPop()">Salvar</button>
       </div>
     </div>
   </div>
 
-  <div class="modal" id="modalEditSwitch" aria-hidden="true">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-title">Editar Switch</div>
-        <button class="close-x" data-close="modalEditSwitch" aria-label="Fechar">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="formEditSwitch">
-          <input type="hidden" id="editSwitchId">
-          <div class="form-group">
-            <label for="editSwitchNome">Nome do Switch</label>
-            <input type="text" id="editSwitchNome">
-          </div>
-          <div class="form-group">
-            <label for="editSwitchIP">Endereço IP</label>
-            <input type="text" id="editSwitchIP" placeholder="Ex: 192.168.1.100">
-          </div>
-          <div class="form-group">
-            <label for="editSwitchModelo">Modelo</label>
-            <input type="text" id="editSwitchModelo" list="modelosBase" placeholder="Ex: DM4100">
-          </div>
-          <div class="form-group">
-            <label for="editSwitchPop">POP</label>
-            <select id="editSwitchPop"></select>
-          </div>
-          <div class="form-group">
-            <label for="editSwitchFoto">Foto do Switch</label>
-            <div class="row-actions">
-              <div class="file-input-wrapper" style="flex:1">
-                <div class="file-input-button">Selecionar imagem</div>
-                <input type="file" id="editSwitchFoto" accept="image/*">
-              </div>
-              <button type="button" class="btn ghost small" id="btnRemoverFoto">Remover imagem</button>
-            </div>
-            <div class="muted" id="previewInfo" style="margin-top:8px"></div>
-            <!-- MINI GALERIA DE FOTOS (EDIÇÃO) -->
-            <div id="galleryEdit" class="mini-gallery"></div>
-            <div class="muted" style="margin-top:4px">
-              Ou clique em uma imagem já cadastrada abaixo para reutilizar.
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn ghost" data-close="modalEditSwitch">Cancelar</button>
-        <button class="btn" id="btnSalvarEditSwitch">Salvar</button>
-      </div>
-    </div>
-  </div>
+  <!-- FIREBASE SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
-  <div class="modal" id="modalPops" aria-hidden="true">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-title">Gerenciar POPs</div>
-        <button class="close-x" data-close="modalPops" aria-label="Fechar">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="muted" style="margin-bottom:10px">Renomeie, ajuste o Estado (UF) ou exclua POPs. Ao renomear, o sistema atualiza o <em>slug</em>/id e realoca os Switches automaticamente.</div>
-        <table id="tabelaPops">
-          <thead>
-            <tr>
-              <th style="width:34%">Nome/Descrição</th>
-              <th style="width:18%">Estado (UF)</th>
-              <th style="width:24%">ID (slug)</th>
-              <th>Switches</th>
-              <th style="width:200px">Ações</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="modal-footer">
-        <button class="btn ghost" data-close="modalPops">Fechar</button>
-        <button class="btn" id="btnSalvarPops">Salvar Alterações</button>
-      </div>
-    </div>
-  </div>
-
-  <script type="module">
-    /* ========= Firebase ========= */
+  <script>
+    // ========================================
+    // 1. CONFIGURAÇÃO DO FIREBASE
+    // ========================================
+    // ⚠️ SUBSTITUA PELAS SUAS CREDENCIAIS REAIS
     const firebaseConfig = {
-      apiKey: "AIzaSyCGSDjIf8pRP_IE0xqjLii4Qeuc6_bhE50",
-      authDomain: "gestao-switches.firebaseapp.com",
-      databaseURL: "https://gestao-switches-default-rtdb.firebaseio.com",
-      projectId: "gestao-switches",
-      storageBucket: "gestao-switches.firebasestorage.app",
-      messagingSenderId: "499639422553",
-      appId: "1:499639422553:web:b2964704013a95ee666b48",
-      measurementId: "G-EVK2QKJL4Y"
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_AUTH_DOMAIN",
+      projectId: "SEU_PROJECT_ID",
+      storageBucket: "SEU_STORAGE_BUCKET",
+      messagingSenderId: "SEU_SENDER_ID",
+      appId: "SEU_APP_ID"
     };
 
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    const fbApp = initializeApp(firebaseConfig);
-    const fbAuth = getAuth(fbApp);
-    const fbDb = getDatabase(fbApp);
+    // ========================================
+    // 2. ESTADO GLOBAL
+    // ========================================
+    let allPops = [];
+    let allSwitches = [];
+    let selectedPopId = null;
 
-    signInAnonymously(fbAuth).catch(err => console.warn('[FB] Erro ao autenticar anon:', err));
-    onAuthStateChanged(fbAuth, user => { if (user) { loadPops(); loadSwitches(); } });
+    // ========================================
+    // 3. LISTENERS DO FIRESTORE
+    // ========================================
+    db.collection('pops').onSnapshot(snapshot => {
+      allPops = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderWhenReady();
+    });
 
-    /* ========= Estado / Utils ========= */
-    const LS_SIDEBAR_STATE = 'sidebarCollapsed';
-    const byId = (id) => document.getElementById(id);
-    const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
+    db.collection('switches').onSnapshot(snapshot => {
+      allSwitches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderWhenReady();
+    });
 
-    function validarIP(ip){
-      const re=/^(25[0-5]|2[0-4]\d|[01]?\d?\d)(\.(25[0-5]|2[0-4]\d|[01]?\d?\d)){3}$/;
-      return re.test(ip);
-    }
-    const slugify=(s)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+    // ========================================
+    // 4. RENDER PRINCIPAL (otimizado)
+    // ========================================
+    function renderWhenReady() {
+      if (!allPops || !allSwitches) return;
 
-    const estados=['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
-    const estadoLabel=(uf)=> uf && uf!=='__' ? uf : 'Sem Estado';
+      // Atualizar contadores
+      document.getElementById('totalPops').textContent = allPops.length;
+      document.getElementById('totalSwitches').textContent = allSwitches.length;
 
-    const POPS_PADRAO=[
-      { nome:'São Paulo (POP-SP)', uf:'SP' },
-      { nome:'Rio de Janeiro (POP-RJ)', uf:'RJ' },
-      { nome:'Belo Horizonte (POP-MG)', uf:'MG' },
-      { nome:'Porto Alegre (POP-RS)', uf:'RS' },
-      { nome:'Curitiba (POP-PR)', uf:'PR' },
-      { nome:'Salvador (POP-BA)', uf:'BA' },
-      { nome:'Fortaleza (POP-CE)', uf:'CE' },
-      { nome:'Brasília (POP-DF)', uf:'DF' }
-    ].map(n => ({ id: slugify(n.nome), nome:n.nome, estado:n.uf }));
-
-    /* ===== Helpers de imagem (compactado) ===== */
-    async function compressImage(file,{maxWidth=1600,maxHeight=1200,mimeType='image/webp',quality=.82}={}){
-      if(!('createImageBitmap' in window)) return await fileToDataURL(file);
-      const bitmap=await createImageBitmap(file);
-      const {width,height}=bitmap; const ratio=Math.min(maxWidth/width,maxHeight/height,1);
-      const canvas=document.createElement('canvas'); canvas.width=Math.round(width*ratio); canvas.height=Math.round(height*ratio);
-      const ctx=canvas.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
-      ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
-      let outType=mimeType; if(!canvas.toDataURL(outType).startsWith('data:image/webp')) outType='image/jpeg';
-      return canvas.toDataURL(outType,quality);
-    }
-    function fileToDataURL(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=e=>res(e.target.result); fr.onerror=rej; fr.readAsDataURL(file); }); }
-    async function compressAdaptively(file){
-      const steps=[{w:2200,h:1600,q:.88},{w:1800,h:1350,q:.84},{w:1600,h:1200,q:.82},{w:1400,h:1050,q:.78},{w:1200,h:900,q:.75},{w:1000,h:750,q:.72},{w:900,h:675,q:.7}];
-      for(const s of steps){ const d=await compressImage(file,{maxWidth:s.w,maxHeight:s.h,quality:s.q}); if(d.length<4_500_000) return d; }
-      return await compressImage(file,{maxWidth:800,maxHeight:600,quality:.68});
+      // Renderizar lista de POPs
+      renderEstadosComPops();
     }
 
-    /* ===== POPs/Switches ===== */
-    let switches=[]; let pops=[]; let pendingPopEdits=[];
-    let popsLoaded=false; let switchesLoaded=false; let loadFallbackTimer=null;
-
-    function loadPops(){
-      const dbRef=ref(fbDb,'pops');
-      onValue(dbRef,(snap)=>{
-        const data=snap.val(); pops=data?Object.values(data):[];
-        if(!pops || pops.length===0){ pops=[...POPS_PADRAO]; savePops(); }
-        renderPopOptions(); popsLoaded=true; renderWhenReady();
-      },(err)=>{ console.error('Erro POPs',err); popsLoaded=true; renderWhenReady(); });
-    }
-    function savePops(){ const dbRef=ref(fbDb,'pops'); const obj={}; pops.forEach(p=>obj[p.id]=p); set(dbRef,obj).catch(()=> showAlert({title:'Erro',message:'Falha ao salvar POPs.'})); }
-    function loadSwitches(){
-      const dbRef=ref(fbDb,'switches');
-      onValue(dbRef,(snap)=>{ const data=snap.val(); switches=data?Object.values(data):[]; switchesLoaded=true; renderWhenReady(); },
-                    (err)=>{ console.error('Erro switches',err); switchesLoaded=true; renderWhenReady(); });
-    }
-    function saveSwitches(){ const dbRef=ref(fbDb,'switches'); const obj={}; switches.forEach(s=>obj[s.id]=s); set(dbRef,obj).catch(()=> showAlert({title:'Erro',message:'Falha ao salvar switches.'})); }
-
-    /* ========= Confirm/Alert ========= */
-    function _openModalById(id){ const el=byId(id); if(!el) return; el.classList.add('open'); el.setAttribute('aria-hidden','false'); }
-    function _closeModalById(id){ const el=byId(id); if(!el) return; el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
-
-    function showConfirm({ title='Confirmar', message='', okLabel='Confirmar', cancelLabel='Cancelar', okIsDanger=false }={}){
-      return new Promise(resolve=>{
-        const modal=byId('confirmModal'); if(!modal){ resolve(window.confirm(message)); return; }
-        const originalParent=modal.parentElement, originalNext=modal.nextSibling;
-        document.body.appendChild(modal); const originalZ=modal.style.zIndex||''; modal.style.zIndex='3000';
-
-        const titleEl=modal.querySelector('#confirmModalTitle');
-        const msgEl=modal.querySelector('#confirmModalMessage');
-        const okBtn=modal.querySelector('#confirmOkBtn');
-        const cancelBtn=modal.querySelector('#confirmCancelBtn');
-        const closeBtn=modal.querySelector('.close-x');
-
-        titleEl.textContent=title; msgEl.textContent=message;
-        okBtn.textContent=okLabel; cancelBtn.textContent=cancelLabel;
-        cancelBtn.style.display=''; okBtn.classList.toggle('danger',!!okIsDanger);
-
-        const onOk=()=>{ cleanup(); resolve(true) };
-        const onCancel=()=>{ cleanup(); resolve(false) };
-        const onClose=()=>{ onCancel() };
-
-        function restore(){ try{ if(originalParent){ if(originalNext) originalParent.insertBefore(modal,originalNext); else originalParent.appendChild(modal);} }catch{} finally{ modal.style.zIndex=originalZ; } }
-        function cleanup(){ okBtn.removeEventListener('click',onOk); cancelBtn.removeEventListener('click',onCancel); if(closeBtn) closeBtn.removeEventListener('click',onClose); okBtn.classList.remove('danger'); _closeModalById('confirmModal'); restore(); }
-
-        okBtn.addEventListener('click',onOk); cancelBtn.addEventListener('click',onCancel); if(closeBtn) closeBtn.addEventListener('click',onClose);
-        _openModalById('confirmModal');
-      });
-    }
-
-    function showAlert({ title='Aviso', message='Operação concluída.' }={}){
-      return new Promise(resolve=>{
-        const modal=byId('confirmModal'); if(!modal){ window.alert(message); resolve(); return; }
-        const originalParent=modal.parentElement, originalNext=modal.nextSibling;
-        document.body.appendChild(modal); const originalZ=modal.style.zIndex||''; modal.style.zIndex='3000';
-
-        const titleEl=modal.querySelector('#confirmModalTitle');
-        const msgEl=modal.querySelector('#confirmModalMessage');
-        const okBtn=modal.querySelector('#confirmOkBtn');
-        const cancelBtn=modal.querySelector('#confirmCancelBtn');
-        const closeBtn=modal.querySelector('.close-x');
-
-        titleEl.textContent=title; msgEl.textContent=message;
-        okBtn.textContent='OK'; cancelBtn.style.display='none'; okBtn.classList.remove('danger');
-
-        const onOk=()=>{ cleanup(); resolve(); };
-        const onClose=()=>{ cleanup(); resolve(); };
-
-        function restore(){ try{ if(originalParent){ if(originalNext) originalParent.insertBefore(modal,originalNext); else originalParent.appendChild(modal);} }catch{} finally{ modal.style.zIndex=originalZ; } }
-        function cleanup(){ okBtn.removeEventListener('click',onOk); if(closeBtn) closeBtn.removeEventListener('click',onClose); cancelBtn.style.display=''; _closeModalById('confirmModal'); restore(); }
-
-        okBtn.addEventListener('click',onOk); if(closeBtn) closeBtn.addEventListener('click',onClose);
-        _openModalById('confirmModal');
-      });
-    }
-
-    /* ========= Loading / Render control ========= */
-    function showLoading(show){ const loading=byId('estadoLoading'); const container=byId('estadoContainer'); if(!loading||!container) return; loading.style.display=show?'flex':'none'; }
-    function renderWhenReady(){ 
-      if(popsLoaded && switchesLoaded){ 
-        clearTimeout(loadFallbackTimer); 
-        showLoading(false); 
-        renderEstadosComPops(); 
-      } 
-    }
-    function startLoadFallbackTimer(ms=8000){
-      clearTimeout(loadFallbackTimer);
-      loadFallbackTimer=setTimeout(()=>{
-        if(!(popsLoaded && switchesLoaded)){
-          showLoading(false);
-          const wrap=byId('estadoContainer');
-          if(wrap) wrap.innerHTML='<div class="no-pops">Não foi possível carregar os POPs. Verifique sua conexão ou tente novamente. Use "Novo cadastro".</div>';
-        }
-      },ms);
-    }
-
-    /* ========= GALERIA LOCAL (por modal) ========= */
-
-    // Retorna lista de fotos únicas de todos os switches
-    function getUniqueFotos() {
-      return Array.from(
-        new Set(
-          switches
-            .map(s => s.foto)
-            .filter(Boolean)
-        )
-      );
-    }
-
-    // Preenche a mini galeria de um container (cadastro ou edição)
-    function fillGallery(containerEl, fotos, currentSelectedDataUrl) {
-      if (!containerEl) return;
-      containerEl.innerHTML = '';
-
-      if (!fotos.length) {
-        containerEl.innerHTML = '<span class="muted">Nenhuma imagem cadastrada ainda.</span>';
-        return;
-      }
-
-      fotos.forEach(dataUrl => {
-        const thumb = document.createElement('div');
-        thumb.className = 'mini-thumb';
-        thumb.dataset.source = dataUrl;
-        if (currentSelectedDataUrl && currentSelectedDataUrl === dataUrl) {
-          thumb.classList.add('selected');
-        }
-        thumb.innerHTML = `<img src="${dataUrl}" alt="Imagem de switch">`;
-        containerEl.appendChild(thumb);
-      });
-    }
-
-    /* ========= Render ========= */
-    function popsByEstado(){ const groups={}; pops.forEach(p=>{ const uf=p.estado||'__'; (groups[uf]??=[]).push(p); }); Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR'))); return groups; }
-
-    // NOVO: agrupa switches por POP para evitar .filter repetido
+    // ========================================
+    // 5. OTIMIZAÇÃO: groupSwitchesByPop
+    // ========================================
     function groupSwitchesByPop() {
       const map = {};
-      for (const sw of switches) {
-        const popId = sw.pop;
+      allSwitches.forEach(sw => {
+        const popId = sw.popId || 'sem-pop';
         if (!map[popId]) map[popId] = [];
         map[popId].push(sw);
-      }
+      });
       return map;
     }
 
-    // NOVO: versão otimizada usando mapa de switches
-    function renderEstadosComPops(){
-      const wrap=byId('estadoContainer'); if(!wrap) return;
-      if(!pops || pops.length===0){
-        wrap.innerHTML='<div class="no-pops">Nenhum POP cadastrado ainda. Use "Novo cadastro".</div>';
+    // ========================================
+    // 6. RENDERIZAR POPs (O(N) ao invés de O(N²))
+    // ========================================
+    function renderEstadosComPops() {
+      const container = document.getElementById('popsContainer');
+      if (!allPops.length) {
+        container.innerHTML = '<p style="font-size: 12px; color: #9ca3af; text-align: center; padding: 20px;">Nenhum POP cadastrado</p>';
         return;
       }
 
-      const groups=popsByEstado();
-      const ufs=Object.keys(groups).sort((a,b)=>{
-        if(a==='__') return 1;
-        if(b==='__') return -1;
-        return a.localeCompare(b);
-      });
-
+      // Agrupar switches por POP uma única vez
       const switchesByPop = groupSwitchesByPop();
 
-      const totalSwitchesPorUF = {};
-      for (const uf of ufs) {
-        let total = 0;
-        for (const pop of groups[uf]) {
-          const lista = switchesByPop[pop.id] || [];
-          total += lista.length;
-        }
-        totalSwitchesPorUF[uf] = total;
-      }
+      // Agrupar POPs por UF
+      const ufGroups = {};
+      allPops.forEach(pop => {
+        const uf = pop.uf || 'N/A';
+        if (!ufGroups[uf]) ufGroups[uf] = [];
+        ufGroups[uf].push(pop);
+      });
 
-      wrap.innerHTML='';
-      ufs.forEach(uf=>{
-        const bloco=document.createElement('div'); bloco.className='estado-block';
-        const totalSwitchesUF = totalSwitchesPorUF[uf] || 0;
-        bloco.innerHTML=`
-          <div class="estado-head">
-            <div class="h3">${estadoLabel(uf)}</div>
-            <div class="estado-badge">
-              ${groups[uf].length} POP${groups[uf].length===1?'':'s'} •
-              ${totalSwitchesUF} switch${totalSwitchesUF===1?'':'es'}
+      let html = '';
+
+      Object.keys(ufGroups).sort().forEach(uf => {
+        const popsInUf = ufGroups[uf];
+        const totalSwitchesInUf = popsInUf.reduce((sum, pop) => {
+          return sum + (switchesByPop[pop.id] || []).length;
+        }, 0);
+
+        popsInUf.forEach(pop => {
+          const switchesInPop = switchesByPop[pop.id] || [];
+          const numSwitches = switchesInPop.length;
+
+          html += `
+            <div class="pop-item" 
+                 data-pop-id="${pop.id}"
+                 onmouseenter="showHoverPreview(event, '${pop.id}')"
+                 onmouseleave="hideHoverPreview()"
+                 onclick="selectPop('${pop.id}')">
+              <div class="pop-main">
+                <div class="pop-name-row">
+                  <span class="pop-name">${pop.nome}</span>
+                  <span class="pop-uf">${pop.uf}</span>
+                </div>
+                <div class="pop-badges">
+                  <span class="badge badge-pop">🏢 POP</span>
+                  <span class="badge badge-switches">🔌 ${numSwitches} switch${numSwitches !== 1 ? 'es' : ''}</span>
+                </div>
+              </div>
+              <div class="pop-meta">
+                ${pop.cidade || 'N/A'}<br>
+                ${pop.endereco || ''}
+              </div>
+              <div class="pop-actions">
+                <span class="more-link">
+                  Ver switches
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </span>
+              </div>
+            </div>
+          `;
+        });
+      });
+
+      container.innerHTML = html;
+    }
+
+    // ========================================
+    // 7. HOVER PREVIEW
+    // ========================================
+    function showHoverPreview(event, popId) {
+      const switchesInPop = allSwitches.filter(sw => sw.popId === popId);
+      if (!switchesInPop.length) return;
+
+      const preview = document.getElementById('hoverPreview');
+      const content = document.getElementById('hoverPreviewContent');
+
+      let html = '';
+      switchesInPop.forEach(sw => {
+        const thumb = sw.fotos && sw.fotos[0] ? sw.fotos[0] : '';
+        html += `
+          <div class="switch-item-mini">
+            <div class="switch-mini-thumb">
+              ${thumb ? `<img src="${thumb}" alt="${sw.modelo}">` : ''}
+            </div>
+            <div class="switch-mini-body">
+              <div class="switch-mini-title">${sw.modelo || 'Switch'}</div>
+              <div class="switch-mini-meta">${sw.marca || ''} • ${sw.portas || 0} portas</div>
+              <div class="switch-mini-tags">
+                ${sw.gerenciavel ? '<span class="tag">Gerenciável</span>' : ''}
+                ${sw.poe ? '<span class="tag">PoE</span>' : ''}
+              </div>
             </div>
           </div>
-          <div class="pop-grid"></div>
         `;
-        const grid=bloco.querySelector('.pop-grid');
-
-        groups[uf].forEach(pop=>{
-          const card=document.createElement('div'); card.className='pop-card';
-          const swDoPop = switchesByPop[pop.id] || [];
-          card.innerHTML=`
-            <div class="pop-header">
-              <div class="pop-title">${pop.nome}</div>
-              <div class="pop-badge">${swDoPop.length} switch${swDoPop.length===1?'':'es'}</div>
-            </div>
-            <button class="pop-toggle" data-toggle-pop="${pop.id}" aria-expanded="false">
-              <span>Ver switches</span><i>▼</i>
-            </button>
-            <div class="switch-list">
-              ${
-                swDoPop.length===0
-                ? `<div class="no-switches" style="padding:16px">Nenhum switch vinculado a este POP.</div>`
-                : swDoPop.map(sw=>`
-                    <div class="switch-row"
-                         data-switch-id="${sw.id}"
-                         data-switch-nome="${sw.nome.replace(/"/g,'&quot;')}"
-                         data-switch-ip="${sw.ip.replace(/"/g,'&quot;')}">
-                      <div class="switch-info-wrap">
-                        <div class="switch-name">${sw.nome}</div>
-                        <div class="switch-meta">IP: ${sw.ip}</div>
-                        <div class="switch-meta">Modelo: ${sw.modelo ? sw.modelo : '—'}</div>
-                      </div>
-                      <div class="row-actions">
-                        <button class="btn small" data-action="edit">Editar</button>
-                        <button class="btn danger small" data-action="delete">Excluir</button>
-                      </div>
-                      <div class="hover-preview">
-                        ${ sw.foto ? `<img src="${sw.foto}" alt="Foto de ${sw.nome}">` : `<div class="noimg">Sem imagem para este switch</div>` }
-                        <button class="btn small ghost copy-btn" type="button">Copiar</button>
-                      </div>
-                    </div>
-                  `).join('')
-              }
-            </div>`;
-          grid.appendChild(card);
-        });
-
-        wrap.appendChild(bloco);
-      });
-    }
-
-    function renderUFSelect(selectEl){ if(!selectEl) return; selectEl.innerHTML=`<option value="__">Sem Estado</option>`+estados.map(uf=>`<option value="${uf}">${uf}</option>`).join(''); }
-    function renderPopOptions(){
-      const sel=byId('pop'); if(!sel) return;
-      if(!pops || pops.length===0){ sel.innerHTML='<option value="">Cadastre um POP</option>'; return; }
-      const groups=popsByEstado(); const ufs=Object.keys(groups).sort((a,b)=>{ if(a==='__') return 1; if(b==='__') return -1; return a.localeCompare(b); });
-      sel.innerHTML=ufs.map(uf=>{ const options=groups[uf].map(p=>`<option value="${p.id}">${p.nome}</option>`).join(''); return `<optgroup label="${estadoLabel(uf)}">${options}</optgroup>`; }).join('');
-    }
-
-    /* ========= CRUD ========= */
-    function openModal(id){ const el=byId(id); if(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); } }
-    function closeModal(id){ const el=byId(id); if(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); } }
-
-    function openCadastroModal(){ 
-      openModal('modalCadastro'); 
-      renderPopOptions(); 
-      renderUFSelect(byId('popEstado')); 
-      const sel=byId('tipoCadastro'); 
-      sel.value='switch'; 
-      bindTipoCadastroEvents(); 
-      alternarTipo();
-      
-      const galleryCadastro = byId('galleryCadastro');
-      if(galleryCadastro) {
-        const fotos = getUniqueFotos();
-        const form = byId('cadastroForm');
-        const selected = form && form.dataset.galleryFoto ? form.dataset.galleryFoto : null;
-        fillGallery(galleryCadastro, fotos, selected);
-      }
-
-      const fotoInput = byId('foto');
-      if (fotoInput) fotoInput.value = '';
-
-      const form = byId('cadastroForm');
-      if (form && form.dataset.galleryFoto) {
-        // mantemos o valor, apenas recarregamos thumbs acima
-      }
-    }
-    
-    function bindTipoCadastroEvents(){ const sel=byId('tipoCadastro'); const clone=sel.cloneNode(true); sel.parentNode.replaceChild(clone,sel); clone.addEventListener('change',alternarTipo); clone.addEventListener('input',alternarTipo); document.addEventListener('change',(e)=>{ if(e.target && e.target.id==='tipoCadastro') alternarTipo(); },{once:true}); }
-    function alternarTipo(){ const tipo=(byId('tipoCadastro')?.value)||'switch'; const popBox=byId('camposPOP'); const swBox=byId('camposSW'); const showPop=(tipo==='pop'); popBox.classList.toggle('hide',!showPop); swBox.classList.toggle('hide',showPop); popBox.style.display=showPop?'block':'none'; swBox.style.display=showPop?'none':'block'; }
-
-    async function cadastrarPOP(){
-      const nome=(byId('popNome').value||'').trim(); if(!nome){ await showAlert({title:'Atenção',message:'Informe o Nome/Descrição do POP.'}); return; }
-      const uf=(byId('popEstado').value||'__'); const id=slugify(nome);
-      const exists=pops.some(p=>p.id===id||p.nome.toLowerCase()===nome.toLowerCase());
-      if(exists){ await showAlert({title:'Atenção',message:'Já existe um POP com esse nome.'}); return; }
-      pops.push({ id, nome, estado:uf }); 
-      savePops(); 
-      renderPopOptions(); 
-      renderEstadosComPops(); 
-      byId('cadastroForm').reset(); 
-      closeModal('modalCadastro'); 
-      await showAlert({title:'Sucesso',message:'POP cadastrado com sucesso.'});
-    }
-
-    async function cadastrarSwitch(){
-      const popSel=byId('pop').value; const ip=byId('ip').value.trim(); const nome=byId('nome').value.trim(); const modelo=(byId('modelo').value||'').trim(); const fotoInput=byId('foto');
-      if(!popSel||!ip||!nome){ await showAlert({title:'Atenção',message:'Preencha POP, IP e Nome do switch.'}); return; }
-      if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
-      const sw={ id:String(Date.now()), pop:popSel, ip, nome, modelo: modelo || null, foto:null };
-
-      const form = byId('cadastroForm');
-      const galleryFoto = form && form.dataset.galleryFoto ? form.dataset.galleryFoto : null;
-
-      if(fotoInput.files && fotoInput.files[0]){
-        try{
-          sw.foto=await compressAdaptively(fotoInput.files[0]);
-        }catch{
-          await showAlert({title:'Aviso',message:'Não foi possível processar a imagem. O switch será salvo sem foto.'});
-        }
-      } else if (galleryFoto) {
-        sw.foto = galleryFoto;
-      }
-
-      switches.push(sw); 
-      saveSwitches(); 
-      renderPopOptions(); 
-      renderEstadosComPops(); 
-      byId('cadastroForm').reset(); 
-
-      if (form && form.dataset.galleryFoto) {
-        delete form.dataset.galleryFoto;
-      }
-
-      closeModal('modalCadastro'); 
-      await showAlert({title:'Sucesso',message:'Switch cadastrado com sucesso.'});
-    }
-
-    function openEditSwitch(id){
-      const idStr = String(id);
-      const sw = switches.find(s => {
-        if (s.id === idStr) return true;
-        if (s.id != null && String(s.id) === idStr) return true;
-        return false;
       });
 
-      if (!sw) {
-        console.warn('[openEditSwitch] Switch não encontrado para id:', id, 'lista atual:', switches);
+      content.innerHTML = html;
+      preview.style.display = 'block';
+      preview.style.left = event.pageX + 'px';
+      preview.style.top = event.pageY + 'px';
+    }
+
+    function hideHoverPreview() {
+      document.getElementById('hoverPreview').style.display = 'none';
+    }
+
+    // ========================================
+    // 8. SELECIONAR POP (mostrar detalhes)
+    // ========================================
+    function selectPop(popId) {
+      selectedPopId = popId;
+      const pop = allPops.find(p => p.id === popId);
+      const switchesInPop = allSwitches.filter(sw => sw.popId === popId);
+
+      const container = document.getElementById('detailsContainer');
+
+      if (!switchesInPop.length) {
+        container.innerHTML = `
+          <p style="font-size: 12px; color: #9ca3af; text-align: center; margin-top: 40px;">
+            Nenhum switch cadastrado neste POP
+          </p>
+        `;
         return;
       }
 
-      byId('editSwitchId').value = String(sw.id);
-      byId('editSwitchNome').value = sw.nome;
-      byId('editSwitchIP').value = sw.ip;
+      let tableHtml = `
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Modelo</th>
+                <th>Marca</th>
+                <th>Portas</th>
+                <th>PoE</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
 
-      const sel = byId('editSwitchPop');
-      sel.innerHTML = pops
-        .map(p => `<option value="${p.id}">${estadoLabel(p.estado)} — ${p.nome}</option>`)
-        .join('');
-      sel.value = sw.pop;
+      switchesInPop.forEach(sw => {
+        tableHtml += `
+          <tr>
+            <td>${sw.modelo || 'N/A'}</td>
+            <td>${sw.marca || 'N/A'}</td>
+            <td>${sw.portas || 0}</td>
+            <td>${sw.poe ? '✅' : '❌'}</td>
+          </tr>
+        `;
+      });
 
-      byId('editSwitchModelo').value = sw.modelo || '';
-      const info = byId('previewInfo');
-      info.dataset.remove = 'false';
-      info.textContent = sw.foto ? 'Imagem atual presente.' : 'Sem imagem.';
-      info.dataset.galleryFoto = '';
+      tableHtml += `
+            </tbody>
+          </table>
+        </div>
+      `;
 
-      byId('editSwitchFoto').value = '';
-
-      const galleryEdit = byId('galleryEdit');
-      if (galleryEdit) {
-        const fotos = getUniqueFotos();
-        fillGallery(galleryEdit, fotos, sw.foto || null);
-      }
-
-      openModal('modalEditSwitch');
+      container.innerHTML = tableHtml;
     }
 
-    async function saveEditSwitch(ev){
-      ev && ev.preventDefault();
-      const id = byId('editSwitchId').value;
-      const nome=(byId('editSwitchNome').value||'').trim();
-      const ip=(byId('editSwitchIP').value||'').trim();
-      const popSel=byId('editSwitchPop').value;
-      const modelo=(byId('editSwitchModelo').value||'').trim();
-      const fotoInput=byId('editSwitchFoto');
-      const previewInfo = byId('previewInfo');
-      const removeFlag=previewInfo.dataset.remove==='true';
-
-      if(!nome || !ip || !popSel){ await showAlert({title:'Atenção',message:'Preencha Nome, IP e POP.'}); return; }
-      if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
-
-      const idx = switches.findIndex(s => String(s.id) === String(id));
-      if(idx === -1){
-        console.warn('[saveEditSwitch] Switch não encontrado para id:', id);
-        return;
-      }
-
-      const original=switches[idx];
-      const origModelo=original.modelo || null;
-      const newModelo=modelo || null;
-      const hasNewFile=fotoInput && fotoInput.files && fotoInput.files[0];
-      const galleryFoto = previewInfo.dataset.galleryFoto || null;
-      const willRemoveFoto=removeFlag && !!original.foto;
-
-      const changed= nome!==original.nome || ip!==original.ip || popSel!==original.pop || newModelo!==origModelo || hasNewFile || willRemoveFoto || galleryFoto;
-      if(!changed){ closeModal('modalEditSwitch'); return; }
-
-      const applyAndClose=async (newFoto)=>{
-        switches[idx].nome=nome; 
-        switches[idx].ip=ip; 
-        switches[idx].pop=popSel; 
-        switches[idx].modelo=newModelo;
-
-        if(removeFlag) switches[idx].foto=null;
-
-        if (newFoto !== undefined) {
-          switches[idx].foto = newFoto;
-        } else if (galleryFoto) {
-          switches[idx].foto = galleryFoto;
-        }
-
-        previewInfo.dataset.galleryFoto = '';
-
-        saveSwitches(); 
-        renderPopOptions(); 
-        renderEstadosComPops(); 
-        closeModal('modalEditSwitch'); 
-        await showAlert({title:'Sucesso',message:'Alterações salvas com sucesso.'});
-      };
-
-      if(hasNewFile){ 
-        try{ 
-          const dataURL=await compressAdaptively(fotoInput.files[0]); 
-          await applyAndClose(dataURL); 
-        }catch{ 
-          await showAlert({title:'Aviso',message:'Não foi possível processar a nova imagem. Os demais dados serão salvos.'}); 
-          await applyAndClose(); 
-        } 
-      }
-      else{ 
-        await applyAndClose(); 
-      }
+    // ========================================
+    // 9. MODAL ADICIONAR POP
+    // ========================================
+    function openAddPopModal() {
+      document.getElementById('addPopModal').classList.add('show');
     }
 
-    async function deleteSwitch(id){
-      const ok=await showConfirm({ title:'Confirmar exclusão', message:'Tem certeza de que deseja remover este switch permanentemente? Esta ação não pode ser desfeita.', okLabel:'Remover', cancelLabel:'Cancelar', okIsDanger:true });
-      if(!ok) return;
-      switches=switches.filter(s=>s.id!==id);
-      saveSwitches(); 
-      renderPopOptions(); 
-      renderEstadosComPops();
-      await showAlert({ title:'Removido', message:'O switch foi removido.' });
+    function closeAddPopModal() {
+      document.getElementById('addPopModal').classList.remove('show');
+      document.getElementById('addPopForm').reset();
     }
 
-    function openModalPops(){ buildPopsTable(); openModal('modalPops'); }
-    function buildPopsTable(){
-      const tbody=byId('tabelaPops').querySelector('tbody'); tbody.innerHTML='';
-      pendingPopEdits=pops.map(p=>({ oldId:p.id, id:p.id, nome:p.nome, estado:p.estado||'__', _delete:false }));
-      pendingPopEdits.forEach((row,i)=>{
-        const vinculados=switches.filter(s=>s.pop===row.id).length;
-        const tr=document.createElement('tr'); tr.dataset.index=i;
-        const ufSelect=`<select data-field="estado">${['__',...estados].map(uf=>`<option value="${uf}" ${uf===row.estado?'selected':''}>${estadoLabel(uf)}</option>`).join('')}</select>`;
-        tr.innerHTML=`
-          <td><input type="text" value="${row.nome.replace(/"/g,'&quot;')}" data-field="nome"></td>
-          <td>${ufSelect}</td>
-          <td><input type="text" value="${row.id.replace(/"/g,'&quot;')}" data-field="id" disabled></td>
-          <td>${vinculados}</td>
-          <td class="row-actions">
-            <button class="btn small" data-act="renomear">Gerar ID</button>
-            <button class="btn danger small" data-act="excluir">Excluir</button>
-          </td>`;
-        tbody.appendChild(tr);
-      });
-      tbody.onclick=(ev)=>{
-        const tr=ev.target.closest('tr'); if(!tr) return; const idx=Number(tr.dataset.index);
-        if(ev.target.matches('[data-act="renomear"]')){
-          const nomeInput=tr.querySelector('input[data-field="nome"]');
-          const idInput=tr.querySelector('input[data-field="id"]');
-          const novoId=slugify(nomeInput.value.trim());
-          idInput.value=novoId; pendingPopEdits[idx].id=novoId; pendingPopEdits[idx].nome=nomeInput.value.trim();
-        }
-        if(ev.target.matches('[data-act="excluir"]')){
-          const idAtual=pendingPopEdits[idx].id;
-          const vinculados=switches.filter(s=>s.pop===idAtual).length;
-          if(vinculados>0){ showAlert({title:'Atenção',message:'Não é possível excluir: existem switches vinculados.'}); return; }
-          (async ()=>{
-            const ok=await showConfirm({ title:'Confirmar exclusão', message:'Deseja realmente excluir este POP?', okLabel:'Excluir', cancelLabel:'Cancelar', okIsDanger:true });
-            if(!ok) return; pendingPopEdits[idx]._delete=true; tr.style.opacity=.5;
-          })();
-        }
-      };
-      tbody.oninput=(ev)=>{ const tr=ev.target.closest('tr'); if(!tr) return; const idx=Number(tr.dataset.index); if(ev.target.dataset.field==='nome') pendingPopEdits[idx].nome=ev.target.value; if(ev.target.dataset.field==='estado') pendingPopEdits[idx].estado=ev.target.value; };
-      tbody.onchange=tbody.oninput;
-    }
+    function submitAddPop() {
+      const form = document.getElementById('addPopForm');
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
 
-    async function applyPopEdits(){
-      const deletions=pendingPopEdits.filter(r=>r._delete);
-      const effective=pendingPopEdits.filter(r=>!r._delete);
-      let anyChange=deletions.length>0;
-
-      for(const row of effective){
-        const orig=pops.find(p=>p.id===row.oldId); if(!orig){ anyChange=true; break; }
-        const origNome=(orig.nome||'').trim(); const newNome=(row.nome||'').trim();
-        const origEstado=(orig.estado||'__'); const newEstado=(row.estado||'__');
-        const origId=orig.id; const newId=row.id;
-        if(origNome!==newNome || origEstado!==newEstado || origId!==newId){ anyChange=true; break; }
-      }
-
-      if(!anyChange){ closeModal('modalPops'); return; }
-
-      const effectiveIds=effective.map(r=>r.id);
-      const effectiveNamesLower=effective.map(r=>(r.nome||'').trim().toLowerCase());
-      if(effectiveIds.length!==new Set(effectiveIds).size){ await showAlert({title:'Atenção',message:'IDs duplicados após edição.'}); return; }
-      if(effectiveNamesLower.length!==new Set(effectiveNamesLower).size){ await showAlert({title:'Atenção',message:'Nomes duplicados após edição.'}); return; }
-
-      pendingPopEdits.filter(r=>r._delete).forEach(rem=>{ pops=pops.filter(p=>p.id!==rem.oldId); });
-      pendingPopEdits.filter(r=>!r._delete).forEach(edit=>{
-        const pIdx=pops.findIndex(p=>p.id===edit.oldId);
-        if(pIdx===-1){ pops.push({ id:edit.id, nome:(edit.nome||'').trim(), estado:edit.estado||'__' }); return; }
-        const idChanged=edit.oldId!==edit.id;
-        pops[pIdx].id=edit.id; pops[pIdx].nome=(edit.nome||'').trim(); pops[pIdx].estado=edit.estado||'__';
-        if(idChanged) switches.forEach(s=>{ if(s.pop===edit.oldId) s.pop=edit.id; });
-      });
-
-      savePops(); 
-      saveSwitches(); 
-      renderPopOptions(); 
-      renderEstadosComPops();
-      closeModal('modalPops'); 
-      await showAlert({title:'Sucesso',message:'POPs atualizados.'});
-    }
-
-    /* ========= Sidebar ========= */
-    function setCollapsed(collapsed){
-      document.body.classList.toggle('sidebar-collapsed',collapsed);
-      try{ localStorage.setItem(LS_SIDEBAR_STATE, collapsed?'1':'0'); }catch{}
-      const btn=byId('btnCollapse'); if(btn){ btn.setAttribute('aria-expanded', String(!collapsed)); btn.title=collapsed?'Mostrar menu':'Ocultar menu'; }
-    }
-    function isSidebarOpen(){ return isMobile() ? document.body.classList.contains('sidebar-open') : !document.body.classList.contains('sidebar-collapsed'); }
-    function closeSidebar(){ if(isMobile()) document.body.classList.remove('sidebar-open'); else setCollapsed(true); }
-    let autoHideTimer=null, isSidebarHovered=false;
-    function scheduleAutoHide(){ clearTimeout(autoHideTimer); if(!isSidebarOpen()) return; autoHideTimer=setTimeout(()=>{ if(!isSidebarHovered && isSidebarOpen()) closeSidebar(); },5000); }
-    function cancelAutoHide(){ clearTimeout(autoHideTimer); }
-
-    /* ====== Modal de Senha (bonito) ====== */
-    function requestUnlockWithModal(){
-      return new Promise(resolve=>{
-        const modal=byId('passwordModal');
-        const form=byId('passwordForm');
-        const input=byId('passwordInput');
-        const errorEl=byId('passwordError');
-        const toggle=byId('togglePass');
-
-        if(!modal || !form || !input){ resolve(false); return; }
-        input.type='password'; input.value=''; errorEl.style.display='none';
-
-        const onSubmit=(e)=>{ e.preventDefault(); const val=(input.value||'').trim(); if(val==='123456'){ cleanup(); resolve(true); } else{ errorEl.style.display='block'; input.focus(); input.select(); } };
-        const onCancel=()=>{ cleanup(); resolve(false); };
-        const onToggle=()=>{ input.type = (input.type==='password') ? 'text' : 'password'; input.focus(); };
-
-        form.addEventListener('submit',onSubmit);
-        toggle.addEventListener('click',onToggle);
-        modal.querySelectorAll('[data-close="passwordModal"]').forEach(b=> b.addEventListener('click', onCancel, { once:true }));
-
-        openModal('passwordModal'); setTimeout(()=> input.focus(), 50);
-
-        function cleanup(){ form.removeEventListener('submit',onSubmit); toggle.removeEventListener('click',onToggle); closeModal('passwordModal'); }
-      });
-    }
-
-    /* ====== LOCK STATE ====== */
-    let isLocked=true;
-    const ICON_LOCKED="https://cdn-icons-png.flaticon.com/512/7615/7615902.png";
-    const ICON_UNLOCK="https://cdn-icons-png.flaticon.com/512/7615/7615905.png";
-
-    function setLocked(state){
-      isLocked = !!state;
-      document.body.classList.toggle('locked', isLocked);
-      const icon=byId('lockIcon'); const txt=byId('lockText'); const badge=byId('lockBadge');
-      if(isLocked){
-        if(icon) icon.src = ICON_LOCKED;
-        if(txt)  txt.textContent = 'Bloqueado';
-        if(badge) badge.textContent = 'LOCK';
-      }else{
-        if(icon) icon.src = ICON_UNLOCK;
-        if(txt)  txt.textContent = 'Desbloqueado';
-        if(badge) badge.textContent = 'OPEN';
-      }
-    }
-
-    /* ========= Listeners globais ========= */
-    document.addEventListener('DOMContentLoaded', ()=>{
-      if(!isMobile()) setCollapsed(true); else document.body.classList.remove('sidebar-open');
-      setLocked(true);
-
-      document.querySelectorAll('[data-close]').forEach(btn =>
-        btn.addEventListener('click', (e)=> closeModal(e.currentTarget.getAttribute('data-close')))
-      );
-
-      byId('btnCollapse').addEventListener('click', ()=>{
-        if(isMobile()) document.body.classList.toggle('sidebar-open');
-        else setCollapsed(!document.body.classList.contains('sidebar-collapsed'));
-        setTimeout(scheduleAutoHide,0);
-      });
-
-      document.querySelector('.sidebar-overlay').addEventListener('click', ()=>{ document.body.classList.remove('sidebar-open'); cancelAutoHide(); });
-
-      const edge=byId('edgeHitbox');
-      if(edge){
-        let startX=null;
-        edge.addEventListener('touchstart',(e)=>{ if(!isMobile()) return; startX=e.touches[0].clientX; });
-        edge.addEventListener('touchmove',(e)=>{ if(!isMobile()||startX===null) return; const dx=e.touches[0].clientX-startX; if(dx>12){ document.body.classList.add('sidebar-open'); startX=null; scheduleAutoHide(); } });
-        edge.addEventListener('click',()=>{ if(isMobile()){ document.body.classList.add('sidebar-open'); scheduleAutoHide(); } });
-      }
-
-      byId('menuNovoCadastro').addEventListener('click', async ()=>{
-        if(isLocked){ const ok=await requestUnlockWithModal(); if(!ok) return; setLocked(false); }
-        closeSidebar(); cancelAutoHide(); openCadastroModal();
-      });
-      byId('menuGerenciarPops').addEventListener('click', async ()=>{
-        if(isLocked){ const ok=await requestUnlockWithModal(); if(!ok) return; setLocked(false); }
-        closeSidebar(); cancelAutoHide(); openModalPops();
-      });
-
-      byId('lockBtn').addEventListener('click', async ()=>{
-        if(isLocked){
-          const ok=await requestUnlockWithModal();
-          if(ok){ setLocked(false); await showAlert({ title:'Desbloqueado', message:'Funções liberadas.' }); }
-        }else{
-          setLocked(true);
-          await showAlert({ title:'Bloqueado', message:'Ações ocultadas e bloqueadas.' });
-        }
-      });
-
-      byId('btnSalvarCadastro').addEventListener('click', async (e)=>{ e.preventDefault(); const tipo=byId('tipoCadastro').value; if(tipo==='pop') await cadastrarPOP(); else await cadastrarSwitch(); });
-      byId('btnSalvarEditSwitch').addEventListener('click', saveEditSwitch);
-      
-      byId('btnRemoverFoto').addEventListener('click', ()=>{ 
-        byId('editSwitchFoto').value=''; 
-        const info = byId('previewInfo');
-        info.textContent='Imagem será removida ao salvar.'; 
-        info.dataset.remove='true';
-        info.dataset.galleryFoto = '';
-
-        const galleryEdit = byId('galleryEdit');
-        if (galleryEdit) {
-          galleryEdit.innerHTML = '';
-          const placeholder = document.createElement('div');
-          placeholder.className = 'mini-thumb';
-          placeholder.innerHTML = `<span>Sem imagem</span>`;
-          galleryEdit.appendChild(placeholder);
-        }
-      });
-      
-      byId('btnSalvarPops').addEventListener('click', applyPopEdits);
-
-      byId('estadoContainer').addEventListener('click', async (ev)=>{
-        const toggleBtn = ev.target.closest('[data-toggle-pop]');
-        if (toggleBtn) {
-          const card = toggleBtn.closest('.pop-card');
-          const list = card.querySelector('.switch-list');
-          const isOpen = list.style.display === 'block';
-          if (isOpen) {
-            toggleBtn.classList.remove('open');
-            toggleBtn.setAttribute('aria-expanded','false');
-            list.style.display='none';
-          } else {
-            document.querySelectorAll('.pop-card .pop-toggle.open').forEach(b=>{
-              b.classList.remove('open');
-              b.setAttribute('aria-expanded','false');
-              b.closest('.pop-card').querySelector('.switch-list').style.display='none';
-            });
-            toggleBtn.classList.add('open');
-            toggleBtn.setAttribute('aria-expanded','true');
-            list.style.display='block';
-          }
-          return;
-        }
-
-        const copyBtn = ev.target.closest('.copy-btn');
-        if (copyBtn) {
-          const row = copyBtn.closest('.switch-row');
-          if (!row) return;
-
-          const nome = row.dataset.switchNome || '';
-          const ip   = row.dataset.switchIp   || '';
-          const texto = `${nome} IP: ${ip}`;
-
-          try{
-            await navigator.clipboard.writeText(texto);
-            await showAlert({
-              title: 'Copiado',
-              message: `\n${texto}`
-            });
-          }catch(e){
-            console.warn('[copy] erro ao copiar', e);
-            await showAlert({
-              title: 'Erro',
-              message: 'Não foi possível copiar automaticamente. Copie manualmente: ' + texto
-            });
-          }
-          return;
-        }
-
-        const swBtn = ev.target.closest('[data-action]');
-        if (swBtn) {
-          const action = swBtn.dataset.action;
-          const swRow = swBtn.closest('[data-switch-id]');
-          const swId = swRow ? swRow.dataset.switchId : null;
-
-          if (!swId) {
-            console.warn('[EDIT/DELETE] switch sem data-switch-id');
-            return;
-          }
-
-          if (isLocked) {
-            const ok = await requestUnlockWithModal();
-            if (!ok) return;
-            setLocked(false);
-          }
-
-          if (action === 'edit') {
-            openEditSwitch(swId);
-          }
-          if (action === 'delete') {
-            deleteSwitch(swId);
-          }
-        }
-      });
-
-      // ------- Preview da imagem em NOVO CADASTRO -------
-      const fotoCadastroInput = byId('foto');
-      const galleryCadastro   = byId('galleryCadastro');
-
-      if (fotoCadastroInput && galleryCadastro) {
-        fotoCadastroInput.addEventListener('change', () => {
-          const file = fotoCadastroInput.files && fotoCadastroInput.files[0];
-
-          const form = byId('cadastroForm');
-          if (form && form.dataset.galleryFoto) {
-            delete form.dataset.galleryFoto;
-          }
-
-          galleryCadastro.innerHTML = '';
-          if (!file) return;
-
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const url = e.target.result;
-            const thumb = document.createElement('div');
-            thumb.className = 'mini-thumb selected';
-            thumb.innerHTML = `<img src="${url}" alt="Preview do switch">`;
-            galleryCadastro.appendChild(thumb);
-          };
-          reader.readAsDataURL(file);
+      db.collection('pops').add(data)
+        .then(() => {
+          closeAddPopModal();
+          alert('POP adicionado com sucesso!');
+        })
+        .catch(err => {
+          console.error('Erro ao adicionar POP:', err);
+          alert('Erro ao adicionar POP');
         });
+    }
 
-        galleryCadastro.addEventListener('click', (e) => {
-          const thumb = e.target.closest('.mini-thumb');
-          if (!thumb || !thumb.dataset.source) return;
-
-          galleryCadastro.querySelectorAll('.mini-thumb').forEach(t => t.classList.remove('selected'));
-          thumb.classList.add('selected');
-
-          const form = byId('cadastroForm');
-          if (form) {
-            form.dataset.galleryFoto = thumb.dataset.source;
-          }
-
-          if (fotoCadastroInput) fotoCadastroInput.value = '';
-        });
-      }
-
-      // ------- Preview da imagem em EDITAR SWITCH -------
-      const editFotoInput = byId('editSwitchFoto');
-      const galleryEdit   = byId('galleryEdit');
-
-      if (editFotoInput && galleryEdit) {
-        editFotoInput.addEventListener('change', () => {
-          const file = editFotoInput.files && editFotoInput.files[0];
-          const info = byId('previewInfo');
-
-          if (info) {
-            info.dataset.galleryFoto = '';
-            info.dataset.remove = 'false';
-          }
-
-          galleryEdit.innerHTML = '';
-          if (!file) return;
-
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const url = e.target.result;
-
-            const thumbNova = document.createElement('div');
-            thumbNova.className = 'mini-thumb selected';
-            thumbNova.innerHTML = `<img src="${url}" alt="Nova imagem do switch">`;
-            galleryEdit.appendChild(thumbNova);
-
-            if (info) {
-              info.textContent = 'Nova imagem selecionada. Será aplicada ao salvar.';
-            }
-          };
-          reader.readAsDataURL(file);
-        });
-
-        galleryEdit.addEventListener('click', (e) => {
-          const thumb = e.target.closest('.mini-thumb');
-          if (!thumb || !thumb.dataset.source) return;
-
-          galleryEdit.querySelectorAll('.mini-thumb').forEach(t => t.classList.remove('selected'));
-          thumb.classList.add('selected');
-
-          const info = byId('previewInfo');
-          if (info) {
-            info.dataset.galleryFoto = thumb.dataset.source;
-            info.dataset.remove = 'false';
-            info.textContent = 'Imagem selecionada da galeria. Será aplicada ao salvar.';
-          }
-
-          if (editFotoInput) editFotoInput.value = '';
-        });
-      }
-
-      const sidebarEl=document.querySelector('.sidebar');
-      if(sidebarEl){ sidebarEl.addEventListener('mouseenter',()=>{ isSidebarHovered=true; cancelAutoHide(); }); sidebarEl.addEventListener('mouseleave',()=>{ isSidebarHovered=false; scheduleAutoHide(); }); }
-
-      const bodyObserver=new MutationObserver(()=>{ if(isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide(); });
-      bodyObserver.observe(document.body,{ attributes:true, attributeFilter:['class'] });
-
-      // NOVO: debounce de resize para reduzir trabalho
-      let resizeTimer=null;
-      window.addEventListener('resize', ()=>{
-        clearTimeout(resizeTimer);
-        resizeTimer=setTimeout(()=>{
-          document.documentElement.classList.remove('js-ready');
-          if(!isMobile()){
-            document.body.classList.remove('sidebar-open');
-            setCollapsed(true);
-          }
-          requestAnimationFrame(()=>{ 
-            document.documentElement.classList.add('js-ready'); 
-            if(isSidebarOpen()) scheduleAutoHide(); 
-            else cancelAutoHide(); 
-          });
-        },150);
+    // ========================================
+    // 10. SIDEBAR NAVIGATION
+    // ========================================
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+      item.addEventListener('click', function() {
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+        // Aqui você pode adicionar lógica para trocar de view
       });
-
-      document.addEventListener('keydown',(e)=>{
-        if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='b' && !isMobile()){
-          e.preventDefault(); setCollapsed(!document.body.classList.contains('sidebar-collapsed'));
-          setTimeout(scheduleAutoHide,0);
-        }
-      });
-
-      startLoadFallbackTimer(8000);
-      requestAnimationFrame(()=>{ document.documentElement.classList.add('js-ready'); });
     });
-  </script>
 
-  <!-- ===== FAVICON ANIMADO VIA CANVAS (otimizado) ===== -->
-  <script>
-  (function(){
-    const link=document.querySelector('#dynamic-favicon');
-    const video=document.querySelector('#favVideo');
-    if(!link||!video) return;
-    const canvas=document.createElement('canvas');
-    const ctx=canvas.getContext('2d',{ willReadFrequently:true });
-    const FAV_W=32,FAV_H=32; canvas.width=FAV_W; canvas.height=FAV_H;
-    let running=false, rafId=null, lastUpdate=0;
-    const FPS=4, FRAME_MS=1000/FPS;           // FPS reduzido
-    const MAX_DURATION_MS=15000;              // roda máx. 15s
-    let startTime=null;
+    // ========================================
+    // 11. FILTROS (CHIPS)
+    // ========================================
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', function() {
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+        // Aqui você pode adicionar lógica de filtro
+      });
+    });
 
-    function drawFrame(ts){
-      if(!running) return;
-      if(document.hidden){ rafId=requestAnimationFrame(drawFrame); return; }
+    // ========================================
+    // 12. OTIMIZAÇÃO: DEBOUNCE RESIZE
+    // ========================================
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        // Lógica de ajuste de layout se necessário
+        console.log('Layout ajustado após resize');
+      }, 150);
+    });
 
-      if(startTime===null) startTime=ts;
-      if(ts - startTime > MAX_DURATION_MS){
-        stop();
-        return;
-      }
+    // ========================================
+    // 13. OTIMIZAÇÃO: ANIMATED FAVICON
+    // ========================================
+    let faviconAnimationStarted = false;
+    let faviconAnimationDuration = 0;
+    const MAX_FAVICON_DURATION = 15000; // 15 segundos
 
-      if(ts-lastUpdate>=FRAME_MS){
-        lastUpdate=ts;
-        try{
-          ctx.clearRect(0,0,FAV_W,FAV_H);
-          const vW=video.videoWidth||256, vH=video.videoHeight||256;
-          if(vW&&vH){
-            const s=Math.min(vW,vH);
-            const sx=(vW-s)/2, sy=(vH-s)/2;
-            ctx.drawImage(video,sx,sy,s,s,0,0,FAV_W,FAV_H);
-          } else{
-            ctx.fillStyle='#111923';
-            ctx.fillRect(0,0,FAV_W,FAV_H);
-          }
-          const url=canvas.toDataURL('image/png');
-          if(url && url.startsWith('data:image/png')) link.href=url;
-        }catch(e){
-          console.warn('[favicon] Falha ao animar (CORS?)',e);
-          stop();
+    function startFaviconAnimation() {
+      if (faviconAnimationStarted) return;
+      faviconAnimationStarted = true;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+      let frame = 0;
+
+      const interval = setInterval(() => {
+        faviconAnimationDuration += 250; // 4 FPS (1000/4 = 250ms)
+
+        if (faviconAnimationDuration >= MAX_FAVICON_DURATION) {
+          clearInterval(interval);
           return;
         }
-      }
-      rafId=requestAnimationFrame(drawFrame);
+
+        ctx.clearRect(0, 0, 32, 32);
+        ctx.fillStyle = frame % 2 === 0 ? '#2563eb' : '#4f46e5';
+        ctx.fillRect(0, 0, 32, 32);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('P', 16, 16);
+
+        const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        link.href = canvas.toDataURL();
+        document.getElementsByTagName('head')[0].appendChild(link);
+
+        frame++;
+      }, 250);
     }
-    function start(){
-      if(running) return;
-      running=true;
-      startTime=null;
-      const p=video.play();
-      if(p&&typeof p.then==='function'){ p.catch(()=>{}); }
-      rafId=requestAnimationFrame(drawFrame);
-    }
-    function stop(){
-      running=false;
-      if(rafId) cancelAnimationFrame(rafId), rafId=null;
-    }
-    if(video.readyState>=1) start(); else video.addEventListener('loadedmetadata', start, { once:true });
-    document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stop(); else start(); });
-    video.addEventListener('error', (e)=>{ console.warn('[favicon] Erro no vídeo:', e); stop(); });
-    window.addEventListener('pointerdown', ()=>{ if(!running) start(); }, { once:true });
-  })();
+
+    // Iniciar animação do favicon após primeira interação
+    document.addEventListener('pointerdown', startFaviconAnimation, { once: true });
+
   </script>
+
 </body>
 </html>
