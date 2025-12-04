@@ -772,19 +772,56 @@
 
     /* ========= Render ========= */
     function popsByEstado(){ const groups={}; pops.forEach(p=>{ const uf=p.estado||'__'; (groups[uf]??=[]).push(p); }); Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR'))); return groups; }
+
+    // NOVO: agrupa switches por POP para evitar .filter repetido
+    function groupSwitchesByPop() {
+      const map = {};
+      for (const sw of switches) {
+        const popId = sw.pop;
+        if (!map[popId]) map[popId] = [];
+        map[popId].push(sw);
+      }
+      return map;
+    }
+
+    // NOVO: versão otimizada usando mapa de switches
     function renderEstadosComPops(){
       const wrap=byId('estadoContainer'); if(!wrap) return;
-      if(!pops || pops.length===0){ wrap.innerHTML='<div class="no-pops">Nenhum POP cadastrado ainda. Use "Novo cadastro".</div>'; return; }
+      if(!pops || pops.length===0){
+        wrap.innerHTML='<div class="no-pops">Nenhum POP cadastrado ainda. Use "Novo cadastro".</div>';
+        return;
+      }
+
       const groups=popsByEstado();
-      const ufs=Object.keys(groups).sort((a,b)=>{ if(a==='__') return 1; if(b==='__') return -1; return a.localeCompare(b); });
+      const ufs=Object.keys(groups).sort((a,b)=>{
+        if(a==='__') return 1;
+        if(b==='__') return -1;
+        return a.localeCompare(b);
+      });
+
+      const switchesByPop = groupSwitchesByPop();
+
+      const totalSwitchesPorUF = {};
+      for (const uf of ufs) {
+        let total = 0;
+        for (const pop of groups[uf]) {
+          const lista = switchesByPop[pop.id] || [];
+          total += lista.length;
+        }
+        totalSwitchesPorUF[uf] = total;
+      }
+
       wrap.innerHTML='';
       ufs.forEach(uf=>{
         const bloco=document.createElement('div'); bloco.className='estado-block';
-        const totalSwitchesUF=groups[uf].reduce((acc,p)=> acc + switches.filter(s=>s.pop===p.id).length,0);
+        const totalSwitchesUF = totalSwitchesPorUF[uf] || 0;
         bloco.innerHTML=`
           <div class="estado-head">
             <div class="h3">${estadoLabel(uf)}</div>
-            <div class="estado-badge">${groups[uf].length} POP${groups[uf].length===1?'':'s'} • ${totalSwitchesUF} switch${totalSwitchesUF===1?'':'es'}</div>
+            <div class="estado-badge">
+              ${groups[uf].length} POP${groups[uf].length===1?'':'s'} •
+              ${totalSwitchesUF} switch${totalSwitchesUF===1?'':'es'}
+            </div>
           </div>
           <div class="pop-grid"></div>
         `;
@@ -792,7 +829,7 @@
 
         groups[uf].forEach(pop=>{
           const card=document.createElement('div'); card.className='pop-card';
-          const swDoPop=switches.filter(s=>s.pop===pop.id);
+          const swDoPop = switchesByPop[pop.id] || [];
           card.innerHTML=`
             <div class="pop-header">
               <div class="pop-title">${pop.nome}</div>
@@ -833,6 +870,7 @@
         wrap.appendChild(bloco);
       });
     }
+
     function renderUFSelect(selectEl){ if(!selectEl) return; selectEl.innerHTML=`<option value="__">Sem Estado</option>`+estados.map(uf=>`<option value="${uf}">${uf}</option>`).join(''); }
     function renderPopOptions(){
       const sel=byId('pop'); if(!sel) return;
@@ -856,15 +894,12 @@
       
       const galleryCadastro = byId('galleryCadastro');
       if(galleryCadastro) {
-        // fotos de todos os switches existentes
         const fotos = getUniqueFotos();
-        // se o form tiver uma imagem escolhida anteriormente (dataset), marca
         const form = byId('cadastroForm');
         const selected = form && form.dataset.galleryFoto ? form.dataset.galleryFoto : null;
         fillGallery(galleryCadastro, fotos, selected);
       }
 
-      // zera seleção/arquivo
       const fotoInput = byId('foto');
       if (fotoInput) fotoInput.value = '';
 
@@ -900,7 +935,6 @@
       const form = byId('cadastroForm');
       const galleryFoto = form && form.dataset.galleryFoto ? form.dataset.galleryFoto : null;
 
-      // 1º: se tiver arquivo no input, prioriza ele
       if(fotoInput.files && fotoInput.files[0]){
         try{
           sw.foto=await compressAdaptively(fotoInput.files[0]);
@@ -908,7 +942,6 @@
           await showAlert({title:'Aviso',message:'Não foi possível processar a imagem. O switch será salvo sem foto.'});
         }
       } else if (galleryFoto) {
-        // 2º: se não tiver arquivo, mas tiver imagem selecionada da galeria, usa ela
         sw.foto = galleryFoto;
       }
 
@@ -918,7 +951,6 @@
       renderEstadosComPops(); 
       byId('cadastroForm').reset(); 
 
-      // Limpa marcador
       if (form && form.dataset.galleryFoto) {
         delete form.dataset.galleryFoto;
       }
@@ -954,7 +986,7 @@
       const info = byId('previewInfo');
       info.dataset.remove = 'false';
       info.textContent = sw.foto ? 'Imagem atual presente.' : 'Sem imagem.';
-      info.dataset.galleryFoto = ''; // limpa
+      info.dataset.galleryFoto = '';
 
       byId('editSwitchFoto').value = '';
 
@@ -1006,12 +1038,11 @@
         if(removeFlag) switches[idx].foto=null;
 
         if (newFoto !== undefined) {
-          switches[idx].foto = newFoto;        // imagem nova enviada pelo usuário
+          switches[idx].foto = newFoto;
         } else if (galleryFoto) {
-          switches[idx].foto = galleryFoto;    // imagem escolhida da galeria
+          switches[idx].foto = galleryFoto;
         }
 
-        // limpar marcador
         previewInfo.dataset.galleryFoto = '';
 
         saveSwitches(); 
@@ -1270,7 +1301,6 @@
           return;
         }
 
-        // Botão "Copiar" dentro do hover
         const copyBtn = ev.target.closest('.copy-btn');
         if (copyBtn) {
           const row = copyBtn.closest('.switch-row');
@@ -1330,7 +1360,6 @@
         fotoCadastroInput.addEventListener('change', () => {
           const file = fotoCadastroInput.files && fotoCadastroInput.files[0];
 
-          // Se o user escolheu arquivo local: limpamos seleção da galeria
           const form = byId('cadastroForm');
           if (form && form.dataset.galleryFoto) {
             delete form.dataset.galleryFoto;
@@ -1350,22 +1379,18 @@
           reader.readAsDataURL(file);
         });
 
-        // Clique nas thumbs do cadastro para selecionar imagem de switch
         galleryCadastro.addEventListener('click', (e) => {
           const thumb = e.target.closest('.mini-thumb');
           if (!thumb || !thumb.dataset.source) return;
 
-          // limpa seleção visual
           galleryCadastro.querySelectorAll('.mini-thumb').forEach(t => t.classList.remove('selected'));
           thumb.classList.add('selected');
 
-          // guarda imagem escolhida
           const form = byId('cadastroForm');
           if (form) {
             form.dataset.galleryFoto = thumb.dataset.source;
           }
 
-          // limpa arquivo local, se houver
           if (fotoCadastroInput) fotoCadastroInput.value = '';
         });
       }
@@ -1379,7 +1404,6 @@
           const file = editFotoInput.files && editFotoInput.files[0];
           const info = byId('previewInfo');
 
-          // se o user escolheu arquivo local, limpa escolha de galeria
           if (info) {
             info.dataset.galleryFoto = '';
             info.dataset.remove = 'false';
@@ -1404,7 +1428,6 @@
           reader.readAsDataURL(file);
         });
 
-        // clique nas thumbs da edição para escolher imagem
         galleryEdit.addEventListener('click', (e) => {
           const thumb = e.target.closest('.mini-thumb');
           if (!thumb || !thumb.dataset.source) return;
@@ -1419,7 +1442,6 @@
             info.textContent = 'Imagem selecionada da galeria. Será aplicada ao salvar.';
           }
 
-          // limpa input file para não conflitar
           if (editFotoInput) editFotoInput.value = '';
         });
       }
@@ -1430,10 +1452,22 @@
       const bodyObserver=new MutationObserver(()=>{ if(isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide(); });
       bodyObserver.observe(document.body,{ attributes:true, attributeFilter:['class'] });
 
+      // NOVO: debounce de resize para reduzir trabalho
+      let resizeTimer=null;
       window.addEventListener('resize', ()=>{
-        document.documentElement.classList.remove('js-ready');
-        if(!isMobile()){ document.body.classList.remove('sidebar-open'); setCollapsed(true); }
-        requestAnimationFrame(()=>{ document.documentElement.classList.add('js-ready'); if(isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide(); });
+        clearTimeout(resizeTimer);
+        resizeTimer=setTimeout(()=>{
+          document.documentElement.classList.remove('js-ready');
+          if(!isMobile()){
+            document.body.classList.remove('sidebar-open');
+            setCollapsed(true);
+          }
+          requestAnimationFrame(()=>{ 
+            document.documentElement.classList.add('js-ready'); 
+            if(isSidebarOpen()) scheduleAutoHide(); 
+            else cancelAutoHide(); 
+          });
+        },150);
       });
 
       document.addEventListener('keydown',(e)=>{
@@ -1448,7 +1482,7 @@
     });
   </script>
 
-  <!-- ===== FAVICON ANIMADO VIA CANVAS ===== -->
+  <!-- ===== FAVICON ANIMADO VIA CANVAS (otimizado) ===== -->
   <script>
   (function(){
     const link=document.querySelector('#dynamic-favicon');
@@ -1457,25 +1491,56 @@
     const canvas=document.createElement('canvas');
     const ctx=canvas.getContext('2d',{ willReadFrequently:true });
     const FAV_W=32,FAV_H=32; canvas.width=FAV_W; canvas.height=FAV_H;
-    let running=false, rafId=null, lastUpdate=0; const FPS=10, FRAME_MS=1000/FPS;
+    let running=false, rafId=null, lastUpdate=0;
+    const FPS=4, FRAME_MS=1000/FPS;           // FPS reduzido
+    const MAX_DURATION_MS=15000;              // roda máx. 15s
+    let startTime=null;
 
     function drawFrame(ts){
       if(!running) return;
       if(document.hidden){ rafId=requestAnimationFrame(drawFrame); return; }
+
+      if(startTime===null) startTime=ts;
+      if(ts - startTime > MAX_DURATION_MS){
+        stop();
+        return;
+      }
+
       if(ts-lastUpdate>=FRAME_MS){
         lastUpdate=ts;
         try{
           ctx.clearRect(0,0,FAV_W,FAV_H);
           const vW=video.videoWidth||256, vH=video.videoHeight||256;
-          if(vW&&vH){ const s=Math.min(vW,vH); const sx=(vW-s)/2, sy=(vH-s)/2; ctx.drawImage(video,sx,sy,s,s,0,0,FAV_W,FAV_H); }
-          else{ ctx.fillStyle='#111923'; ctx.fillRect(0,0,FAV_W,FAV_H); }
-          const url=canvas.toDataURL('image/png'); if(url && url.startsWith('data:image/png')) link.href=url;
-        }catch(e){ console.warn('[favicon] Falha ao animar (CORS?)',e); stop(); return; }
+          if(vW&&vH){
+            const s=Math.min(vW,vH);
+            const sx=(vW-s)/2, sy=(vH-s)/2;
+            ctx.drawImage(video,sx,sy,s,s,0,0,FAV_W,FAV_H);
+          } else{
+            ctx.fillStyle='#111923';
+            ctx.fillRect(0,0,FAV_W,FAV_H);
+          }
+          const url=canvas.toDataURL('image/png');
+          if(url && url.startsWith('data:image/png')) link.href=url;
+        }catch(e){
+          console.warn('[favicon] Falha ao animar (CORS?)',e);
+          stop();
+          return;
+        }
       }
       rafId=requestAnimationFrame(drawFrame);
     }
-    function start(){ if(running) return; running=true; const p=video.play(); if(p&&typeof p.then==='function'){ p.catch(()=>{}); } rafId=requestAnimationFrame(drawFrame); }
-    function stop(){ running=false; if(rafId) cancelAnimationFrame(rafId), rafId=null; }
+    function start(){
+      if(running) return;
+      running=true;
+      startTime=null;
+      const p=video.play();
+      if(p&&typeof p.then==='function'){ p.catch(()=>{}); }
+      rafId=requestAnimationFrame(drawFrame);
+    }
+    function stop(){
+      running=false;
+      if(rafId) cancelAnimationFrame(rafId), rafId=null;
+    }
     if(video.readyState>=1) start(); else video.addEventListener('loadedmetadata', start, { once:true });
     document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stop(); else start(); });
     video.addEventListener('error', (e)=>{ console.warn('[favicon] Erro no vídeo:', e); stop(); });
