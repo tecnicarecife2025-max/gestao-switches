@@ -143,57 +143,18 @@
     .pop-toggle i{ transition:transform .2s }
     .pop-toggle.open i{ transform:rotate(180deg) }
 
-    .switch-list{ display:none; padding:8px 16px 16px 16px; overflow:hidden; position:relative }
-    .switch-row{ background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible; margin-bottom:8px }
+    .switch-list{ display:none; padding:8px 16px 16px 16px; overflow:visible; position:relative }
+    .switch-row{ background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible }
     .switch-info-wrap{ display:flex; flex-direction:column; gap:2px }
     .switch-name{ font-weight:700; color:#2c3e50 }
     .switch-meta{ font-size:14px; color:#7f8c8d }
     .row-actions{ display:flex; gap:8px; align-items:center }
 
-    .hover-preview{
-      position:absolute;
-      left:0;
-      bottom:calc(100% + 6px);
-      transform:translate(0, 4px) scale(.98);
-      width:320px;
-      max-width:90vw;
-      max-height:260px;
-      background:#fff;
-      border:1px solid #e6e9ef;
-      border-radius:10px;
-      box-shadow:0 10px 28px rgba(20,30,50,.18);
-      padding:10px;
-      opacity:0;
-      pointer-events:none;
-      transition:opacity .15s ease, transform .15s ease;
-      z-index:999;
-    }
-    .switch-row:hover .hover-preview{
-      opacity:1;
-      transform:translate(0,0) scale(1);
-      pointer-events:auto;
-    }
-    .hover-preview::before{
-      content:"";
-      position:absolute;
-      left:40px;
-      bottom:-16px;
-      transform:translateX(-50%);
-      border-width:8px;
-      border-style:solid;
-      border-color:#e6e9ef transparent transparent transparent;
-    }
-    .hover-preview::after{
-      content:"";
-      position:absolute;
-      left:40px;
-      bottom:-15px;
-      transform:translateX(-50%);
-      border-width:8px;
-      border-style:solid;
-      border-color:#fff transparent transparent transparent;
-    }
-    .hover-preview img{ width:100%; height:auto; display:block; border-radius:6px; object-fit:cover; max-height:200px }
+    .hover-preview{ position:absolute; left:50%; bottom:calc(100% + 10px); transform:translate(-50%, 6px) scale(.98); width:340px; max-width:90vw; max-height:300px; background:#fff; border:1px solid #e6e9ef; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,.18); padding:10px; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:999 }
+    .switch-row:hover .hover-preview{ opacity:1; transform:translate(-50%,0) scale(1); pointer-events:auto }
+    .hover-preview::before{ content:""; position:absolute; left:50%; bottom:-16px; transform:translateX(-50%); border-width:8px; border-style:solid; border-color:#e6e9ef transparent transparent transparent }
+    .hover-preview::after{ content:""; position:absolute; left:50%; bottom:-15px; transform:translateX(-50%); border-width:8px; border-style:solid; border-color:#fff transparent transparent transparent }
+    .hover-preview img{ width:100%; height:auto; display:block; border-radius:6px; object-fit:cover; max-height:240px }
     .hover-preview .noimg{ color:#7f8c8d; font-size:14px; text-align:center; padding:18px 6px }
     .hover-preview .copy-btn{
       margin-top:8px;
