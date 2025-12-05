@@ -166,6 +166,7 @@
     .switch-meta{ font-size:14px; color:#7f8c8d }
     .row-actions{ display:flex; gap:8px; align-items:center }
 
+    /* Tooltip padrão: abre para a direita */
     .hover-preview{ 
       position:absolute; 
       top:50%; 
@@ -209,6 +210,27 @@
       border-style:solid; 
       border-color:transparent #fff transparent transparent 
     }
+
+    /* ===== NOVO: quando a linha tiver .hover-left, abrir tooltip para a ESQUERDA ===== */
+    .switch-row.hover-left .hover-preview{
+      left:auto;
+      right:100%;
+      transform:translate(-10px, -50%) scale(.98);
+    }
+    .switch-row.hover-left:hover .hover-preview{
+      transform:translate(-10px, -50%) scale(1);
+    }
+    .switch-row.hover-left .hover-preview::before{
+      left:auto;
+      right:-16px;
+      border-color:transparent transparent transparent #e6e9ef;
+    }
+    .switch-row.hover-left .hover-preview::after{
+      left:auto;
+      right:-15px;
+      border-color:transparent transparent transparent #fff;
+    }
+
     .hover-preview img{ width:100%; height:auto; display:block; border-radius:6px; object-fit:cover; max-height:240px }
     .hover-preview .noimg{ color:#7f8c8d; font-size:14px; text-align:center; padding:18px 6px }
     .hover-preview .copy-btn{
@@ -800,6 +822,31 @@
       return map;
     }
 
+    // ===== NOVA FUNÇÃO: detecta e marca linhas que devem abrir tooltip à esquerda =====
+    function adjustHoverDirections() {
+      const rows = document.querySelectorAll('.switch-row');
+      if (!rows.length) return;
+
+      const viewportWidth = window.innerWidth;
+
+      rows.forEach(row => {
+        const preview = row.querySelector('.hover-preview');
+        if (!preview) return;
+
+        // Remove classe antes de recalcular
+        row.classList.remove('hover-left');
+
+        const rect = row.getBoundingClientRect();
+        const estimatedPreviewWidth = preview.offsetWidth || 340; // fallback
+        // Se do lado direito faltar pouco espaço pro tooltip, mostramos à esquerda
+        const spaceRight = viewportWidth - rect.right;
+
+        if (spaceRight < estimatedPreviewWidth + 20) {
+          row.classList.add('hover-left');
+        }
+      });
+    }
+
     // NOVO: versão otimizada usando mapa de switches
     function renderEstadosComPops(){
       const wrap=byId('estadoContainer'); if(!wrap) return;
@@ -885,6 +932,9 @@
 
         wrap.appendChild(bloco);
       });
+
+      // ===== CHAMA A FUNÇÃO PARA AJUSTAR DIREÇÕES DOS TOOLTIPS =====
+      adjustHoverDirections();
     }
 
     function renderUFSelect(selectEl){ if(!selectEl) return; selectEl.innerHTML=`<option value="__">Sem Estado</option>`+estados.map(uf=>`<option value="${uf}">${uf}</option>`).join(''); }
@@ -1313,6 +1363,9 @@
             toggleBtn.classList.add('open');
             toggleBtn.setAttribute('aria-expanded','true');
             list.style.display='block';
+
+            // ===== RECALCULA DIREÇÕES DOS TOOLTIPS APÓS ABRIR =====
+            setTimeout(() => adjustHoverDirections(), 50);
           }
           return;
         }
@@ -1468,7 +1521,7 @@
       const bodyObserver=new MutationObserver(()=>{ if(isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide(); });
       bodyObserver.observe(document.body,{ attributes:true, attributeFilter:['class'] });
 
-      // NOVO: debounce de resize para reduzir trabalho
+      // NOVO: debounce de resize para reduzir trabalho + recalcula tooltips
       let resizeTimer=null;
       window.addEventListener('resize', ()=>{
         clearTimeout(resizeTimer);
@@ -1482,6 +1535,9 @@
             document.documentElement.classList.add('js-ready'); 
             if(isSidebarOpen()) scheduleAutoHide(); 
             else cancelAutoHide(); 
+
+            // ===== RECALCULA DIREÇÕES DOS TOOLTIPS NO RESIZE =====
+            adjustHoverDirections();
           });
         },150);
       });
