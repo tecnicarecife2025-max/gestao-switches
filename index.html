@@ -22,11 +22,11 @@
     *{ margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif }
     body{ background:#f5f7fa; color:#333 }
     .container{  
-  width:100%;  
-  max-width:1600px;  
-  margin:0 auto;  
-  padding:20px;  
-}
+      width:100%;  
+      max-width:1600px;  
+      margin:0 auto;  
+      padding:20px;  
+    }
 
     /* ===== Sidebar ===== */
     .sidebar{
@@ -92,6 +92,7 @@
     body.sidebar-collapsed .with-sidebar{ margin-left:var(--sbw-collapsed) }
     body.sidebar-collapsed .title{ opacity:0; pointer-events:none }
     body.sidebar-collapsed .brand{ justify-content:center; gap:0 }
+    .lock-btn img{ width:20px; height:20px }
     body.sidebar-collapsed .logo{ display:none }
     body.sidebar-collapsed .collapse-btn span{ display:none }
     body.sidebar-collapsed .collapse-btn{ padding:8px }
@@ -100,6 +101,16 @@
     body.sidebar-collapsed .menu h4{ height:0; margin:0; padding:0; opacity:0; overflow:hidden }
     body.sidebar-collapsed .menu .item{ justify-content:center; gap:0; padding:10px; margin:4px 6px; border-radius:12px }
     body.sidebar-collapsed .menu .item span{ display:none }
+
+    /* >>> NOVO: em modo colapsado, mostrar só o ícone do cadeado <<< */
+    body.sidebar-collapsed .sidebar-footer .lock-btn{
+      justify-content:center;
+      padding:10px;
+    }
+    body.sidebar-collapsed #lockText,
+    body.sidebar-collapsed .lock-badge{
+      display:none;
+    }
 
     /* Mobile */
     @media (max-width: 900px){
