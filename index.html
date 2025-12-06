@@ -233,6 +233,26 @@
 
     .hover-preview img{ width:100%; height:auto; display:block; border-radius:6px; object-fit:cover; max-height:240px }
     .hover-preview .noimg{ color:#7f8c8d; font-size:14px; text-align:center; padding:18px 6px }
+
+    /* ===== NOVO BLOCO DE TEXTO DO MODELO NO TOOLTIP ===== */
+    .hover-preview .hover-model-block{
+      margin-top:10px;
+      padding:8px 10px;
+      border-radius:8px;
+      background:#f6f8fb;
+      border:1px solid #e0e5f0;
+      font-size:13px;
+      color:#2c3e50;
+    }
+    .hover-preview .hover-model-title{
+      font-weight:700;
+      margin-bottom:4px;
+    }
+    .hover-preview .hover-model-text{
+      line-height:1.35;
+      color:#4b5563;
+    }
+
     .hover-preview .copy-btn{
       margin-top:8px;
       width:100%;
@@ -243,10 +263,10 @@
     .modal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:1200 }
     .modal.open{ display:flex }
     .modal-content{ background:#fff; width:min(900px, 100%); max-height:90vh; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:auto }
-    .modal-header{ padding:16px 20px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between }
+    .modal-header{ padding:16px 20px; border-bottom:1px solid:#eee; display:flex; align-items:center; justify-content:space-between }
     .modal-title{ font-size:18px; font-weight:700 }
     .modal-body{ padding:20px }
-    .modal-footer{ padding:16px 20px; border-top:1px solid #eee; display:flex; gap:10px; justify-content:flex-end }
+    .modal-footer{ padding:16px 20px; border-top:1px solid:#eee; display:flex; gap:10px; justify-content:flex-end }
     .close-x{ background:transparent; border:0; font-size:20px; cursor:pointer }
 
     .form-group{ margin-bottom:16px }
@@ -657,6 +677,56 @@
       { nome:'Brasília (POP-DF)', uf:'DF' }
     ].map(n => ({ id: slugify(n.nome), nome:n.nome, estado:n.uf }));
 
+    /* ===== DESCRIÇÕES POR MODELO PARA O TOOLTIP ===== */
+    const MODELO_DESCRICOES = {
+      // Datacom
+      'DM4170 24GX+12XS':
+        'Switch L2/L3 e MPLS com 24 interfaces GE óticas SFP e 12 interfaces 10GE óticas SFP+, com dois slots hot swappable para fontes de alimentação redundantes.',
+      'DM3224F2':
+        'Switch empilhável Layer 2 com 24 portas Fast Ethernet 10/100Base-TX e 4 portas Gigabit Ethernet combo (1000Base-X ou 10/100/1000Base-T).',
+
+      'DM3000':
+        'Família de switches standalone de 1U para racks de 19\", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
+      'Datacom DM3000':
+        'Família de switches standalone de 1U para racks de 19\", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
+      'DM4100':
+        'Switch de agregação Datacom com recursos L2/L3 avançados, uplinks de alta capacidade e suporte a redundância, indicado para borda de provedores e redes corporativas de maior porte.',
+      'Datacom DM4100':
+        'Switch de agregação Datacom com recursos L2/L3 avançados, uplinks de alta capacidade e suporte a redundância, indicado para borda de provedores e redes corporativas de maior porte.',
+      'Datacom EDD 2104':
+        'Equipamento de demarcação Ethernet (EDD) com até 4 portas Gigabit, QoS detalhado e OAM para oferta de serviços Metro Ethernet com garantia de SLA na borda do cliente.',
+
+      // Cisco
+      'Cisco Catalyst 2960':
+        'Switch de acesso Layer 2 da família Catalyst com portas Fast Ethernet ou Gigabit, recursos de segurança, QoS e opções com PoE/PoE+, amplamente usado em redes LAN corporativas.',
+      'Catalyst 2960':
+        'Switch de acesso Layer 2 da família Catalyst com portas Fast Ethernet ou Gigabit, recursos de segurança, QoS e opções com PoE/PoE+, amplamente usado em redes LAN corporativas.',
+      'Cisco Catalyst 9200':
+        'Switch de acesso enterprise da família Catalyst 9000, com uplinks modulares, empilhamento, recursos avançados L3, SD-Access, automação e segurança reforçada para redes corporativas.',
+      'Catalyst 9200':
+        'Switch de acesso enterprise da família Catalyst 9000, com uplinks modulares, empilhamento, recursos avançados L3, SD-Access, automação e segurança reforçada para redes corporativas.',
+
+      // Huawei
+      'Huawei S5720':
+        'Série de switches Gigabit de próxima geração com uplinks 10GE, funções L2/L3 avançadas, QoS, segurança aprimorada e recursos adequados para acesso e agregação em redes corporativas.',
+
+      // HPE / Aruba
+      'HP/Aruba 2530':
+        'Switch Layer 2 de acesso com portas Fast Ethernet ou Gigabit, gerenciamento completo, QoS e opções PoE, ideal para redes de campus e filiais com foco em simplicidade e baixo consumo.',
+
+      // MikroTik
+      'MikroTik CRS326':
+        'Switch Cloud Router Switch Gigabit com 24 portas 10/100/1000 e 2 portas SFP+ 10GbE, sistema RouterOS/SwOS, oferecendo switching wire speed e recursos básicos de roteamento.',
+
+      // Juniper
+      'Juniper EX3300':
+        'Switch de acesso 1GbE com uplinks 10GbE e tecnologia Virtual Chassis, permitindo empilhamento de até 10 unidades, com recursos L2/L3 para redes corporativas e campus.',
+
+      // Planet
+      'Planet GSW':
+        'Família de switches Gigabit da Planet, geralmente não-gerenciáveis ou smart, com múltiplas portas 10/100/1000 para agregação simples de tráfego em redes de pequeno e médio porte.'
+    };
+
     /* ===== Helpers de imagem (compactado) ===== */
     async function compressImage(file,{maxWidth=1600,maxHeight=1200,mimeType='image/webp',quality=.82}={}){
       if(!('createImageBitmap' in window)) return await fileToDataURL(file);
@@ -920,7 +990,23 @@
                         <button class="btn danger small" data-action="delete">Excluir</button>
                       </div>
                       <div class="hover-preview">
-                        ${ sw.foto ? `<img src="${sw.foto}" alt="Foto de ${sw.nome}">` : `<div class="noimg">Sem imagem para este switch</div>` }
+                        ${
+                          sw.foto
+                            ? `<img src="${sw.foto}" alt="Foto de ${sw.nome}">`
+                            : `<div class="noimg">Sem imagem para este switch</div>`
+                        }
+                        <div class="hover-model-block">
+                          <div class="hover-model-title">
+                            Modelo: ${sw.modelo ? sw.modelo : '—'}
+                          </div>
+                          <div class="hover-model-text">
+                            ${
+                              sw.modelo && MODELO_DESCRICOES[sw.modelo]
+                                ? MODELO_DESCRICOES[sw.modelo]
+                                : 'Sem descrição detalhada para este modelo.'
+                            }
+                          </div>
+                        </div>
                         <button class="btn small ghost copy-btn" type="button">Copiar</button>
                       </div>
                     </div>
