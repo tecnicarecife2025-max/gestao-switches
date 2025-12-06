@@ -182,13 +182,20 @@
       opacity:0; 
       pointer-events:none; 
       transition:opacity .15s ease, transform .15s ease; 
-      z-index:999 
+      z-index:999;
     }
-    .switch-row:hover .hover-preview{ 
+
+    /* ABRIR tooltip apenas quando:
+       - mouse estiver sobre o bloco de informações do switch (.switch-info-wrap)
+       - OU sobre o próprio tooltip (.hover-preview)
+       (passar na faixa em branco à direita NÃO dispara mais) */
+    .switch-info-wrap:hover ~ .hover-preview,
+    .hover-preview:hover{
       opacity:1; 
       transform:translate(10px, -50%) scale(1);
-      pointer-events:auto
+      pointer-events:auto;
     }
+
     .hover-preview::before{ 
       content:""; 
       position:absolute; 
@@ -197,7 +204,7 @@
       transform:translateY(-50%); 
       border-width:8px; 
       border-style:solid; 
-      border-color:transparent #e6e9ef transparent transparent 
+      border-color:transparent #e6e9ef transparent transparent; 
     }
     .hover-preview::after{ 
       content:""; 
@@ -207,17 +214,20 @@
       transform:translateY(-50%); 
       border-width:8px; 
       border-style:solid; 
-      border-color:transparent #fff transparent transparent 
+      border-color:transparent #fff transparent transparent; 
     }
 
-    /* ===== NOVO: quando a linha tiver .hover-left, abrir tooltip para a ESQUERDA ===== */
+    /* ===== Quando a linha tiver .hover-left, abrir tooltip para a ESQUERDA ===== */
     .switch-row.hover-left .hover-preview{
       left:auto;
       right:100%;
       transform:translate(-10px, -50%) scale(.98);
     }
-    .switch-row.hover-left:hover .hover-preview{
+    .switch-row.hover-left .switch-info-wrap:hover ~ .hover-preview,
+    .switch-row.hover-left .hover-preview:hover{
+      opacity:1;
       transform:translate(-10px, -50%) scale(1);
+      pointer-events:auto;
     }
     .switch-row.hover-left .hover-preview::before{
       left:auto;
