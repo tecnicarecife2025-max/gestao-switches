@@ -160,6 +160,10 @@
     .pop-toggle.open i{ transform:rotate(180deg) }
 
     .switch-list{ display:none; padding:8px 16px 16px 16px; overflow:visible; position:relative }
+    
+    /* NOVO: cursor pointer na linha inteira quando tiver data-preview */
+    .switch-row[data-preview]{ cursor:pointer }
+    
     .switch-row{ background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible }
     .switch-info-wrap{ display:flex; flex-direction:column; gap:2px }
     .switch-name{ font-weight:700; color:#2c3e50 }
@@ -1010,7 +1014,8 @@
                     <div class="switch-row"
                          data-switch-id="${sw.id}"
                          data-switch-nome="${sw.nome.replace(/"/g,'&quot;')}"
-                         data-switch-ip="${sw.ip.replace(/"/g,'&quot;')}">
+                         data-switch-ip="${sw.ip.replace(/"/g,'&quot;')}"
+                         data-preview="true">
                       <div class="switch-info-wrap">
                         <div class="switch-name">${sw.nome}</div>
                         <div class="switch-meta">IP: ${sw.ip}</div>
