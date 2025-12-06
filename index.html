@@ -183,7 +183,7 @@
       opacity:0; 
       pointer-events:none; 
       transition:opacity .15s ease, transform .15s ease; 
-      z-index:999 
+      z-index:999;
     }
     .switch-row:hover .hover-preview{ 
       opacity:1; 
@@ -699,12 +699,12 @@
       'DM4008':
         'Chassi modular DM4008 da família DM4000, switch Metro Ethernet de grande porte para núcleo/agregação, com arquitetura de alta capacidade, múltiplos slots de interface GE/10GE e recursos avançados de QoS, VPN e alta disponibilidade para redes Metro Ethernet.',
       'S12700':
-        'Chassi core Huawei S12708 da família S12700, modular para rack 19\" com múltiplos slots de serviço, altura em torno de 8–10U (dependendo do kit), alta capacidade de comutação em line cards 10GE/40GE/100GE e fontes PSU redundantes hot‑swap, ideal para núcleo de redes de campus de grande porte.',
+        'Chassi core Huawei S12708 da família S12700, modular para rack 19" com múltiplos slots de serviço, altura em torno de 8–10U (dependendo do kit), alta capacidade de comutação em line cards 10GE/40GE/100GE e fontes PSU redundantes hot‑swap, ideal para núcleo de redes de campus de grande porte.',
       
       'DM3000':
-        'Família de switches standalone de 1U para racks de 19\", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
+        'Família de switches standalone de 1U para racks de 19", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
       'Datacom DM3000':
-        'Família de switches standalone de 1U para racks de 19\", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
+        'Família de switches standalone de 1U para racks de 19", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
       'DM4100':
         'Switch de agregação Datacom com recursos L2/L3 avançados, uplinks de alta capacidade e suporte a redundância, indicado para borda de provedores e redes corporativas de maior porte.',
       'Datacom DM4100':
@@ -919,16 +919,65 @@
         const preview = row.querySelector('.hover-preview');
         if (!preview) return;
 
-        // Remove classe antes de recalcular
         row.classList.remove('hover-left');
+        preview.dataset.side = 'right'; // default
 
         const rect = row.getBoundingClientRect();
         const estimatedPreviewWidth = preview.offsetWidth || 340; // fallback
-        // Se do lado direito faltar pouco espaço pro tooltip, mostramos à esquerda
         const spaceRight = viewportWidth - rect.right;
 
         if (spaceRight < estimatedPreviewWidth + 20) {
           row.classList.add('hover-left');
+          preview.dataset.side = 'left';
+        }
+      });
+    }
+
+    // ===== NOVA FUNÇÃO: impede vazamento vertical do tooltip =====
+    function adjustHoverVerticalPosition() {
+      const previews = document.querySelectorAll('.switch-row .hover-preview');
+      if (!previews.length) return;
+
+      const viewportHeight = window.innerHeight;
+
+      previews.forEach(preview => {
+        const row = preview.closest('.switch-row');
+        if (!row) return;
+
+        // volta ao estado padrão
+        preview.style.top = '50%';
+        preview.style.bottom = '';
+        const side = preview.dataset.side || 'right';
+        if (side === 'left') {
+          preview.style.transform = 'translate(-10px, -50%) scale(.98)';
+        } else {
+          preview.style.transform = 'translate(10px, -50%) scale(.98)';
+        }
+
+        const rect = preview.getBoundingClientRect();
+        const overflowTop = rect.top < 8;
+        const overflowBottom = rect.bottom > viewportHeight - 8;
+
+        // vazando para baixo
+        if (overflowBottom && !overflowTop) {
+          preview.style.top = 'auto';
+          preview.style.bottom = '0';
+          if (side === 'left') {
+            preview.style.transform = 'translate(-10px, 0) scale(.98)';
+          } else {
+            preview.style.transform = 'translate(10px, 0) scale(.98)';
+          }
+        }
+
+        // vazando para cima
+        if (overflowTop) {
+          preview.style.top = '0';
+          preview.style.bottom = 'auto';
+          if (side === 'left') {
+            preview.style.transform = 'translate(-10px, 0) scale(.98)';
+          } else {
+            preview.style.transform = 'translate(10px, 0) scale(.98)';
+          }
         }
       });
     }
@@ -1035,8 +1084,9 @@
         wrap.appendChild(bloco);
       });
 
-      // ===== CHAMA A FUNÇÃO PARA AJUSTAR DIREÇÕES DOS TOOLTIPS =====
+      // Direção horizontal + posição vertical dos tooltips
       adjustHoverDirections();
+      setTimeout(adjustHoverVerticalPosition, 0);
     }
 
     function renderUFSelect(selectEl){ if(!selectEl) return; selectEl.innerHTML=`<option value="__">Sem Estado</option>`+estados.map(uf=>`<option value="${uf}">${uf}</option>`).join(''); }
@@ -1466,8 +1516,11 @@
             toggleBtn.setAttribute('aria-expanded','true');
             list.style.display='block';
 
-            // ===== RECALCULA DIREÇÕES DOS TOOLTIPS APÓS ABRIR =====
-            setTimeout(() => adjustHoverDirections(), 50);
+            // Recalcula posição dos tooltips após abrir
+            setTimeout(() => {
+              adjustHoverDirections();
+              adjustHoverVerticalPosition();
+            }, 50);
           }
           return;
         }
@@ -1638,8 +1691,8 @@
             if(isSidebarOpen()) scheduleAutoHide(); 
             else cancelAutoHide(); 
 
-            // ===== RECALCULA DIREÇÕES DOS TOOLTIPS NO RESIZE =====
             adjustHoverDirections();
+            adjustHoverVerticalPosition();
           });
         },150);
       });
