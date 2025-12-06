@@ -231,19 +231,12 @@
       border-color:transparent transparent transparent #fff;
     }
 
-    /* ===== NOVO: contêiner para imagem + descrição ficarem juntos ===== */
-    .hover-preview .hover-top{
-      display:flex;
-      flex-direction:column;
-      gap:6px;           /* espaço pequeno ENTRE imagem e descrição */
-      margin-bottom:8px; /* espaço abaixo do conjunto imagem+texto */
-    }
-
     .hover-preview img{ width:100%; height:auto; display:block; border-radius:6px; object-fit:cover; max-height:240px }
     .hover-preview .noimg{ color:#7f8c8d; font-size:14px; text-align:center; padding:18px 6px }
 
-    /* ===== BLOCO DE TEXTO DO MODELO NO TOOLTIP ===== */
+    /* ===== NOVO BLOCO DE TEXTO DO MODELO NO TOOLTIP ===== */
     .hover-preview .hover-model-block{
+      margin-top:10px;
       padding:8px 10px;
       border-radius:8px;
       background:#f6f8fb;
@@ -261,7 +254,7 @@
     }
 
     .hover-preview .copy-btn{
-      margin-top:0;
+      margin-top:8px;
       width:100%;
       justify-content:center;
       pointer-events:auto;
@@ -1013,23 +1006,21 @@
                         <button class="btn danger small" data-action="delete">Excluir</button>
                       </div>
                       <div class="hover-preview">
-                        <div class="hover-top">
-                          ${
-                            sw.foto
-                              ? `<img src="${sw.foto}" alt="Foto de ${sw.nome}">`
-                              : `<div class="noimg">Sem imagem para este switch</div>`
-                          }
-                          <div class="hover-model-block">
-                            <div class="hover-model-title">
-                              Modelo: ${sw.modelo ? sw.modelo : '—'}
-                            </div>
-                            <div class="hover-model-text">
-                              ${
-                                sw.modelo && MODELO_DESCRICOES[sw.modelo]
-                                  ? MODELO_DESCRICOES[sw.modelo]
-                                  : 'Sem descrição detalhada para este modelo.'
-                              }
-                            </div>
+                        ${
+                          sw.foto
+                            ? `<img src="${sw.foto}" alt="Foto de ${sw.nome}">`
+                            : `<div class="noimg">Sem imagem para este switch</div>`
+                        }
+                        <div class="hover-model-block">
+                          <div class="hover-model-title">
+                            Modelo: ${sw.modelo ? sw.modelo : '—'}
+                          </div>
+                          <div class="hover-model-text">
+                            ${
+                              sw.modelo && MODELO_DESCRICOES[sw.modelo]
+                                ? MODELO_DESCRICOES[sw.modelo]
+                                : 'Sem descrição detalhada para este modelo.'
+                            }
                           </div>
                         </div>
                         <button class="btn small ghost copy-btn" type="button">Copiar</button>
