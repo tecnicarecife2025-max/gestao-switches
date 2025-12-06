@@ -160,22 +160,7 @@
     .pop-toggle.open i{ transform:rotate(180deg) }
 
     .switch-list{ display:none; padding:8px 16px 16px 16px; overflow:visible; position:relative }
-    
-    /* ===== AJUSTE: switch-row agora é hoverável e mostra cursor pointer ===== */
-    .switch-row{ 
-      background:#fff; 
-      border:1px solid #eee; 
-      border-radius:8px; 
-      padding:12px; 
-      display:flex; 
-      gap:12px; 
-      align-items:center; 
-      justify-content:space-between; 
-      position:relative; 
-      overflow:visible;
-      cursor:pointer;
-    }
-    
+    .switch-row{ background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible }
     .switch-info-wrap{ display:flex; flex-direction:column; gap:2px }
     .switch-name{ font-weight:700; color:#2c3e50 }
     .switch-meta{ font-size:14px; color:#7f8c8d }
@@ -189,7 +174,6 @@
       transform:translate(10px, -50%) scale(.98); 
       width:340px; 
       max-width:90vw; 
-      max-height:300px; 
       background:#fff; 
       border:1px solid #e6e9ef; 
       border-radius:10px; 
@@ -246,12 +230,19 @@
       border-color:transparent transparent transparent #fff;
     }
 
+    /* ===== NOVO: contêiner para imagem + descrição ficarem juntos ===== */
+    .hover-preview .hover-top{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-bottom:10px;
+    }
+
     .hover-preview img{ width:100%; height:auto; display:block; border-radius:6px; object-fit:cover; max-height:240px }
     .hover-preview .noimg{ color:#7f8c8d; font-size:14px; text-align:center; padding:18px 6px }
 
-    /* ===== NOVO BLOCO DE TEXTO DO MODELO NO TOOLTIP ===== */
+    /* ===== BLOCO DE TEXTO DO MODELO NO TOOLTIP ===== */
     .hover-preview .hover-model-block{
-      margin-top:10px;
       padding:8px 10px;
       border-radius:8px;
       background:#f6f8fb;
@@ -269,7 +260,7 @@
     }
 
     .hover-preview .copy-btn{
-      margin-top:8px;
+      margin-top:0;
       width:100%;
       justify-content:center;
       pointer-events:auto;
@@ -755,7 +746,11 @@
 
       // Planet
       'Planet GSW':
-        'Família de switches Gigabit da Planet, geralmente não-gerenciáveis ou smart, com múltiplas portas 10/100/1000 para agregação simples de tráfego em redes de pequeno e médio porte.'
+        'Família de switches Gigabit da Planet, geralmente não-gerenciáveis ou smart, com múltiplas portas 10/100/1000 para agregação simples de tráfego em redes de pequeno e médio porte.',
+      
+      // Adicionando MA5683T
+      'MA5683T':
+        'OLT de acesso óptico de médio porte, chassi 5U com 6 slots de serviço, suportando GPON/10G GPON/EPON/10G EPON e P2P, para oferta de serviços de Internet, voz e vídeo em redes FTTH/FTTx.'
     };
 
     /* ===== Helpers de imagem (compactado) ===== */
@@ -1006,7 +1001,12 @@
               ${
                 swDoPop.length===0
                 ? `<div class="no-switches" style="padding:16px">Nenhum switch vinculado a este POP.</div>`
-                : swDoPop.map(sw=>`
+                : swDoPop.map(sw=>{
+                    const modeloDesc = sw.modelo && MODELO_DESCRICOES[sw.modelo]
+                      ? MODELO_DESCRICOES[sw.modelo]
+                      : 'Sem descrição detalhada para este modelo.';
+                    
+                    return `
                     <div class="switch-row"
                          data-switch-id="${sw.id}"
                          data-switch-nome="${sw.nome.replace(/"/g,'&quot;')}"
@@ -1021,27 +1021,26 @@
                         <button class="btn danger small" data-action="delete">Excluir</button>
                       </div>
                       <div class="hover-preview">
-                        ${
-                          sw.foto
-                            ? `<img src="${sw.foto}" alt="Foto de ${sw.nome}">`
-                            : `<div class="noimg">Sem imagem para este switch</div>`
-                        }
-                        <div class="hover-model-block">
-                          <div class="hover-model-title">
-                            Modelo: ${sw.modelo ? sw.modelo : '—'}
-                          </div>
-                          <div class="hover-model-text">
-                            ${
-                              sw.modelo && MODELO_DESCRICOES[sw.modelo]
-                                ? MODELO_DESCRICOES[sw.modelo]
-                                : 'Sem descrição detalhada para este modelo.'
-                            }
+                        <div class="hover-top">
+                          ${
+                            sw.foto
+                              ? `<img src="${sw.foto}" alt="Foto de ${sw.nome}">`
+                              : `<div class="noimg">Sem imagem para este switch</div>`
+                          }
+                          <div class="hover-model-block">
+                            <div class="hover-model-title">
+                              Modelo: ${sw.modelo ? sw.modelo : '—'}
+                            </div>
+                            <div class="hover-model-text">
+                              ${modeloDesc}
+                            </div>
                           </div>
                         </div>
                         <button class="btn small ghost copy-btn" type="button">Copiar</button>
                       </div>
                     </div>
-                  `).join('')
+                  `;
+                }).join('')
               }
             </div>`;
           grid.appendChild(card);
@@ -1681,8 +1680,8 @@
     const ctx=canvas.getContext('2d',{ willReadFrequently:true });
     const FAV_W=32,FAV_H=32; canvas.width=FAV_W; canvas.height=FAV_H;
     let running=false, rafId=null, lastUpdate=0;
-    const FPS=4, FRAME_MS=1000/FPS;           // FPS reduzido
-    const MAX_DURATION_MS=15000;              // roda máx. 15s
+    const FPS=4, FRAME_MS=1000/FPS;
+    const MAX_DURATION_MS=15000;
     let startTime=null;
 
     function drawFrame(ts){
