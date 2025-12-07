@@ -269,15 +269,15 @@
     .modal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:1200 }
     .modal.open{ display:flex }
     .modal-content{ background:#fff; width:min(900px, 100%); max-height:90vh; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:auto }
-    .modal-header{ padding:16px 20px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between }
+    .modal-header{ padding:16px 20px; border-bottom:1px solid:#eee; display:flex; align-items:center; justify-content:space-between }
     .modal-title{ font-size:18px; font-weight:700 }
     .modal-body{ padding:20px }
-    .modal-footer{ padding:16px 20px; border-top:1px solid #eee; display:flex; gap:10px; justify-content:flex-end }
+    .modal-footer{ padding:16px 20px; border-top:1px solid:#eee; display:flex; gap:10px; justify-content:flex-end }
     .close-x{ background:transparent; border:0; font-size:20px; cursor:pointer }
 
     .form-group{ margin-bottom:16px }
     label{ display:block; margin-bottom:8px; font-weight:600; color:#2c3e50 }
-    input,select{ width:100%; padding:12px; border:1px solid #ddd; border-radius:5px; transition:border-color .3s }
+    input,select{ width:100%; padding:12px; border:1px solid:#ddd; border-radius:5px; transition:border-color .3s }
     input:focus,select:focus{ border-color:#3498db; outline:0; box-shadow:0 0 0 2px rgba(52,152,219,.2) }
     .file-input-wrapper{ position:relative; overflow:hidden; display:inline-block; width:100% }
     .file-input-wrapper input[type=file]{ position:absolute; left:0; top:0; opacity:0; width:100%; height:100%; cursor:pointer }
@@ -350,6 +350,7 @@
   </style>
 </head>
 
+<!-- Começa colapsado e BLOQUEADO -->
 <body class="sidebar-collapsed locked">
   <!-- VIDEO OCULTO PARA FAVICON ANIMADO -->
   <video id="favVideo" width="256" height="256" preload="auto" muted playsinline loop
@@ -392,19 +393,6 @@
         </span>
         <span>Gerenciar POPs</span>
       </div>
-
-      <!-- NOVO: Cadastrar acesso -->
-      <div class="item" id="menuCadastrarAcesso" data-label="Cadastrar acesso" role="button" tabindex="0">
-        <span class="icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 21v-2a4 4 0 0 0-8 0v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-            <line x1="20" y1="8" x2="20" y2="14"></line>
-            <line x1="23" y1="11" x2="17" y2="11"></line>
-          </svg>
-        </span>
-        <span>Cadastrar acesso</span>
-      </div>
     </nav>
 
     <!-- Rodapé com botão de cadeado -->
@@ -440,27 +428,211 @@
     </div>
   </div>
 
-  <!-- Modal para cadastrar login simples -->
-  <div class="modal" id="modalCadastrarAcesso" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalCadastrarAcessoTitle">
-    <div class="modal-content" style="max-width:400px">
+  <!-- Confirm/Alert modal reutilizável -->
+  <div class="modal" id="confirmModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+    <div class="modal-content" style="max-width:600px">
       <div class="modal-header">
-        <div class="modal-title" id="modalCadastrarAcessoTitle">Cadastrar Login</div>
-        <button class="close-x" data-close="modalCadastrarAcesso" aria-label="Fechar">&times;</button>
+        <div class="modal-title" id="confirmModalTitle">Confirmar</div>
+        <button class="close-x" data-close="confirmModal" aria-label="Fechar">&times;</button>
       </div>
-      <form class="modal-body" id="formCadastrarAcesso">
-        <div class="form-group">
-          <label for="loginUsuario">Login</label>
-          <input type="text" id="loginUsuario" required placeholder="Digite seu login" autocomplete="off" />
-        </div>
-      </form>
+      <div class="modal-body">
+        <p id="confirmModalMessage" style="margin:0; color:#333; line-height:1.4"></p>
+      </div>
       <div class="modal-footer">
-        <button class="btn ghost" data-close="modalCadastrarAcesso">Cancelar</button>
-        <button class="btn" id="btnCadastrarUsuario">Cadastrar</button>
+        <button class="btn ghost" id="confirmCancelBtn">Cancelar</button>
+        <button class="btn danger" id="confirmOkBtn">Remover</button>
       </div>
     </div>
   </div>
 
-  <!-- (Mantenha os outros modais e código existentes aqui, omitidos para brevidade) -->
+  <!-- Modal de Senha -->
+  <div class="modal" id="passwordModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="passwordTitle">
+    <div class="modal-content" style="max-width:420px">
+      <div class="modal-header">
+        <div class="modal-title" id="passwordTitle">Destravar</div>
+        <button class="close-x" data-close="passwordModal" aria-label="Fechar">&times;</button>
+      </div>
+      <form class="modal-body" id="passwordForm">
+        <label for="passwordInput" class="muted" style="display:block;margin-bottom:8px">
+          Digite a senha para destravar:
+        </label>
+        <div class="password-field">
+          <input type="password" id="passwordInput" placeholder="••••••" autocomplete="current-password" required>
+          <button type="button" class="eye" id="togglePass" aria-label="Mostrar/ocultar senha" title="Mostrar/ocultar senha">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+        <div class="input-hint" id="passwordError" style="display:none">Senha incorreta. Tente novamente.</div>
+      </form>
+      <div class="modal-footer">
+        <button class="btn ghost" type="button" data-close="passwordModal">Cancelar</button>
+        <button class="btn" id="passwordOkBtn" form="passwordForm">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUGESTÕES DE MODELOS -->
+  <datalist id="modelosBase">
+    <option value="Datacom DM3000"></option>
+    <option value="Datacom DM4100"></option>
+    <option value="Datacom EDD 2104"></option>
+    <option value="Cisco Catalyst 2960"></option>
+    <option value="Cisco Catalyst 9200"></option>
+    <option value="Huawei S5720"></option>
+    <option value="HP/Aruba 2530"></option>
+    <option value="MikroTik CRS326"></option>
+    <option value="Juniper EX3300"></option>
+    <option value="Planet GSW"></option>
+  </datalist>
+
+  <!-- MODAIS CADASTRO / EDIÇÃO / POPS -->
+  <div class="modal" id="modalCadastro" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Novo cadastro</div>
+        <button class="close-x" data-close="modalCadastro" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="cadastroForm">
+          <div class="form-group">
+            <label for="tipoCadastro">O que deseja cadastrar?</label>
+            <select id="tipoCadastro" required>
+              <option value="switch">Switch</option>
+              <option value="pop">POP</option>
+            </select>
+          </div>
+
+          <div id="camposPOP" class="hide" style="display:none">
+            <div class="form-group">
+              <label for="popNome">Nome/Descrição do POP</label>
+              <input type="text" id="popNome" placeholder="Ex: São Paulo (POP-SP)">
+            </div>
+            <div class="form-group">
+              <label for="popEstado">Estado (UF)</label>
+              <select id="popEstado"></select>
+            </div>
+          </div>
+
+          <div id="camposSW" style="display:block">
+            <div class="form-group">
+              <label for="pop">POP (Ponto de Presença)</label>
+              <select id="pop"></select>
+              <div class="muted" style="margin-top:6px">Se o POP não existir, selecione "POP" acima e cadastre.</div>
+            </div>
+            <div class="form-group">
+              <label for="modelo">Modelo</label>
+              <input type="text" id="modelo" list="modelosBase" placeholder="Ex: DM3000">
+            </div>
+            <div class="form-group">
+              <label for="nome">Nome do Switch</label>
+              <input type="text" id="nome" placeholder="Ex: SWAC01-RCE03">
+            </div>
+            <div class="form-group">
+              <label for="ip">Endereço IP</label>
+              <input type="text" id="ip" placeholder="Ex: 192.168.1.100">
+            </div>
+            <div class="form-group">
+              <label for="foto">Foto do Switch</label>
+              <div class="file-input-wrapper">
+                <div class="file-input-button">Selecionar imagem</div>
+                <input type="file" id="foto" accept="image/*">
+              </div>
+              <!-- MINI GALERIA DE FOTOS (NOVO CADASTRO) -->
+              <div id="galleryCadastro" class="mini-gallery"></div>
+              <div class="muted" style="margin-top:4px">
+                Ou clique em uma imagem já cadastrada abaixo para reutilizar.
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn ghost" data-close="modalCadastro">Cancelar</button>
+        <button class="btn" id="btnSalvarCadastro">Cadastrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalEditSwitch" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Editar Switch</div>
+        <button class="close-x" data-close="modalEditSwitch" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="formEditSwitch">
+          <input type="hidden" id="editSwitchId">
+          <div class="form-group">
+            <label for="editSwitchNome">Nome do Switch</label>
+            <input type="text" id="editSwitchNome">
+          </div>
+          <div class="form-group">
+            <label for="editSwitchIP">Endereço IP</label>
+            <input type="text" id="editSwitchIP" placeholder="Ex: 192.168.1.100">
+          </div>
+          <div class="form-group">
+            <label for="editSwitchModelo">Modelo</label>
+            <input type="text" id="editSwitchModelo" list="modelosBase" placeholder="Ex: DM4100">
+          </div>
+          <div class="form-group">
+            <label for="editSwitchPop">POP</label>
+            <select id="editSwitchPop"></select>
+          </div>
+          <div class="form-group">
+            <label for="editSwitchFoto">Foto do Switch</label>
+            <div class="row-actions">
+              <div class="file-input-wrapper" style="flex:1">
+                <div class="file-input-button">Selecionar imagem</div>
+                <input type="file" id="editSwitchFoto" accept="image/*">
+              </div>
+              <button type="button" class="btn ghost small" id="btnRemoverFoto">Remover imagem</button>
+            </div>
+            <div class="muted" id="previewInfo" style="margin-top:8px"></div>
+            <!-- MINI GALERIA DE FOTOS (EDIÇÃO) -->
+            <div id="galleryEdit" class="mini-gallery"></div>
+            <div class="muted" style="margin-top:4px">
+              Ou clique em uma imagem já cadastrada abaixo para reutilizar.
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn ghost" data-close="modalEditSwitch">Cancelar</button>
+        <button class="btn" id="btnSalvarEditSwitch">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalPops" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Gerenciar POPs</div>
+        <button class="close-x" data-close="modalPops" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="muted" style="margin-bottom:10px">Renomeie, ajuste o Estado (UF) ou exclua POPs. Ao renomear, o sistema atualiza o <em>slug</em>/id e realoca os Switches automaticamente.</div>
+        <table id="tabelaPops">
+          <thead>
+            <tr>
+              <th style="width:34%">Nome/Descrição</th>
+              <th style="width:18%">Estado (UF)</th>
+              <th style="width:24%">ID (slug)</th>
+              <th>Switches</th>
+              <th style="width:200px">Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn ghost" data-close="modalPops">Fechar</button>
+        <button class="btn" id="btnSalvarPops">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module">
     /* ========= Firebase ========= */
@@ -491,37 +663,289 @@
     const byId = (id) => document.getElementById(id);
     const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
 
-    // ... (mantenha todas as funções utilitárias e código existente) ...
+    function validarIP(ip){
+      const re=/^(25[0-5]|2[0-4]\d|[01]?\d?\d)(\.(25[0-5]|2[0-4]\d|[01]?\d?\d)){3}$/;
+      return re.test(ip);
+    }
+    const slugify=(s)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
 
-    /* ===== NOVO: controle simples de login ===== */
-    let isUserLoggedIn = false;
-    let currentLogin = null;
+    const estados=['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+    const estadoLabel=(uf)=> uf && uf!=='__' ? uf : 'Sem Estado';
 
-    function openCadastrarAcessoModal(){
-      openModal('modalCadastrarAcesso');
+    const POPS_PADRAO=[
+      { nome:'São Paulo (POP-SP)', uf:'SP' },
+      { nome:'Rio de Janeiro (POP-RJ)', uf:'RJ' },
+      { nome:'Belo Horizonte (POP-MG)', uf:'MG' },
+      { nome:'Porto Alegre (POP-RS)', uf:'RS' },
+      { nome:'Curitiba (POP-PR)', uf:'PR' },
+      { nome:'Salvador (POP-BA)', uf:'BA' },
+      { nome:'Fortaleza (POP-CE)', uf:'CE' },
+      { nome:'Brasília (POP-DF)', uf:'DF' }
+    ].map(n => ({ id: slugify(n.nome), nome:n.nome, estado:n.uf }));
+
+    /* ===== DESCRIÇÕES POR MODELO PARA O TOOLTIP ===== */
+    const MODELO_DESCRICOES = {
+      // Datacom
+      'DM4170 24GX+12XS':
+        'Switch L2/L3 e MPLS com 24 interfaces GE óticas SFP e 12 interfaces 10GE óticas SFP+, com dois slots hot swappable para fontes de alimentação redundantes.',
+      'DM3224F2':
+        'Switch DM3000 Layer 2 com 24 portas Fast Ethernet 10/100Base-TX e 4 portas Gigabit Ethernet combo (1000Base-X ou 10/100/1000Base-T).',
+      'HUAWEI S6730-H48X6C':
+        'Switch de agregação/roteamento 10GE de alta densidade, com 48×10GE SFP+ e 6×40/100GE QSFP28, WLAN AC integrado para até 1024 APs, VXLAN e recursos avançados de segurança e automação.',
+      'DM4270 48XS+6CX':
+        'Switch L2/L3 e MPLS com 48 interfaces ópticas SFP+ 10GE, 6 interfaces ópticas QSFP28 100GE/40GE e dois slots para fontes de alimentação hot swap.',
+      'MA5683T':
+        'OLT de acesso óptico de médio porte, chassi 5U com 6 slots de serviço, suportando GPON/10G GPON/EPON/10G EPON e P2P, para oferta de serviços de Internet, voz e vídeo em redes FTTH/FTTx.',
+      'DM4100 ETH24GX+4XX+MPLS':
+        'Switch DM4100 com 24 portas Gigabit elétricas + 4 uplinks SFP, comutação wire‑speed L2/L3, suporte a IP/MPLS e recursos avançados para redes de acesso e agregação Ethernet.',
+      'HUAWEI S6720-54C-EI-48S-DC':
+        'Switch 10GE de alto desempenho para data center/campus, com 48 portas 10GE SFP+ e 2 uplinks 40GE QSFP+, 2,56 Tbit/s de capacidade, 1.080 Mpps, suporte a iStack e SVF para redes simplificadas.',
+      'MA5800-X7':
+        'OLT de acesso óptico de grande porte, chassi MA5800‑X7 com arquitetura distribuída, suportando GPON/XG(S)‑PON/50G PON e interfaces GE/10GE, ideal para oferta de serviços de Internet, voz e vídeo 4K/8K/VR em redes FTTH/FTTx gigabit.',
+      'DM4008':
+        'Chassi modular DM4008 da família DM4000, switch Metro Ethernet de grande porte para núcleo/agregação, com arquitetura de alta capacidade, múltiplos slots de interface GE/10GE e recursos avançados de QoS, VPN e alta disponibilidade para redes Metro Ethernet.',
+      'S12700':
+        'Chassi core Huawei S12708 da família S12700, modular para rack 19\" com múltiplos slots de serviço, altura em torno de 8–10U (dependendo do kit), alta capacidade de comutação em line cards 10GE/40GE/100GE e fontes PSU redundantes hot‑swap, ideal para núcleo de redes de campus de grande porte.',
+      'DM4380 12XS+3CX':
+        'Switch L2/L3 e MPLS com 12 interfaces ópticas 10GE SFP+ e 3 interfaces ópticas QSFP+ 40GE/100GE, equipado com dois slots hot swappable para fontes de alimentação redundantes, projetado para alta densidade de uplinks e agregação em redes corporativas e data centers.',
+      
+      'DM3000':
+        'Família de switches standalone de 1U para racks de 19\", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
+      'Datacom DM3000':
+        'Família de switches standalone de 1U para racks de 19\", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
+      'DM4100':
+        'Switch de agregação Datacom com recursos L2/L3 avançados, uplinks de alta capacidade e suporte a redundância, indicado para borda de provedores e redes corporativas de maior porte.',
+      'Datacom DM4100':
+        'Switch de agregação Datacom com recursos L2/L3 avançados, uplinks de alta capacidade e suporte a redundância, indicado para borda de provedores e redes corporativas de maior porte.',
+      'Datacom EDD 2104':
+        'Equipamento de demarcação Ethernet (EDD) com até 4 portas Gigabit, QoS detalhado e OAM para oferta de serviços Metro Ethernet com garantia de SLA na borda do cliente.',
+
+      // Cisco
+      'Cisco Catalyst 2960':
+        'Switch de acesso Layer 2 da família Catalyst com portas Fast Ethernet ou Gigabit, recursos de segurança, QoS e opções com PoE/PoE+, amplamente usado em redes LAN corporativas.',
+      'Catalyst 2960':
+        'Switch de acesso Layer 2 da família Catalyst com portas Fast Ethernet ou Gigabit, recursos de segurança, QoS e opções com PoE/PoE+, amplamente usado em redes LAN corporativas.',
+      'Cisco Catalyst 9200':
+        'Switch de acesso enterprise da família Catalyst 9000, com uplinks modulares, empilhamento, recursos avançados L3, SD-Access, automação e segurança reforçada para redes corporativas.',
+      'Catalyst 9200':
+        'Switch de acesso enterprise da família Catalyst 9000, com uplinks modulares, empilhamento, recursos avançados L3, SD-Access, automação e segurança reforçada para redes corporativas.',
+
+      // Huawei
+      'Huawei S5720':
+        'Série de switches Gigabit de próxima geração com uplinks 10GE, funções L2/L3 avançadas, QoS, segurança aprimorada e recursos adequados para acesso e agregação em redes corporativas.',
+
+      // HPE / Aruba
+      'HP/Aruba 2530':
+        'Switch Layer 2 de acesso com portas Fast Ethernet ou Gigabit, gerenciamento completo, QoS e opções PoE, ideal para redes de campus e filiais com foco em simplicidade e baixo consumo.',
+
+      // MikroTik
+      'MikroTik CRS326':
+        'Switch Cloud Router Switch Gigabit com 24 portas 10/100/1000 e 2 portas SFP+ 10GbE, sistema RouterOS/SwOS, oferecendo switching wire speed e recursos básicos de roteamento.',
+
+      // Juniper
+      'Juniper EX3300':
+        'Switch de acesso 1GbE com uplinks 10GbE e tecnologia Virtual Chassis, permitindo empilhamento de até 10 unidades, com recursos L2/L3 para redes corporativas e campus.',
+
+      // Planet
+      'Planet GSW':
+        'Família de switches Gigabit da Planet, geralmente não-gerenciáveis ou smart, com múltiplas portas 10/100/1000 para agregação simples de tráfego em redes de pequeno e médio porte.',
+      
+      // Adicionando MA5683T
+      'MA5683T':
+        'OLT de acesso óptico de médio porte, chassi 5U com 6 slots de serviço, suportando GPON/10G GPON/EPON/10G EPON e P2P, para oferta de serviços de Internet, voz e vídeo em redes FTTH/FTTx.'
+    };
+
+    /* ===== Helpers de imagem (compactado) ===== */
+    async function compressImage(file,{maxWidth=1600,maxHeight=1200,mimeType='image/webp',quality=.82}={}){
+      if(!('createImageBitmap' in window)) return await fileToDataURL(file);
+      const bitmap=await createImageBitmap(file);
+      const {width,height}=bitmap; const ratio=Math.min(maxWidth/width,maxHeight/height,1);
+      const canvas=document.createElement('canvas'); canvas.width=Math.round(width*ratio); canvas.height=Math.round(height*ratio);
+      const ctx=canvas.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+      ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+      let outType=mimeType; if(!canvas.toDataURL(outType).startsWith('data:image/webp')) outType='image/jpeg';
+      return canvas.toDataURL(outType,quality);
+    }
+    function fileToDataURL(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=e=>res(e.target.result); fr.onerror=rej; fr.readAsDataURL(file); }); }
+    async function compressAdaptively(file){
+      const steps=[{w:2200,h:1600,q:.88},{w:1800,h:1350,q:.84},{w:1600,h:1200,q:.82},{w:1400,h:1050,q:.78},{w:1200,h:900,q:.75},{w:1000,h:750,q:.72},{w:900,h:675,q:.7}];
+      for(const s of steps){ const d=await compressImage(file,{maxWidth:s.w,maxHeight:s.h,quality:s.q}); if(d.length<4_500_000) return d; }
+      return await compressImage(file,{maxWidth:800,maxHeight:600,quality:.68});
     }
 
-    function saveLogin(login){
-      if(!login || login.trim() === '') return false;
-      currentLogin = login.trim();
-      localStorage.setItem('appLogin', currentLogin);
-      isUserLoggedIn = true;
-      renderEstadosComPops();
-      return true;
+    /* ===== POPs/Switches ===== */
+    let switches=[]; let pops=[]; let pendingPopEdits=[];
+    let popsLoaded=false; let switchesLoaded=false; let loadFallbackTimer=null;
+
+    function loadPops(){
+      const dbRef=ref(fbDb,'pops');
+      onValue(dbRef,(snap)=>{
+        const data=snap.val(); pops=data?Object.values(data):[];
+        if(!pops || pops.length===0){ pops=[...POPS_PADRAO]; savePops(); }
+        renderPopOptions(); popsLoaded=true; renderWhenReady();
+      },(err)=>{ console.error('Erro POPs',err); popsLoaded=true; renderWhenReady(); });
+    }
+    function savePops(){ const dbRef=ref(fbDb,'pops'); const obj={}; pops.forEach(p=>obj[p.id]=p); set(dbRef,obj).catch(()=> showAlert({title:'Erro',message:'Falha ao salvar POPs.'})); }
+    function loadSwitches(){
+      const dbRef=ref(fbDb,'switches');
+      onValue(dbRef,(snap)=>{ const data=snap.val(); switches=data?Object.values(data):[]; switchesLoaded=true; renderWhenReady(); },
+                    (err)=>{ console.error('Erro switches',err); switchesLoaded=true; renderWhenReady(); });
+    }
+    function saveSwitches(){ const dbRef=ref(fbDb,'switches'); const obj={}; switches.forEach(s=>obj[s.id]=s); set(dbRef,obj).catch(()=> showAlert({title:'Erro',message:'Falha ao salvar switches.'})); }
+
+    /* ========= Confirm/Alert ========= */
+    function _openModalById(id){ const el=byId(id); if(!el) return; el.classList.add('open'); el.setAttribute('aria-hidden','false'); }
+    function _closeModalById(id){ const el=byId(id); if(!el) return; el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
+
+    function showConfirm({ title='Confirmar', message='', okLabel='Confirmar', cancelLabel='Cancelar', okIsDanger=false }={}){
+      return new Promise(resolve=>{
+        const modal=byId('confirmModal'); if(!modal){ resolve(window.confirm(message)); return; }
+        const originalParent=modal.parentElement, originalNext=modal.nextSibling;
+        document.body.appendChild(modal); const originalZ=modal.style.zIndex||''; modal.style.zIndex='3000';
+
+        const titleEl=modal.querySelector('#confirmModalTitle');
+        const msgEl=modal.querySelector('#confirmModalMessage');
+        const okBtn=modal.querySelector('#confirmOkBtn');
+        const cancelBtn=modal.querySelector('#confirmCancelBtn');
+        const closeBtn=modal.querySelector('.close-x');
+
+        titleEl.textContent=title; msgEl.textContent=message;
+        okBtn.textContent=okLabel; cancelBtn.textContent=cancelLabel;
+        cancelBtn.style.display=''; okBtn.classList.toggle('danger',!!okIsDanger);
+
+        const onOk=()=>{ cleanup(); resolve(true) };
+        const onCancel=()=>{ cleanup(); resolve(false) };
+        const onClose=()=>{ onCancel() };
+
+        function restore(){ try{ if(originalParent){ if(originalNext) originalParent.insertBefore(modal,originalNext); else originalParent.appendChild(modal);} }catch{} finally{ modal.style.zIndex=originalZ; } }
+        function cleanup(){ okBtn.removeEventListener('click',onOk); cancelBtn.removeEventListener('click',onCancel); if(closeBtn) closeBtn.removeEventListener('click',onClose); okBtn.classList.remove('danger'); _closeModalById('confirmModal'); restore(); }
+
+        okBtn.addEventListener('click',onOk); cancelBtn.addEventListener('click',onCancel); if(closeBtn) closeBtn.addEventListener('click',onClose);
+        _openModalById('confirmModal');
+      });
     }
 
-    function loadLogin(){
-      const saved = localStorage.getItem('appLogin');
-      if(saved){
-        currentLogin = saved;
-        isUserLoggedIn = true;
-      } else {
-        isUserLoggedIn = false;
+    function showAlert({ title='Aviso', message='Operação concluída.' }={}){
+      return new Promise(resolve=>{
+        const modal=byId('confirmModal'); if(!modal){ window.alert(message); resolve(); return; }
+        const originalParent=modal.parentElement, originalNext=modal.nextSibling;
+        document.body.appendChild(modal); const originalZ=modal.style.zIndex||''; modal.style.zIndex='3000';
+
+        const titleEl=modal.querySelector('#confirmModalTitle');
+        const msgEl=modal.querySelector('#confirmModalMessage');
+        const okBtn=modal.querySelector('#confirmOkBtn');
+        const cancelBtn=modal.querySelector('#confirmCancelBtn');
+        const closeBtn=modal.querySelector('.close-x');
+
+        titleEl.textContent=title; msgEl.textContent=message;
+        okBtn.textContent='OK'; cancelBtn.style.display='none'; okBtn.classList.remove('danger');
+
+        const onOk=()=>{ cleanup(); resolve(); };
+        const onClose=()=>{ cleanup(); resolve(); };
+
+        function restore(){ try{ if(originalParent){ if(originalNext) originalParent.insertBefore(modal,originalNext); else originalParent.appendChild(modal);} }catch{} finally{ modal.style.zIndex=originalZ; } }
+        function cleanup(){ okBtn.removeEventListener('click',onOk); if(closeBtn) closeBtn.removeEventListener('click',onClose); cancelBtn.style.display=''; _closeModalById('confirmModal'); restore(); }
+
+        okBtn.addEventListener('click',onOk); if(closeBtn) closeBtn.addEventListener('click',onClose);
+        _openModalById('confirmModal');
+      });
+    }
+
+    /* ========= Loading / Render control ========= */
+    function showLoading(show){ const loading=byId('estadoLoading'); const container=byId('estadoContainer'); if(!loading||!container) return; loading.style.display=show?'flex':'none'; }
+    function renderWhenReady(){ 
+      if(popsLoaded && switchesLoaded){ 
+        clearTimeout(loadFallbackTimer); 
+        showLoading(false); 
+        renderEstadosComPops(); 
+      } 
+    }
+    function startLoadFallbackTimer(ms=8000){
+      clearTimeout(loadFallbackTimer);
+      loadFallbackTimer=setTimeout(()=>{
+        if(!(popsLoaded && switchesLoaded)){
+          showLoading(false);
+          const wrap=byId('estadoContainer');
+          if(wrap) wrap.innerHTML='<div class="no-pops">Não foi possível carregar os POPs. Verifique sua conexão ou tente novamente. Use "Novo cadastro".</div>';
+        }
+      },ms);
+    }
+
+    /* ========= GALERIA LOCAL (por modal) ========= */
+
+    // Retorna lista de fotos únicas de todos os switches
+    function getUniqueFotos() {
+      return Array.from(
+        new Set(
+          switches
+            .map(s => s.foto)
+            .filter(Boolean)
+        )
+      );
+    }
+
+    // Preenche a mini galeria de um container (cadastro ou edição)
+    function fillGallery(containerEl, fotos, currentSelectedDataUrl) {
+      if (!containerEl) return;
+      containerEl.innerHTML = '';
+
+      if (!fotos.length) {
+        containerEl.innerHTML = '<span class="muted">Nenhuma imagem cadastrada ainda.</span>';
+        return;
       }
-      renderEstadosComPops();
+
+      fotos.forEach(dataUrl => {
+        const thumb = document.createElement('div');
+        thumb.className = 'mini-thumb';
+        thumb.dataset.source = dataUrl;
+        if (currentSelectedDataUrl && currentSelectedDataUrl === dataUrl) {
+          thumb.classList.add('selected');
+        }
+        thumb.innerHTML = `<img src="${dataUrl}" alt="Imagem de switch">`;
+        containerEl.appendChild(thumb);
+      });
     }
 
-    // Modifique renderEstadosComPops para controlar visibilidade do botão "Ver switches"
+    /* ========= Render ========= */
+    function popsByEstado(){ const groups={}; pops.forEach(p=>{ const uf=p.estado||'__'; (groups[uf]??=[]).push(p); }); Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR'))); return groups; }
+
+    // NOVO: agrupa switches por POP para evitar .filter repetido
+    function groupSwitchesByPop() {
+      const map = {};
+      for (const sw of switches) {
+        const popId = sw.pop;
+        if (!map[popId]) map[popId] = [];
+        map[popId].push(sw);
+      }
+      return map;
+    }
+
+    // ===== NOVA FUNÇÃO: detecta e marca linhas que devem abrir tooltip à esquerda =====
+    function adjustHoverDirections() {
+      const rows = document.querySelectorAll('.switch-row');
+      if (!rows.length) return;
+
+      const viewportWidth = window.innerWidth;
+
+      rows.forEach(row => {
+        const preview = row.querySelector('.hover-preview');
+        if (!preview) return;
+
+        // Remove classe antes de recalcular
+        row.classList.remove('hover-left');
+
+        const rect = row.getBoundingClientRect();
+        const estimatedPreviewWidth = preview.offsetWidth || 340; // fallback
+        // Se do lado direito faltar pouco espaço pro tooltip, mostramos à esquerda
+        const spaceRight = viewportWidth - rect.right;
+
+        if (spaceRight < estimatedPreviewWidth + 20) {
+          row.classList.add('hover-left');
+        }
+      });
+    }
+
+    // NOVO: versão otimizada usando mapa de switches
     function renderEstadosComPops(){
       const wrap=byId('estadoContainer'); if(!wrap) return;
       if(!pops || pops.length===0){
@@ -572,7 +996,7 @@
               <div class="pop-title">${pop.nome}</div>
               <div class="pop-badge">${swDoPop.length} switch${swDoPop.length===1?'':'es'}</div>
             </div>
-            <button class="pop-toggle" data-toggle-pop="${pop.id}" aria-expanded="false" style="display: ${isUserLoggedIn ? 'flex' : 'none'};">
+            <button class="pop-toggle" data-toggle-pop="${pop.id}" aria-expanded="false">
               <span>Ver switches</span><i>▼</i>
             </button>
             <div class="switch-list">
@@ -627,16 +1051,355 @@
         wrap.appendChild(bloco);
       });
 
+      // ===== CHAMA A FUNÇÃO PARA AJUSTAR DIREÇÕES DOS TOOLTIPS =====
       adjustHoverDirections();
+    }
+
+    function renderUFSelect(selectEl){ if(!selectEl) return; selectEl.innerHTML=`<option value="__">Sem Estado</option>`+estados.map(uf=>`<option value="${uf}">${uf}</option>`).join(''); }
+    function renderPopOptions(){
+      const sel=byId('pop'); if(!sel) return;
+      if(!pops || pops.length===0){ sel.innerHTML='<option value="">Cadastre um POP</option>'; return; }
+      const groups=popsByEstado(); const ufs=Object.keys(groups).sort((a,b)=>{ if(a==='__') return 1; if(b==='__') return -1; return a.localeCompare(b); });
+      sel.innerHTML=ufs.map(uf=>{ const options=groups[uf].map(p=>`<option value="${p.id}">${p.nome}</option>`).join(''); return `<optgroup label="${estadoLabel(uf)}">${options}</optgroup>`; }).join('');
+    }
+
+    /* ========= CRUD ========= */
+    function openModal(id){ const el=byId(id); if(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); } }
+    function closeModal(id){ const el=byId(id); if(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); } }
+
+    function openCadastroModal(){ 
+      openModal('modalCadastro'); 
+      renderPopOptions(); 
+      renderUFSelect(byId('popEstado')); 
+      const sel=byId('tipoCadastro'); 
+      sel.value='switch'; 
+      bindTipoCadastroEvents(); 
+      alternarTipo();
+      
+      const galleryCadastro = byId('galleryCadastro');
+      if(galleryCadastro) {
+        const fotos = getUniqueFotos();
+        const form = byId('cadastroForm');
+        const selected = form && form.dataset.galleryFoto ? form.dataset.galleryFoto : null;
+        fillGallery(galleryCadastro, fotos, selected);
+      }
+
+      const fotoInput = byId('foto');
+      if (fotoInput) fotoInput.value = '';
+
+      const form = byId('cadastroForm');
+      if (form && form.dataset.galleryFoto) {
+        // mantemos o valor, apenas recarregamos thumbs acima
+      }
+    }
+    
+    function bindTipoCadastroEvents(){ const sel=byId('tipoCadastro'); const clone=sel.cloneNode(true); sel.parentNode.replaceChild(clone,sel); clone.addEventListener('change',alternarTipo); clone.addEventListener('input',alternarTipo); document.addEventListener('change',(e)=>{ if(e.target && e.target.id==='tipoCadastro') alternarTipo(); },{once:true}); }
+    function alternarTipo(){ const tipo=(byId('tipoCadastro')?.value)||'switch'; const popBox=byId('camposPOP'); const swBox=byId('camposSW'); const showPop=(tipo==='pop'); popBox.classList.toggle('hide',!showPop); swBox.classList.toggle('hide',showPop); popBox.style.display=showPop?'block':'none'; swBox.style.display=showPop?'none':'block'; }
+
+    async function cadastrarPOP(){
+      const nome=(byId('popNome').value||'').trim(); if(!nome){ await showAlert({title:'Atenção',message:'Informe o Nome/Descrição do POP.'}); return; }
+      const uf=(byId('popEstado').value||'__'); const id=slugify(nome);
+      const exists=pops.some(p=>p.id===id||p.nome.toLowerCase()===nome.toLowerCase());
+      if(exists){ await showAlert({title:'Atenção',message:'Já existe um POP com esse nome.'}); return; }
+      pops.push({ id, nome, estado:uf }); 
+      savePops(); 
+      renderPopOptions(); 
+      renderEstadosComPops(); 
+      byId('cadastroForm').reset(); 
+      closeModal('modalCadastro'); 
+      await showAlert({title:'Sucesso',message:'POP cadastrado com sucesso.'});
+    }
+
+    async function cadastrarSwitch(){
+      const popSel=byId('pop').value; const ip=byId('ip').value.trim(); const nome=byId('nome').value.trim(); const modelo=(byId('modelo').value||'').trim(); const fotoInput=byId('foto');
+      if(!popSel||!ip||!nome){ await showAlert({title:'Atenção',message:'Preencha POP, IP e Nome do switch.'}); return; }
+      if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
+      const sw={ id:String(Date.now()), pop:popSel, ip, nome, modelo: modelo || null, foto:null };
+
+      const form = byId('cadastroForm');
+      const galleryFoto = form && form.dataset.galleryFoto ? form.dataset.galleryFoto : null;
+
+      if(fotoInput.files && fotoInput.files[0]){
+        try{
+          sw.foto=await compressAdaptively(fotoInput.files[0]);
+        }catch{
+          await showAlert({title:'Aviso',message:'Não foi possível processar a imagem. O switch será salvo sem foto.'});
+        }
+      } else if (galleryFoto) {
+        sw.foto = galleryFoto;
+      }
+
+      switches.push(sw); 
+      saveSwitches(); 
+      renderPopOptions(); 
+      renderEstadosComPops(); 
+      byId('cadastroForm').reset(); 
+
+      if (form && form.dataset.galleryFoto) {
+        delete form.dataset.galleryFoto;
+      }
+
+      closeModal('modalCadastro'); 
+      await showAlert({title:'Sucesso',message:'Switch cadastrado com sucesso.'});
+    }
+
+    function openEditSwitch(id){
+      const idStr = String(id);
+      const sw = switches.find(s => {
+        if (s.id === idStr) return true;
+        if (s.id != null && String(s.id) === idStr) return true;
+        return false;
+      });
+
+      if (!sw) {
+        console.warn('[openEditSwitch] Switch não encontrado para id:', id, 'lista atual:', switches);
+        return;
+      }
+
+      byId('editSwitchId').value = String(sw.id);
+      byId('editSwitchNome').value = sw.nome;
+      byId('editSwitchIP').value = sw.ip;
+
+      const sel = byId('editSwitchPop');
+      sel.innerHTML = pops
+        .map(p => `<option value="${p.id}">${estadoLabel(p.estado)} — ${p.nome}</option>`)
+        .join('');
+      sel.value = sw.pop;
+
+      byId('editSwitchModelo').value = sw.modelo || '';
+      const info = byId('previewInfo');
+      info.dataset.remove = 'false';
+      info.textContent = sw.foto ? 'Imagem atual presente.' : 'Sem imagem.';
+      info.dataset.galleryFoto = '';
+
+      byId('editSwitchFoto').value = '';
+
+      const galleryEdit = byId('galleryEdit');
+      if (galleryEdit) {
+        const fotos = getUniqueFotos();
+        fillGallery(galleryEdit, fotos, sw.foto || null);
+      }
+
+      openModal('modalEditSwitch');
+    }
+
+    async function saveEditSwitch(ev){
+      ev && ev.preventDefault();
+      const id = byId('editSwitchId').value;
+      const nome=(byId('editSwitchNome').value||'').trim();
+      const ip=(byId('editSwitchIP').value||'').trim();
+      const popSel=byId('editSwitchPop').value;
+      const modelo=(byId('editSwitchModelo').value||'').trim();
+      const fotoInput=byId('editSwitchFoto');
+      const previewInfo = byId('previewInfo');
+      const removeFlag=previewInfo.dataset.remove==='true';
+
+      if(!nome || !ip || !popSel){ await showAlert({title:'Atenção',message:'Preencha Nome, IP e POP.'}); return; }
+      if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
+
+      const idx = switches.findIndex(s => String(s.id) === String(id));
+      if(idx === -1){
+        console.warn('[saveEditSwitch] Switch não encontrado para id:', id);
+        return;
+      }
+
+      const original=switches[idx];
+      const origModelo=original.modelo || null;
+      const newModelo=modelo || null;
+      const hasNewFile=fotoInput && fotoInput.files && fotoInput.files[0];
+      const galleryFoto = previewInfo.dataset.galleryFoto || null;
+      const willRemoveFoto=removeFlag && !!original.foto;
+
+      const changed= nome!==original.nome || ip!==original.ip || popSel!==original.pop || newModelo!==origModelo || hasNewFile || willRemoveFoto || galleryFoto;
+      if(!changed){ closeModal('modalEditSwitch'); return; }
+
+      const applyAndClose=async (newFoto)=>{
+        switches[idx].nome=nome; 
+        switches[idx].ip=ip; 
+        switches[idx].pop=popSel; 
+        switches[idx].modelo=newModelo;
+
+        if(removeFlag) switches[idx].foto=null;
+
+        if (newFoto !== undefined) {
+          switches[idx].foto = newFoto;
+        } else if (galleryFoto) {
+          switches[idx].foto = galleryFoto;
+        }
+
+        previewInfo.dataset.galleryFoto = '';
+
+        saveSwitches(); 
+        renderPopOptions(); 
+        renderEstadosComPops(); 
+        closeModal('modalEditSwitch'); 
+        await showAlert({title:'Sucesso',message:'Alterações salvas com sucesso.'});
+      };
+
+      if(hasNewFile){ 
+        try{ 
+          const dataURL=await compressAdaptively(fotoInput.files[0]); 
+          await applyAndClose(dataURL); 
+        }catch{ 
+          await showAlert({title:'Aviso',message:'Não foi possível processar a nova imagem. Os demais dados serão salvos.'}); 
+          await applyAndClose(); 
+        } 
+      }
+      else{ 
+        await applyAndClose(); 
+      }
+    }
+
+    async function deleteSwitch(id){
+      const ok=await showConfirm({ title:'Confirmar exclusão', message:'Tem certeza de que deseja remover este switch permanentemente? Esta ação não pode ser desfeita.', okLabel:'Remover', cancelLabel:'Cancelar', okIsDanger:true });
+      if(!ok) return;
+      switches=switches.filter(s=>s.id!==id);
+      saveSwitches(); 
+      renderPopOptions(); 
+      renderEstadosComPops();
+      await showAlert({ title:'Removido', message:'O switch foi removido.' });
+    }
+
+    function openModalPops(){ buildPopsTable(); openModal('modalPops'); }
+    function buildPopsTable(){
+      const tbody=byId('tabelaPops').querySelector('tbody'); tbody.innerHTML='';
+      pendingPopEdits=pops.map(p=>({ oldId:p.id, id:p.id, nome:p.nome, estado:p.estado||'__', _delete:false }));
+      pendingPopEdits.forEach((row,i)=>{
+        const vinculados=switches.filter(s=>s.pop===row.id).length;
+        const tr=document.createElement('tr'); tr.dataset.index=i;
+        const ufSelect=`<select data-field="estado">${['__',...estados].map(uf=>`<option value="${uf}" ${uf===row.estado?'selected':''}>${estadoLabel(uf)}</option>`).join('')}</select>`;
+        tr.innerHTML=`
+          <td><input type="text" value="${row.nome.replace(/"/g,'&quot;')}" data-field="nome"></td>
+          <td>${ufSelect}</td>
+          <td><input type="text" value="${row.id.replace(/"/g,'&quot;')}" data-field="id" disabled></td>
+          <td>${vinculados}</td>
+          <td class="row-actions">
+            <button class="btn small" data-act="renomear">Gerar ID</button>
+            <button class="btn danger small" data-act="excluir">Excluir</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+      tbody.onclick=(ev)=>{
+        const tr=ev.target.closest('tr'); if(!tr) return; const idx=Number(tr.dataset.index);
+        if(ev.target.matches('[data-act="renomear"]')){
+          const nomeInput=tr.querySelector('input[data-field="nome"]');
+          const idInput=tr.querySelector('input[data-field="id"]');
+          const novoId=slugify(nomeInput.value.trim());
+          idInput.value=novoId; pendingPopEdits[idx].id=novoId; pendingPopEdits[idx].nome=nomeInput.value.trim();
+        }
+        if(ev.target.matches('[data-act="excluir"]')){
+          const idAtual=pendingPopEdits[idx].id;
+          const vinculados=switches.filter(s=>s.pop===idAtual).length;
+          if(vinculados>0){ showAlert({title:'Atenção',message:'Não é possível excluir: existem switches vinculados.'}); return; }
+          (async ()=>{
+            const ok=await showConfirm({ title:'Confirmar exclusão', message:'Deseja realmente excluir este POP?', okLabel:'Excluir', cancelLabel:'Cancelar', okIsDanger:true });
+            if(!ok) return; pendingPopEdits[idx]._delete=true; tr.style.opacity=.5;
+          })();
+        }
+      };
+      tbody.oninput=(ev)=>{ const tr=ev.target.closest('tr'); if(!tr) return; const idx=Number(tr.dataset.index); if(ev.target.dataset.field==='nome') pendingPopEdits[idx].nome=ev.target.value; if(ev.target.dataset.field==='estado') pendingPopEdits[idx].estado=ev.target.value; };
+      tbody.onchange=tbody.oninput;
+    }
+
+    async function applyPopEdits(){
+      const deletions=pendingPopEdits.filter(r=>r._delete);
+      const effective=pendingPopEdits.filter(r=>!r._delete);
+      let anyChange=deletions.length>0;
+
+      for(const row of effective){
+        const orig=pops.find(p=>p.id===row.oldId); if(!orig){ anyChange=true; break; }
+        const origNome=(orig.nome||'').trim(); const newNome=(row.nome||'').trim();
+        const origEstado=(orig.estado||'__'); const newEstado=(row.estado||'__');
+        const origId=orig.id; const newId=row.id;
+        if(origNome!==newNome || origEstado!==newEstado || origId!==newId){ anyChange=true; break; }
+      }
+
+      if(!anyChange){ closeModal('modalPops'); return; }
+
+      const effectiveIds=effective.map(r=>r.id);
+      const effectiveNamesLower=effective.map(r=>(r.nome||'').trim().toLowerCase());
+      if(effectiveIds.length!==new Set(effectiveIds).size){ await showAlert({title:'Atenção',message:'IDs duplicados após edição.'}); return; }
+      if(effectiveNamesLower.length!==new Set(effectiveNamesLower).size){ await showAlert({title:'Atenção',message:'Nomes duplicados após edição.'}); return; }
+
+      pendingPopEdits.filter(r=>r._delete).forEach(rem=>{ pops=pops.filter(p=>p.id!==rem.oldId); });
+      pendingPopEdits.filter(r=>!r._delete).forEach(edit=>{
+        const pIdx=pops.findIndex(p=>p.id===edit.oldId);
+        if(pIdx===-1){ pops.push({ id:edit.id, nome:(edit.nome||'').trim(), estado:edit.estado||'__' }); return; }
+        const idChanged=edit.oldId!==edit.id;
+        pops[pIdx].id=edit.id; pops[pIdx].nome=(edit.nome||'').trim(); pops[pIdx].estado=edit.estado||'__';
+        if(idChanged) switches.forEach(s=>{ if(s.pop===edit.oldId) s.pop=edit.id; });
+      });
+
+      savePops(); 
+      saveSwitches(); 
+      renderPopOptions(); 
+      renderEstadosComPops();
+      closeModal('modalPops'); 
+      await showAlert({title:'Sucesso',message:'POPs atualizados.'});
+    }
+
+    /* ========= Sidebar ========= */
+    function setCollapsed(collapsed){
+      document.body.classList.toggle('sidebar-collapsed',collapsed);
+      try{ localStorage.setItem(LS_SIDEBAR_STATE, collapsed?'1':'0'); }catch{}
+      const btn=byId('btnCollapse'); if(btn){ btn.setAttribute('aria-expanded', String(!collapsed)); btn.title=collapsed?'Mostrar menu':'Ocultar menu'; }
+    }
+    function isSidebarOpen(){ return isMobile() ? document.body.classList.contains('sidebar-open') : !document.body.classList.contains('sidebar-collapsed'); }
+    function closeSidebar(){ if(isMobile()) document.body.classList.remove('sidebar-open'); else setCollapsed(true); }
+    let autoHideTimer=null, isSidebarHovered=false;
+    function scheduleAutoHide(){ clearTimeout(autoHideTimer); if(!isSidebarOpen()) return; autoHideTimer=setTimeout(()=>{ if(!isSidebarHovered && isSidebarOpen()) closeSidebar(); },5000); }
+    function cancelAutoHide(){ clearTimeout(autoHideTimer); }
+
+    /* ====== Modal de Senha (bonito) ====== */
+    function requestUnlockWithModal(){
+      return new Promise(resolve=>{
+        const modal=byId('passwordModal');
+        const form=byId('passwordForm');
+        const input=byId('passwordInput');
+        const errorEl=byId('passwordError');
+        const toggle=byId('togglePass');
+
+        if(!modal || !form || !input){ resolve(false); return; }
+        input.type='password'; input.value=''; errorEl.style.display='none';
+
+        const onSubmit=(e)=>{ e.preventDefault(); const val=(input.value||'').trim(); if(val==='123456'){ cleanup(); resolve(true); } else{ errorEl.style.display='block'; input.focus(); input.select(); } };
+        const onCancel=()=>{ cleanup(); resolve(false); };
+        const onToggle=()=>{ input.type = (input.type==='password') ? 'text' : 'password'; input.focus(); };
+
+        form.addEventListener('submit',onSubmit);
+        toggle.addEventListener('click',onToggle);
+        modal.querySelectorAll('[data-close="passwordModal"]').forEach(b=> b.addEventListener('click', onCancel, { once:true }));
+
+        openModal('passwordModal'); setTimeout(()=> input.focus(), 50);
+
+        function cleanup(){ form.removeEventListener('submit',onSubmit); toggle.removeEventListener('click',onToggle); closeModal('passwordModal'); }
+      });
+    }
+
+    /* ====== LOCK STATE ====== */
+    let isLocked=true;
+    const ICON_LOCKED="https://cdn-icons-png.flaticon.com/512/7615/7615902.png";
+    const ICON_UNLOCK="https://cdn-icons-png.flaticon.com/512/7615/7615905.png";
+
+    function setLocked(state){
+      isLocked = !!state;
+      document.body.classList.toggle('locked', isLocked);
+      const icon=byId('lockIcon'); const txt=byId('lockText'); const badge=byId('lockBadge');
+      if(isLocked){
+        if(icon) icon.src = ICON_LOCKED;
+        if(txt)  txt.textContent = 'Bloqueado';
+        if(badge) badge.textContent = 'LOCK';
+      }else{
+        if(icon) icon.src = ICON_UNLOCK;
+        if(txt)  txt.textContent = 'Desbloqueado';
+        if(badge) badge.textContent = 'OPEN';
+      }
     }
 
     /* ========= Listeners globais ========= */
     document.addEventListener('DOMContentLoaded', ()=>{
       if(!isMobile()) setCollapsed(true); else document.body.classList.remove('sidebar-open');
       setLocked(true);
-
-      // Carregar login salvo
-      loadLogin();
 
       document.querySelectorAll('[data-close]').forEach(btn =>
         btn.addEventListener('click', (e)=> closeModal(e.currentTarget.getAttribute('data-close')))
@@ -667,27 +1430,6 @@
         closeSidebar(); cancelAutoHide(); openModalPops();
       });
 
-      // NOVO: abrir modal cadastrar acesso
-      byId('menuCadastrarAcesso').addEventListener('click', async ()=>{
-        if(isLocked){ const ok=await requestUnlockWithModal(); if(!ok) return; setLocked(false); }
-        closeSidebar(); cancelAutoHide(); openCadastrarAcessoModal();
-      });
-
-      // Botão cadastrar login
-      byId('btnCadastrarUsuario').addEventListener('click', async (e) => {
-        e.preventDefault();
-        const loginInput = byId('loginUsuario');
-        if(!loginInput) return;
-        const login = loginInput.value;
-        if(!login || login.trim() === ''){
-          await showAlert({title:'Atenção', message:'Informe um login válido.'});
-          return;
-        }
-        saveLogin(login);
-        closeModal('modalCadastrarAcesso');
-        await showAlert({title:'Sucesso', message:`Login "${login.trim()}" cadastrado.`});
-      });
-
       byId('lockBtn').addEventListener('click', async ()=>{
         if(isLocked){
           const ok=await requestUnlockWithModal();
@@ -698,11 +1440,236 @@
         }
       });
 
-      // ... (mantenha os demais listeners e código existentes) ...
+      byId('btnSalvarCadastro').addEventListener('click', async (e)=>{ e.preventDefault(); const tipo=byId('tipoCadastro').value; if(tipo==='pop') await cadastrarPOP(); else await cadastrarSwitch(); });
+      byId('btnSalvarEditSwitch').addEventListener('click', saveEditSwitch);
+      
+      byId('btnRemoverFoto').addEventListener('click', ()=>{ 
+        byId('editSwitchFoto').value=''; 
+        const info = byId('previewInfo');
+        info.textContent='Imagem será removida ao salvar.'; 
+        info.dataset.remove='true';
+        info.dataset.galleryFoto = '';
+
+        const galleryEdit = byId('galleryEdit');
+        if (galleryEdit) {
+          galleryEdit.innerHTML = '';
+          const placeholder = document.createElement('div');
+          placeholder.className = 'mini-thumb';
+          placeholder.innerHTML = `<span>Sem imagem</span>`;
+          galleryEdit.appendChild(placeholder);
+        }
+      });
+      
+      byId('btnSalvarPops').addEventListener('click', applyPopEdits);
+
+      byId('estadoContainer').addEventListener('click', async (ev)=>{
+        const toggleBtn = ev.target.closest('[data-toggle-pop]');
+        if (toggleBtn) {
+          const card = toggleBtn.closest('.pop-card');
+          const list = card.querySelector('.switch-list');
+          const isOpen = list.style.display === 'block';
+          if (isOpen) {
+            toggleBtn.classList.remove('open');
+            toggleBtn.setAttribute('aria-expanded','false');
+            list.style.display='none';
+          } else {
+            document.querySelectorAll('.pop-card .pop-toggle.open').forEach(b=>{
+              b.classList.remove('open');
+              b.setAttribute('aria-expanded','false');
+              b.closest('.pop-card').querySelector('.switch-list').style.display='none';
+            });
+            toggleBtn.classList.add('open');
+            toggleBtn.setAttribute('aria-expanded','true');
+            list.style.display='block';
+
+            // ===== RECALCULA DIREÇÕES DOS TOOLTIPS APÓS ABRIR =====
+            setTimeout(() => adjustHoverDirections(), 50);
+          }
+          return;
+        }
+
+        const copyBtn = ev.target.closest('.copy-btn');
+        if (copyBtn) {
+          const row = copyBtn.closest('.switch-row');
+          if (!row) return;
+
+          const nome = row.dataset.switchNome || '';
+          const ip   = row.dataset.switchIp   || '';
+          const texto = `${nome} IP: ${ip}`;
+
+          try{
+            await navigator.clipboard.writeText(texto);
+            await showAlert({
+              title: 'Copiado',
+              message: `\n${texto}`
+            });
+          }catch(e){
+            console.warn('[copy] erro ao copiar', e);
+            await showAlert({
+              title: 'Erro',
+              message: 'Não foi possível copiar automaticamente. Copie manualmente: ' + texto
+            });
+          }
+          return;
+        }
+
+        const swBtn = ev.target.closest('[data-action]');
+        if (swBtn) {
+          const action = swBtn.dataset.action;
+          const swRow = swBtn.closest('[data-switch-id]');
+          const swId = swRow ? swRow.dataset.switchId : null;
+
+          if (!swId) {
+            console.warn('[EDIT/DELETE] switch sem data-switch-id');
+            return;
+          }
+
+          if (isLocked) {
+            const ok = await requestUnlockWithModal();
+            if (!ok) return;
+            setLocked(false);
+          }
+
+          if (action === 'edit') {
+            openEditSwitch(swId);
+          }
+          if (action === 'delete') {
+            deleteSwitch(swId);
+          }
+        }
+      });
+
+      // ------- Preview da imagem em NOVO CADASTRO -------
+      const fotoCadastroInput = byId('foto');
+      const galleryCadastro   = byId('galleryCadastro');
+
+      if (fotoCadastroInput && galleryCadastro) {
+        fotoCadastroInput.addEventListener('change', () => {
+          const file = fotoCadastroInput.files && fotoCadastroInput.files[0];
+
+          const form = byId('cadastroForm');
+          if (form && form.dataset.galleryFoto) {
+            delete form.dataset.galleryFoto;
+          }
+
+          galleryCadastro.innerHTML = '';
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const url = e.target.result;
+            const thumb = document.createElement('div');
+            thumb.className = 'mini-thumb selected';
+            thumb.innerHTML = `<img src="${url}" alt="Preview do switch">`;
+            galleryCadastro.appendChild(thumb);
+          };
+          reader.readAsDataURL(file);
+        });
+
+        galleryCadastro.addEventListener('click', (e) => {
+          const thumb = e.target.closest('.mini-thumb');
+          if (!thumb || !thumb.dataset.source) return;
+
+          galleryCadastro.querySelectorAll('.mini-thumb').forEach(t => t.classList.remove('selected'));
+          thumb.classList.add('selected');
+
+          const form = byId('cadastroForm');
+          if (form) {
+            form.dataset.galleryFoto = thumb.dataset.source;
+          }
+
+          if (fotoCadastroInput) fotoCadastroInput.value = '';
+        });
+      }
+
+      // ------- Preview da imagem em EDITAR SWITCH -------
+      const editFotoInput = byId('editSwitchFoto');
+      const galleryEdit   = byId('galleryEdit');
+
+      if (editFotoInput && galleryEdit) {
+        editFotoInput.addEventListener('change', () => {
+          const file = editFotoInput.files && editFotoInput.files[0];
+          const info = byId('previewInfo');
+
+          if (info) {
+            info.dataset.galleryFoto = '';
+            info.dataset.remove = 'false';
+          }
+
+          galleryEdit.innerHTML = '';
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const url = e.target.result;
+
+            const thumbNova = document.createElement('div');
+            thumbNova.className = 'mini-thumb selected';
+            thumbNova.innerHTML = `<img src="${url}" alt="Nova imagem do switch">`;
+            galleryEdit.appendChild(thumbNova);
+
+            if (info) {
+              info.textContent = 'Nova imagem selecionada. Será aplicada ao salvar.';
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+
+        galleryEdit.addEventListener('click', (e) => {
+          const thumb = e.target.closest('.mini-thumb');
+          if (!thumb || !thumb.dataset.source) return;
+
+          galleryEdit.querySelectorAll('.mini-thumb').forEach(t => t.classList.remove('selected'));
+          thumb.classList.add('selected');
+
+          const info = byId('previewInfo');
+          if (info) {
+            info.dataset.galleryFoto = thumb.dataset.source;
+            info.dataset.remove = 'false';
+            info.textContent = 'Imagem selecionada da galeria. Será aplicada ao salvar.';
+          }
+
+          if (editFotoInput) editFotoInput.value = '';
+        });
+      }
+
+      const sidebarEl=document.querySelector('.sidebar');
+      if(sidebarEl){ sidebarEl.addEventListener('mouseenter',()=>{ isSidebarHovered=true; cancelAutoHide(); }); sidebarEl.addEventListener('mouseleave',()=>{ isSidebarHovered=false; scheduleAutoHide(); }); }
+
+      const bodyObserver=new MutationObserver(()=>{ if(isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide(); });
+      bodyObserver.observe(document.body,{ attributes:true, attributeFilter:['class'] });
+
+      // NOVO: debounce de resize para reduzir trabalho + recalcula tooltips
+      let resizeTimer=null;
+      window.addEventListener('resize', ()=>{
+        clearTimeout(resizeTimer);
+        resizeTimer=setTimeout(()=>{
+          document.documentElement.classList.remove('js-ready');
+          if(!isMobile()){
+            document.body.classList.remove('sidebar-open');
+            setCollapsed(true);
+          }
+          requestAnimationFrame(()=>{ 
+            document.documentElement.classList.add('js-ready'); 
+            if(isSidebarOpen()) scheduleAutoHide(); 
+            else cancelAutoHide(); 
+
+            // ===== RECALCULA DIREÇÕES DOS TOOLTIPS NO RESIZE =====
+            adjustHoverDirections();
+          });
+        },150);
+      });
+
+      document.addEventListener('keydown',(e)=>{
+        if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='b' && !isMobile()){
+          e.preventDefault(); setCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+          setTimeout(scheduleAutoHide,0);
+        }
+      });
+
+      startLoadFallbackTimer(8000);
+      requestAnimationFrame(()=>{ document.documentElement.classList.add('js-ready'); });
     });
-
-    // ... (mantenha o restante do seu código JavaScript original) ...
-
   </script>
 
   <!-- ===== FAVICON ANIMADO VIA CANVAS (otimizado) ===== -->
