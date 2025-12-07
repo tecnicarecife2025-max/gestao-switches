@@ -269,15 +269,15 @@
     .modal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:1200 }
     .modal.open{ display:flex }
     .modal-content{ background:#fff; width:min(900px, 100%); max-height:90vh; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:auto }
-    .modal-header{ padding:16px 20px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between }
+    .modal-header{ padding:16px 20px; border-bottom:1px solid:#eee; display:flex; align-items:center; justify-content:space-between }
     .modal-title{ font-size:18px; font-weight:700 }
     .modal-body{ padding:20px }
-    .modal-footer{ padding:16px 20px; border-top:1px solid #eee; display:flex; gap:10px; justify-content:flex-end }
+    .modal-footer{ padding:16px 20px; border-top:1px solid:#eee; display:flex; gap:10px; justify-content:flex-end }
     .close-x{ background:transparent; border:0; font-size:20px; cursor:pointer }
 
     .form-group{ margin-bottom:16px }
     label{ display:block; margin-bottom:8px; font-weight:600; color:#2c3e50 }
-    input,select{ width:100%; padding:12px; border:1px solid #ddd; border-radius:5px; transition:border-color .3s }
+    input,select{ width:100%; padding:12px; border:1px solid:#ddd; border-radius:5px; transition:border-color .3s }
     input:focus,select:focus{ border-color:#3498db; outline:0; box-shadow:0 0 0 2px rgba(52,152,219,.2) }
     .file-input-wrapper{ position:relative; overflow:hidden; display:inline-block; width:100% }
     .file-input-wrapper input[type=file]{ position:absolute; left:0; top:0; opacity:0; width:100%; height:100%; cursor:pointer }
@@ -996,7 +996,7 @@
               <div class="pop-title">${pop.nome}</div>
               <div class="pop-badge">${swDoPop.length} switch${swDoPop.length===1?'':'es'}</div>
             </div>
-            <button class="pop-toggle" data-toggle-pop="${pop.id}" aria-expanded="false" aria-disabled="true" style="cursor:not-allowed; opacity:0.5;">
+            <button class="pop-toggle" data-toggle-pop="${pop.id}" aria-expanded="false">
               <span>Ver switches</span><i>▼</i>
             </button>
             <div class="switch-list">
@@ -1385,30 +1385,14 @@
       isLocked = !!state;
       document.body.classList.toggle('locked', isLocked);
       const icon=byId('lockIcon'); const txt=byId('lockText'); const badge=byId('lockBadge');
-      const toggleButtons = document.querySelectorAll('.pop-toggle');
-      
       if(isLocked){
         if(icon) icon.src = ICON_LOCKED;
         if(txt)  txt.textContent = 'Bloqueado';
         if(badge) badge.textContent = 'LOCK';
-
-        // Bloqueia os botões "Ver switches"
-        toggleButtons.forEach(btn => {
-          btn.setAttribute('aria-disabled', 'true');
-          btn.style.cursor = 'not-allowed';
-          btn.style.opacity = '0.5';
-        });
       }else{
         if(icon) icon.src = ICON_UNLOCK;
         if(txt)  txt.textContent = 'Desbloqueado';
         if(badge) badge.textContent = 'OPEN';
-
-        // Libera os botões "Ver switches"
-        toggleButtons.forEach(btn => {
-          btn.removeAttribute('aria-disabled');
-          btn.style.cursor = '';
-          btn.style.opacity = '';
-        });
       }
     }
 
@@ -1481,35 +1465,12 @@
       byId('estadoContainer').addEventListener('click', async (ev)=>{
         const toggleBtn = ev.target.closest('[data-toggle-pop]');
         if (toggleBtn) {
-          // Verifica se o botão está desabilitado
-          if (toggleBtn.hasAttribute('aria-disabled') && toggleBtn.getAttribute('aria-disabled') === 'true') {
-            // Se o sistema está bloqueado, pede login
-            if (isLocked) {
-              const username = prompt('Digite seu login para acessar os switches:');
-              if (username && username.toLowerCase() === 'cgalmeida') {
-                // Libera o acesso para este clique
-                togglePop(toggleBtn);
-              } else {
-                alert('Acesso negado. Você precisa estar desbloqueado ou logado como cgalmeida.');
-              }
-              return;
-            }
-          }
-          
-          // Se o sistema está desbloqueado, abre normalmente
-          if (!isLocked) {
-            togglePop(toggleBtn);
-            return;
-          }
-        }
-
-        function togglePop(button) {
-          const card = button.closest('.pop-card');
+          const card = toggleBtn.closest('.pop-card');
           const list = card.querySelector('.switch-list');
           const isOpen = list.style.display === 'block';
           if (isOpen) {
-            button.classList.remove('open');
-            button.setAttribute('aria-expanded','false');
+            toggleBtn.classList.remove('open');
+            toggleBtn.setAttribute('aria-expanded','false');
             list.style.display='none';
           } else {
             document.querySelectorAll('.pop-card .pop-toggle.open').forEach(b=>{
@@ -1517,13 +1478,14 @@
               b.setAttribute('aria-expanded','false');
               b.closest('.pop-card').querySelector('.switch-list').style.display='none';
             });
-            button.classList.add('open');
-            button.setAttribute('aria-expanded','true');
+            toggleBtn.classList.add('open');
+            toggleBtn.setAttribute('aria-expanded','true');
             list.style.display='block';
 
             // ===== RECALCULA DIREÇÕES DOS TOOLTIPS APÓS ABRIR =====
             setTimeout(() => adjustHoverDirections(), 50);
           }
+          return;
         }
 
         const copyBtn = ev.target.closest('.copy-btn');
