@@ -166,12 +166,10 @@
     .switch-meta{ font-size:14px; color:#7f8c8d }
     .row-actions{ display:flex; gap:8px; align-items:center }
 
-    /* Descrição: agora sem quebra de linha (uma única linha) */
+    /* Descrição: oculta por padrão; exibida quando .show-description */
     .switch-descricao{
       display:none;
-      white-space: nowrap;        /* evita quebras de linha */
-      overflow: hidden;          /* esconde o excedente */
-      text-overflow: ellipsis;   /* adiciona reticências se ultrapassar largura */
+      white-space:pre-wrap;
       font-size:13px;
       color:#4b5563;
       margin-top:6px;
@@ -1049,8 +1047,8 @@
                       ? MODELO_DESCRICOES[sw.modelo]
                       : 'Sem descrição detalhada para este modelo.';
 
-                    // NÃO queremos quebras de linha: convertendo novas linhas em espaços e colapsando espaços múltiplos
-                    const descricaoHtml = sw.descricao ? escapeHtml(sw.descricao).replace(/\r?\n+/g,' ').replace(/\s+/g,' ').trim() : '';
+                    // escapando a descrição antes de inserir como HTML e preservando quebras de linha
+                    const descricaoHtml = sw.descricao ? escapeHtml(sw.descricao).replace(/\n/g,'<br>') : '';
 
                     return `
                     <div class="switch-row"
