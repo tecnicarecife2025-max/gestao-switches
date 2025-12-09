@@ -160,11 +160,29 @@
     .pop-toggle.open i{ transform:rotate(180deg) }
 
     .switch-list{ display:none; padding:8px 16px 16px 16px; overflow:visible; position:relative }
-    .switch-row{ background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible }
-    .switch-info-wrap{ display:flex; flex-direction:column; gap:2px }
-    .switch-name{ font-weight:700; color:#2c3e50 }
+    .switch-row{ background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; display:flex; gap:12px; align-items:center; justify-content:space-between; position:relative; overflow:visible; cursor:pointer }
+    .switch-info-wrap{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1 }
+    .switch-name{ font-weight:700; color:#2c3e50; word-break:break-word }
     .switch-meta{ font-size:14px; color:#7f8c8d }
     .row-actions{ display:flex; gap:8px; align-items:center }
+
+    /* Descrição: oculta por padrão; exibida quando .show-description */
+    .switch-descricao{
+      display:none;
+      white-space:pre-wrap;
+      font-size:13px;
+      color:#4b5563;
+      margin-top:6px;
+      background:#fbfdff;
+      border:1px solid #eef3f7;
+      padding:8px;
+      border-radius:6px;
+    }
+    .switch-row.show-description .switch-descricao{
+      display:block;
+    }
+    /* Quando mostra descrição, escondemos tooltip (para evitar sobreposição) */
+    .switch-row.show-description .hover-preview{ display:none !important; }
 
     /* Tooltip padrão: abre para a direita */
     .hover-preview{ 
@@ -277,8 +295,9 @@
 
     .form-group{ margin-bottom:16px }
     label{ display:block; margin-bottom:8px; font-weight:600; color:#2c3e50 }
-    input,select{ width:100%; padding:12px; border:1px solid:#ddd; border-radius:5px; transition:border-color .3s }
-    input:focus,select:focus{ border-color:#3498db; outline:0; box-shadow:0 0 0 2px rgba(52,152,219,.2) }
+    input,select,textarea{ width:100%; padding:12px; border:1px solid:#ddd; border-radius:5px; transition:border-color .3s; font-family:inherit }
+    textarea{ resize:vertical; min-height:80px }
+    input:focus,select:focus,textarea:focus{ border-color:#3498db; outline:0; box-shadow:0 0 0 2px rgba(52,152,219,.2) }
     .file-input-wrapper{ position:relative; overflow:hidden; display:inline-block; width:100% }
     .file-input-wrapper input[type=file]{ position:absolute; left:0; top:0; opacity:0; width:100%; height:100%; cursor:pointer }
     .file-input-button{ display:block; padding:12px; background:#ecf0f1; border:1px solid #ddd; border-radius:5px; text-align:center; cursor:pointer; transition:background .3s }
@@ -534,6 +553,13 @@
               <label for="ip">Endereço IP</label>
               <input type="text" id="ip" placeholder="Ex: 192.168.1.100">
             </div>
+
+            <!-- NOVO: Campo Descrição -->
+            <div class="form-group">
+              <label for="descricao">Descrição</label>
+              <textarea id="descricao" placeholder="Ex:\nEth 1/1 : UP-LINK-SW01-LFS01-PETRORECONCAVO\nEth 1/2 : UP-LINK-SW01-LFS01-CIRION" rows="4"></textarea>
+            </div>
+
             <div class="form-group">
               <label for="foto">Foto do Switch</label>
               <div class="file-input-wrapper">
@@ -581,6 +607,13 @@
             <label for="editSwitchPop">POP</label>
             <select id="editSwitchPop"></select>
           </div>
+
+          <!-- NOVO: Campo Descrição (edição) -->
+          <div class="form-group">
+            <label for="editSwitchDescricao">Descrição</label>
+            <textarea id="editSwitchDescricao" rows="4" placeholder="Ex:\nEth 1/1 : ..."></textarea>
+          </div>
+
           <div class="form-group">
             <label for="editSwitchFoto">Foto do Switch</label>
             <div class="row-actions">
@@ -920,6 +953,12 @@
       return map;
     }
 
+    // ESCAPAR texto simples para evitar injeção (aplicamos antes de inserir como HTML)
+    function escapeHtml(text){
+      if(!text && text!==0) return '';
+      return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
     // ===== NOVA FUNÇÃO: detecta e marca linhas que devem abrir tooltip à esquerda =====
     function adjustHoverDirections() {
       const rows = document.querySelectorAll('.switch-row');
@@ -1007,34 +1046,38 @@
                     const modeloDesc = sw.modelo && MODELO_DESCRICOES[sw.modelo]
                       ? MODELO_DESCRICOES[sw.modelo]
                       : 'Sem descrição detalhada para este modelo.';
-                    
+
+                    // escapando a descrição antes de inserir como HTML e preservando quebras de linha
+                    const descricaoHtml = sw.descricao ? escapeHtml(sw.descricao).replace(/\n/g,'<br>') : '';
+
                     return `
                     <div class="switch-row"
                          data-switch-id="${sw.id}"
                          data-switch-nome="${sw.nome.replace(/"/g,'&quot;')}"
                          data-switch-ip="${sw.ip.replace(/"/g,'&quot;')}">
                       <div class="switch-info-wrap">
-                        <div class="switch-name">${sw.nome}</div>
-                        <div class="switch-meta">IP: ${sw.ip}</div>
-                        <div class="switch-meta">Modelo: ${sw.modelo ? sw.modelo : '—'}</div>
+                        <div class="switch-name">${escapeHtml(sw.nome)}</div>
+                        <div class="switch-meta">IP: ${escapeHtml(sw.ip)}</div>
+                        <div class="switch-meta">Modelo: ${sw.modelo ? escapeHtml(sw.modelo) : '—'}</div>
+                        <div class="switch-descricao">${descricaoHtml}</div>
                       </div>
                       <div class="row-actions">
                         <button class="btn small" data-action="edit">Editar</button>
                         <button class="btn danger small" data-action="delete">Excluir</button>
                       </div>
-                      <div class="hover-preview">
+                      <div class="hover-preview" aria-hidden="true">
                         <div class="hover-top">
                           ${
                             sw.foto
-                              ? `<img src="${sw.foto}" alt="Foto de ${sw.nome}">`
+                              ? `<img src="${sw.foto}" alt="Foto de ${escapeHtml(sw.nome)}">`
                               : `<div class="noimg">Sem imagem para este switch</div>`
                           }
                           <div class="hover-model-block">
                             <div class="hover-model-title">
-                              Modelo: ${sw.modelo ? sw.modelo : '—'}
+                              Modelo: ${sw.modelo ? escapeHtml(sw.modelo) : '—'}
                             </div>
                             <div class="hover-model-text">
-                              ${modeloDesc}
+                              ${escapeHtml(modeloDesc)}
                             </div>
                           </div>
                         </div>
@@ -1112,9 +1155,10 @@
 
     async function cadastrarSwitch(){
       const popSel=byId('pop').value; const ip=byId('ip').value.trim(); const nome=byId('nome').value.trim(); const modelo=(byId('modelo').value||'').trim(); const fotoInput=byId('foto');
+      const descricao = (byId('descricao') && byId('descricao').value) ? byId('descricao').value.trim() : '';
       if(!popSel||!ip||!nome){ await showAlert({title:'Atenção',message:'Preencha POP, IP e Nome do switch.'}); return; }
       if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
-      const sw={ id:String(Date.now()), pop:popSel, ip, nome, modelo: modelo || null, foto:null };
+      const sw={ id:String(Date.now()), pop:popSel, ip, nome, modelo: modelo || null, foto:null, descricao: descricao || null };
 
       const form = byId('cadastroForm');
       const galleryFoto = form && form.dataset.galleryFoto ? form.dataset.galleryFoto : null;
@@ -1134,6 +1178,9 @@
       renderPopOptions(); 
       renderEstadosComPops(); 
       byId('cadastroForm').reset(); 
+
+      // limpar campo descricao também
+      if (byId('descricao')) byId('descricao').value = '';
 
       if (form && form.dataset.galleryFoto) {
         delete form.dataset.galleryFoto;
@@ -1167,6 +1214,10 @@
       sel.value = sw.pop;
 
       byId('editSwitchModelo').value = sw.modelo || '';
+
+      // preencher descricao
+      if (byId('editSwitchDescricao')) byId('editSwitchDescricao').value = sw.descricao || '';
+
       const info = byId('previewInfo');
       info.dataset.remove = 'false';
       info.textContent = sw.foto ? 'Imagem atual presente.' : 'Sem imagem.';
@@ -1190,6 +1241,7 @@
       const ip=(byId('editSwitchIP').value||'').trim();
       const popSel=byId('editSwitchPop').value;
       const modelo=(byId('editSwitchModelo').value||'').trim();
+      const descricao = (byId('editSwitchDescricao') && byId('editSwitchDescricao').value) ? byId('editSwitchDescricao').value.trim() : '';
       const fotoInput=byId('editSwitchFoto');
       const previewInfo = byId('previewInfo');
       const removeFlag=previewInfo.dataset.remove==='true';
@@ -1210,7 +1262,8 @@
       const galleryFoto = previewInfo.dataset.galleryFoto || null;
       const willRemoveFoto=removeFlag && !!original.foto;
 
-      const changed= nome!==original.nome || ip!==original.ip || popSel!==original.pop || newModelo!==origModelo || hasNewFile || willRemoveFoto || galleryFoto;
+      const origDescricao = original.descricao || '';
+      const changed= nome!==original.nome || ip!==original.ip || popSel!==original.pop || newModelo!==origModelo || hasNewFile || willRemoveFoto || galleryFoto || descricao!==origDescricao;
       if(!changed){ closeModal('modalEditSwitch'); return; }
 
       const applyAndClose=async (newFoto)=>{
@@ -1218,6 +1271,7 @@
         switches[idx].ip=ip; 
         switches[idx].pop=popSel; 
         switches[idx].modelo=newModelo;
+        switches[idx].descricao = descricao || null;
 
         if(removeFlag) switches[idx].foto=null;
 
@@ -1488,6 +1542,7 @@
           return;
         }
 
+        // Copiar botão dentro do tooltip
         const copyBtn = ev.target.closest('.copy-btn');
         if (copyBtn) {
           const row = copyBtn.closest('.switch-row');
@@ -1510,6 +1565,17 @@
               message: 'Não foi possível copiar automaticamente. Copie manualmente: ' + texto
             });
           }
+          return;
+        }
+
+        // Toggle descrição ao clicar na linha do switch (exceto se clicou em botão/acao/tooltip)
+        const switchRowClick = ev.target.closest('.switch-row');
+        if (switchRowClick && 
+            !ev.target.closest('button') && 
+            !ev.target.closest('.row-actions') && 
+            !ev.target.closest('.hover-preview') && 
+            !ev.target.closest('[data-action]')) {
+          switchRowClick.classList.toggle('show-description');
           return;
         }
 
