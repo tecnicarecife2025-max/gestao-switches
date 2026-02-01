@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gestão de Switches de Rede</title>
 
   <!-- Favicon base (fallback) -->
@@ -144,7 +144,7 @@
     .muted{ color:#7f8c8d; font-size:14px }
     .no-switches,.no-pops{ text-align:center; padding:40px; color:#7f8c8d; font-style:italic }
 
-    .estado-block{ margin-bottom:32px }
+    .estado-block{ margin-bottom:32px; transition: cursor 0.2s; }
     .estado-head{ display:flex; align-items:center; justify-content:space-between }
     .estado-badge{ background:#eef3f7; border:1px solid #e3e8ee; color:#2c3e50; font-weight:700; padding:4px 10px; border-radius:999px; font-size:12px }
 
@@ -287,15 +287,15 @@
     .modal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:1200 }
     .modal.open{ display:flex }
     .modal-content{ background:#fff; width:min(900px, 100%); max-height:90vh; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:auto }
-    .modal-header{ padding:16px 20px; border-bottom:1px solid:#eee; display:flex; align-items:center; justify-content:space-between }
+    .modal-header{ padding:16px 20px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between }
     .modal-title{ font-size:18px; font-weight:700 }
     .modal-body{ padding:20px }
-    .modal-footer{ padding:16px 20px; border-top:1px solid:#eee; display:flex; gap:10px; justify-content:flex-end }
+    .modal-footer{ padding:16px 20px; border-top:1px solid #eee; display:flex; gap:10px; justify-content:flex-end }
     .close-x{ background:transparent; border:0; font-size:20px; cursor:pointer }
 
     .form-group{ margin-bottom:16px }
     label{ display:block; margin-bottom:8px; font-weight:600; color:#2c3e50 }
-    input,select,textarea{ width:100%; padding:12px; border:1px solid:#ddd; border-radius:5px; transition:border-color .3s; font-family:inherit }
+    input,select,textarea{ width:100%; padding:12px; border:1px solid #ddd; border-radius:5px; transition:border-color .3s; font-family:inherit }
     textarea{ resize:vertical; min-height:80px }
     input:focus,select:focus,textarea:focus{ border-color:#3498db; outline:0; box-shadow:0 0 0 2px rgba(52,152,219,.2) }
     .file-input-wrapper{ position:relative; overflow:hidden; display:inline-block; width:100% }
@@ -365,6 +365,13 @@
     .mini-thumb span{
       font-size:11px;
       color:#7f8c8d;
+    }
+
+    /* ====== DRAG AND DROP ====== */
+    .sortable-ghost {
+      opacity: 0.4;
+      border: 2px dashed #3498db;
+      background: #ebf5fb !important;
     }
   </style>
 </head>
@@ -667,6 +674,9 @@
     </div>
   </div>
 
+  <!-- ====== IMPORTAÇÃO DA BIBLIOTECA SORTABLEJS ====== -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
   <script type="module">
     /* ========= Firebase ========= */
     const firebaseConfig = {
@@ -810,6 +820,9 @@
     let switches=[]; let pops=[]; let pendingPopEdits=[];
     let popsLoaded=false; let switchesLoaded=false; let loadFallbackTimer=null;
 
+    // ====== NOVO: Variável para armazenar a instância do SortableJS ======
+    let sortableInstance = null;
+
     function loadPops(){
       const dbRef=ref(fbDb,'pops');
       onValue(dbRef,(snap)=>{
@@ -940,7 +953,7 @@
     }
 
     /* ========= Render ========= */
-    function popsByEstado(){ const groups={}; pops.forEach(p=>{ const uf=p.estado||'__'; (groups[uf]??=[]).push(p); }); Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR'))); return groups; }
+    function popsByEstado(){ const groups={}; pops.forEach(p=>{ const uf=p.estado||'__'; (groups[uf]??=[]).push(p); }); Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b,'pt-BR'))); return groups; }
 
     // NOVO: agrupa switches por POP para evitar .filter repetido
     function groupSwitchesByPop() {
@@ -982,6 +995,57 @@
           row.classList.add('hover-left');
         }
       });
+    }
+
+    // ====== NOVO: Função para ativar/desativar o drag-and-drop ======
+    function updateDraggableState() {
+      const container = byId('estadoContainer');
+      if (!container) return;
+
+      // Se estiver bloqueado, destruímos a instância de arraste
+      if (isLocked) {
+        if (sortableInstance) {
+          sortableInstance.destroy();
+          sortableInstance = null;
+        }
+        // Remove o cursor de movimento de todos os blocos
+        container.querySelectorAll('.estado-block').forEach(el => el.style.cursor = 'default');
+      } else {
+        // Se desbloqueado e ainda não houver instância, criamos uma
+        if (!sortableInstance) {
+          sortableInstance = new Sortable(container, {
+            animation: 150,
+            ghostClass: 'sortable-ghost', // Classe para o item que está sendo arrastado
+            onEnd: function () {
+              saveNewOrder(); // Salva a ordem sempre que soltar um item
+            }
+          });
+          // Adiciona cursor de movimento para indicar que é arrastável
+          container.querySelectorAll('.estado-block').forEach(el => el.style.cursor = 'move');
+        }
+      }
+    }
+
+    // ====== NOVO: Função para salvar a nova ordem no Firebase ======
+    function saveNewOrder() {
+      const container = byId('estadoContainer');
+      const blocks = container.querySelectorAll('.estado-block');
+      
+      // Criamos um novo array de POPs baseado na ordem visual da tela
+      let newOrderedPops = [];
+      
+      blocks.forEach(block => {
+        const cards = block.querySelectorAll('.pop-toggle');
+        cards.forEach(btn => {
+          const popId = btn.dataset.togglePop;
+          const popData = pops.find(p => p.id === popId);
+          if (popData) newOrderedPops.push(popData);
+        });
+      });
+
+      // Atualiza a variável local e salva no Firebase
+      pops = newOrderedPops;
+      savePops();
     }
 
     // NOVO: versão otimizada usando mapa de switches
@@ -1096,6 +1160,9 @@
 
       // ===== CHAMA A FUNÇÃO PARA AJUSTAR DIREÇÕES DOS TOOLTIPS =====
       adjustHoverDirections();
+
+      // ====== ATUALIZA O ESTADO DO DRAG-AND-DROP ======
+      updateDraggableState();
     }
 
     function renderUFSelect(selectEl){ if(!selectEl) return; selectEl.innerHTML=`<option value="__">Sem Estado</option>`+estados.map(uf=>`<option value="${uf}">${uf}</option>`).join(''); }
@@ -1448,6 +1515,9 @@
         if(txt)  txt.textContent = 'Desbloqueado';
         if(badge) badge.textContent = 'OPEN';
       }
+
+      // ====== ATUALIZA O ESTADO DO DRAG-AND-DROP AO MUDAR O BLOQUEIO ======
+      updateDraggableState();
     }
 
     /* ========= Listeners globais ========= */
