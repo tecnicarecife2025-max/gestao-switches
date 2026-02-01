@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gestão de Switches de Rede</title>
 
   <!-- Favicon base (fallback) -->
@@ -287,15 +287,15 @@
     .modal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:1200 }
     .modal.open{ display:flex }
     .modal-content{ background:#fff; width:min(900px, 100%); max-height:90vh; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:auto }
-    .modal-header{ padding:16px 20px; border-bottom:1px solid:#eee; display:flex; align-items:center; justify-content:space-between }
+    .modal-header{ padding:16px 20px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between }
     .modal-title{ font-size:18px; font-weight:700 }
     .modal-body{ padding:20px }
-    .modal-footer{ padding:16px 20px; border-top:1px solid:#eee; display:flex; gap:10px; justify-content:flex-end }
+    .modal-footer{ padding:16px 20px; border-top:1px solid #eee; display:flex; gap:10px; justify-content:flex-end }
     .close-x{ background:transparent; border:0; font-size:20px; cursor:pointer }
 
     .form-group{ margin-bottom:16px }
     label{ display:block; margin-bottom:8px; font-weight:600; color:#2c3e50 }
-    input,select,textarea{ width:100%; padding:12px; border:1px solid:#ddd; border-radius:5px; transition:border-color .3s; font-family:inherit }
+    input,select,textarea{ width:100%; padding:12px; border:1px solid #ddd; border-radius:5px; transition:border-color .3s; font-family:inherit }
     textarea{ resize:vertical; min-height:80px }
     input:focus,select:focus,textarea:focus{ border-color:#3498db; outline:0; box-shadow:0 0 0 2px rgba(52,152,219,.2) }
     .file-input-wrapper{ position:relative; overflow:hidden; display:inline-block; width:100% }
@@ -365,6 +365,31 @@
     .mini-thumb span{
       font-size:11px;
       color:#7f8c8d;
+    }
+
+    /* Estilos para a barra de pesquisa */
+    .search-container {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .search-container input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .search-container button {
+      padding: 10px 15px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .search-container button:hover {
+      background-color: #2980b9;
     }
   </style>
 </head>
@@ -436,6 +461,13 @@
       <div class="main-content">
         <section class="switches-section">
           <h2>POPs Cadastrados</h2>
+
+          <!-- Barra de Pesquisa -->
+          <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Digite o nome do POP...">
+            <button id="searchButton">Pesquisar</button>
+          </div>
+
           <div id="estadoContainer">
             <div id="estadoLoading" class="loading-wrap" role="status" aria-live="polite" aria-busy="true">
               <div class="progress" aria-hidden="true"><div class="indeterminate"></div></div>
@@ -452,7 +484,7 @@
     <div class="modal-content" style="max-width:600px">
       <div class="modal-header">
         <div class="modal-title" id="confirmModalTitle">Confirmar</div>
-        <button class="close-x" data-close="confirmModal" aria-label="Fechar">&times;</button>
+        <button class="close-x" data-close="confirmModal" aria-label="Fechar">×</button>
       </div>
       <div class="modal-body">
         <p id="confirmModalMessage" style="margin:0; color:#333; line-height:1.4"></p>
@@ -469,7 +501,7 @@
     <div class="modal-content" style="max-width:420px">
       <div class="modal-header">
         <div class="modal-title" id="passwordTitle">Destravar</div>
-        <button class="close-x" data-close="passwordModal" aria-label="Fechar">&times;</button>
+        <button class="close-x" data-close="passwordModal" aria-label="Fechar">×</button>
       </div>
       <form class="modal-body" id="passwordForm">
         <label for="passwordInput" class="muted" style="display:block;margin-bottom:8px">
@@ -512,7 +544,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <div class="modal-title">Novo cadastro</div>
-        <button class="close-x" data-close="modalCadastro" aria-label="Fechar">&times;</button>
+        <button class="close-x" data-close="modalCadastro" aria-label="Fechar">×</button>
       </div>
       <div class="modal-body">
         <form id="cadastroForm">
@@ -586,7 +618,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <div class="modal-title">Editar Switch</div>
-        <button class="close-x" data-close="modalEditSwitch" aria-label="Fechar">&times;</button>
+        <button class="close-x" data-close="modalEditSwitch" aria-label="Fechar">×</button>
       </div>
       <div class="modal-body">
         <form id="formEditSwitch">
@@ -643,7 +675,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <div class="modal-title">Gerenciar POPs</div>
-        <button class="close-x" data-close="modalPops" aria-label="Fechar">&times;</button>
+        <button class="close-x" data-close="modalPops" aria-label="Fechar">×</button>
       </div>
       <div class="modal-body">
         <div class="muted" style="margin-bottom:10px">Renomeie, ajuste o Estado (UF) ou exclua POPs. Ao renomear, o sistema atualiza o <em>slug</em>/id e realoca os Switches automaticamente.</div>
@@ -697,10 +729,10 @@
     const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
 
     function validarIP(ip){
-      const re=/^(25[0-5]|2[0-4]\d|[01]?\d?\d)(\.(25[0-5]|2[0-4]\d|[01]?\d?\d)){3}$/;
+      const re=/^(25[0-5]|2[0-4]\\d|[01]?\\d?\\d)(\\.(25[0-5]|2[0-4]\\d|[01]?\\d?\\d)){3}$/;
       return re.test(ip);
     }
-    const slugify=(s)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+    const slugify=(s)=>s.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
 
     const estados=['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
     const estadoLabel=(uf)=> uf && uf!=='__' ? uf : 'Sem Estado';
@@ -742,14 +774,14 @@
       'DM4008':
         'Chassi modular DM4008 da família DM4000, switch Metro Ethernet de grande porte para núcleo/agregação, com arquitetura de alta capacidade, múltiplos slots de interface GE/10GE e recursos avançados de QoS, VPN e alta disponibilidade para redes Metro Ethernet.',
       'S12700':
-        'Chassi core Huawei S12708 da família S12700, modular para rack 19\" com múltiplos slots de serviço, altura em torno de 8–10U (dependendo do kit), alta capacidade de comutação em line cards 10GE/40GE/100GE e fontes PSU redundantes hot‑swap, ideal para núcleo de redes de campus de grande porte.',
+        'Chassi core Huawei S12708 da família S12700, modular para rack 19\\" com múltiplos slots de serviço, altura em torno de 8–10U (dependendo do kit), alta capacidade de comutação em line cards 10GE/40GE/100GE e fontes PSU redundantes hot‑swap, ideal para núcleo de redes de campus de grande porte.',
       'DM4380 12XS+3CX':
         'Switch L2/L3 e MPLS com 12 interfaces ópticas 10GE SFP+ e 3 interfaces ópticas QSFP+ 40GE/100GE, equipado com dois slots hot swappable para fontes de alimentação redundantes, projetado para alta densidade de uplinks e agregação em redes corporativas e data centers.',
-      
+
       'DM3000':
-        'Família de switches standalone de 1U para racks de 19\", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
+        'Família de switches standalone de 1U para racks de 19\\", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
       'Datacom DM3000':
-        'Família de switches standalone de 1U para racks de 19\", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
+        'Família de switches standalone de 1U para racks de 19\\", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
       'DM4100':
         'Switch de agregação Datacom com recursos L2/L3 avançados, uplinks de alta capacidade e suporte a redundância, indicado para borda de provedores e redes corporativas de maior porte.',
       'Datacom DM4100':
@@ -786,7 +818,7 @@
       // Planet
       'Planet GSW':
         'Família de switches Gigabit da Planet, geralmente não-gerenciáveis ou smart, com múltiplas portas 10/100/1000 para agregação simples de tráfego em redes de pequeno e médio porte.',
-      
+
       // Adicionando MA5683T
       'MA5683T':
         'OLT de acesso óptico de médio porte, chassi 5U com 6 slots de serviço, suportando GPON/10G GPON/EPON/10G EPON e P2P, para oferta de serviços de Internet, voz e vídeo em redes FTTH/FTTx.'
@@ -944,7 +976,7 @@
     }
 
     /* ========= Render ========= */
-    function popsByEstado(){ const groups={}; pops.forEach(p=>{ const uf=p.estado||'__'; (groups[uf]??=[]).push(p); }); Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR'))); return groups; }
+    function popsByEstado(){ const groups={}; pops.forEach(p=>{ const uf=p.estado||'__'; (groups[uf]??=[]).push(p); }); Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b,'pt-BR'))); return groups; }
 
     // NOVO: agrupa switches por POP para evitar .filter repetido
     function groupSwitchesByPop() {
@@ -960,7 +992,7 @@
     // ESCAPAR texto simples para evitar injeção (aplicamos antes de inserir como HTML)
     function escapeHtml(text){
       if(!text && text!==0) return '';
-      return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      return String(text).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"').replace(/'/g,''');
     }
 
     // ===== NOVA FUNÇÃO: detecta e marca linhas que devem abrir tooltip à esquerda =====
@@ -989,24 +1021,39 @@
     }
 
     // NOVO: versão otimizada usando mapa de switches
-    function renderEstadosComPops(){
+    function renderEstadosComPops(searchTerm = ''){
       const wrap=byId('estadoContainer'); if(!wrap) return;
       if(!pops || pops.length===0){
         wrap.innerHTML='<div class="no-pops">Nenhum POP cadastrado ainda. Use "Novo cadastro".</div>';
         return;
       }
 
-      const groups=popsByEstado();
-      const ufs=Object.keys(groups).sort((a,b)=>{
-        if(a==='__') return 1;
-        if(b==='__') return -1;
-        return a.localeCompare(b);
+      // Filtrar POPs com base no termo de busca
+      let filteredPops = pops;
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
+        filteredPops = pops.filter(pop => 
+          pop.nome.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').includes(term)
+        );
+      }
+
+      if(filteredPops.length === 0){
+        wrap.innerHTML='<div class="no-pops">Nenhum POP encontrado com esse nome.</div>';
+        return;
+      }
+
+      const groups={};
+      filteredPops.forEach(p=>{
+        const uf=p.estado||'__';
+        (groups[uf] ??= []).push(p);
       });
+
+      Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b,'pt-BR')));
 
       const switchesByPop = groupSwitchesByPop();
 
       const totalSwitchesPorUF = {};
-      for (const uf of ufs) {
+      for (const uf of Object.keys(groups)) {
         let total = 0;
         for (const pop of groups[uf]) {
           const lista = switchesByPop[pop.id] || [];
@@ -1016,6 +1063,12 @@
       }
 
       wrap.innerHTML='';
+      const ufs=Object.keys(groups).sort((a,b)=>{
+        if(a==='__') return 1;
+        if(b==='__') return -1;
+        return a.localeCompare(b);
+      });
+
       ufs.forEach(uf=>{
         const bloco=document.createElement('div'); bloco.className='estado-block';
         const totalSwitchesUF = totalSwitchesPorUF[uf] || 0;
@@ -1052,13 +1105,13 @@
                       : 'Sem descrição detalhada para este modelo.';
 
                     // escapando a descrição antes de inserir como HTML e preservando quebras de linha
-                    const descricaoHtml = sw.descricao ? escapeHtml(sw.descricao).replace(/\n/g,'<br>') : '';
+                    const descricaoHtml = sw.descricao ? escapeHtml(sw.descricao).replace(/\\n/g,'<br>') : '';
 
                     return `
                     <div class="switch-row"
                          data-switch-id="${sw.id}"
-                         data-switch-nome="${sw.nome.replace(/"/g,'&quot;')}"
-                         data-switch-ip="${sw.ip.replace(/"/g,'&quot;')}">
+                         data-switch-nome="${sw.nome.replace(/"/g,'"')}"
+                         data-switch-ip="${sw.ip.replace(/"/g,'"')}">
                       <div class="switch-info-wrap">
                         <div class="switch-name">${escapeHtml(sw.nome)}</div>
                         <div class="switch-meta">IP: ${escapeHtml(sw.ip)}</div>
@@ -1122,7 +1175,7 @@
       sel.value='switch'; 
       bindTipoCadastroEvents(); 
       alternarTipo();
-      
+
       const galleryCadastro = byId('galleryCadastro');
       if(galleryCadastro) {
         const fotos = getUniqueFotos();
@@ -1139,7 +1192,7 @@
         // mantemos o valor, apenas recarregamos thumbs acima
       }
     }
-    
+
     function bindTipoCadastroEvents(){ const sel=byId('tipoCadastro'); const clone=sel.cloneNode(true); sel.parentNode.replaceChild(clone,sel); clone.addEventListener('change',alternarTipo); clone.addEventListener('input',alternarTipo); document.addEventListener('change',(e)=>{ if(e.target && e.target.id==='tipoCadastro') alternarTipo(); },{once:true}); }
     function alternarTipo(){ const tipo=(byId('tipoCadastro')?.value)||'switch'; const popBox=byId('camposPOP'); const swBox=byId('camposSW'); const showPop=(tipo==='pop'); popBox.classList.toggle('hide',!showPop); swBox.classList.toggle('hide',showPop); popBox.style.display=showPop?'block':'none'; swBox.style.display=showPop?'none':'block'; }
 
@@ -1327,9 +1380,9 @@
         const tr=document.createElement('tr'); tr.dataset.index=i;
         const ufSelect=`<select data-field="estado">${['__',...estados].map(uf=>`<option value="${uf}" ${uf===row.estado?'selected':''}>${estadoLabel(uf)}</option>`).join('')}</select>`;
         tr.innerHTML=`
-          <td><input type="text" value="${row.nome.replace(/"/g,'&quot;')}" data-field="nome"></td>
+          <td><input type="text" value="${row.nome.replace(/"/g,'"')}" data-field="nome"></td>
           <td>${ufSelect}</td>
-          <td><input type="text" value="${row.id.replace(/"/g,'&quot;')}" data-field="id" disabled></td>
+          <td><input type="text" value="${row.id.replace(/"/g,'"')}" data-field="id" disabled></td>
           <td>${vinculados}</td>
           <td class="row-actions">
             <button class="btn small" data-act="renomear">Gerar ID</button>
@@ -1500,7 +1553,7 @@
 
       byId('btnSalvarCadastro').addEventListener('click', async (e)=>{ e.preventDefault(); const tipo=byId('tipoCadastro').value; if(tipo==='pop') await cadastrarPOP(); else await cadastrarSwitch(); });
       byId('btnSalvarEditSwitch').addEventListener('click', saveEditSwitch);
-      
+
       byId('btnRemoverFoto').addEventListener('click', ()=>{ 
         byId('editSwitchFoto').value=''; 
         const info = byId('previewInfo');
@@ -1517,8 +1570,26 @@
           galleryEdit.appendChild(placeholder);
         }
       });
-      
+
       byId('btnSalvarPops').addEventListener('click', applyPopEdits);
+
+      // Event listeners para a barra de pesquisa
+      const searchInput = byId('searchInput');
+      const searchButton = byId('searchButton');
+
+      if (searchInput && searchButton) {
+        searchButton.addEventListener('click', () => {
+          const term = searchInput.value.trim();
+          renderEstadosComPops(term);
+        });
+
+        searchInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            const term = searchInput.value.trim();
+            renderEstadosComPops(term);
+          }
+        });
+      }
 
       byId('estadoContainer').addEventListener('click', async (ev)=>{
         const toggleBtn = ev.target.closest('[data-toggle-pop]');
@@ -1560,7 +1631,7 @@
             await navigator.clipboard.writeText(texto);
             await showAlert({
               title: 'Copiado',
-              message: `\n${texto}`
+              message: `\\n${texto}`
             });
           }catch(e){
             console.warn('[copy] erro ao copiar', e);
