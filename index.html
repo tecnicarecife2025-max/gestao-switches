@@ -436,6 +436,14 @@
       <div class="main-content">
         <section class="switches-section">
           <h2>POPs Cadastrados</h2>
+
+          <!-- BARRA DE PESQUISA -->
+          <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
+            <input id="popSearch" type="search" placeholder="Pesquisar POP por nome..." 
+                   style="flex:1; padding:10px 12px; border-radius:8px; border:1px solid #ddd; font-size:15px">
+            <button id="popSearchClear" class="btn ghost small" type="button">Limpar</button>
+          </div>
+
           <div id="estadoContainer">
             <div id="estadoLoading" class="loading-wrap" role="status" aria-live="polite" aria-busy="true">
               <div class="progress" aria-hidden="true"><div class="indeterminate"></div></div>
@@ -745,7 +753,6 @@
         'Chassi core Huawei S12708 da família S12700, modular para rack 19\" com múltiplos slots de serviço, altura em torno de 8–10U (dependendo do kit), alta capacidade de comutação em line cards 10GE/40GE/100GE e fontes PSU redundantes hot‑swap, ideal para núcleo de redes de campus de grande porte.',
       'DM4380 12XS+3CX':
         'Switch L2/L3 e MPLS com 12 interfaces ópticas 10GE SFP+ e 3 interfaces ópticas QSFP+ 40GE/100GE, equipado com dois slots hot swappable para fontes de alimentação redundantes, projetado para alta densidade de uplinks e agregação em redes corporativas e data centers.',
-      
       'DM3000':
         'Família de switches standalone de 1U para racks de 19\", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
       'Datacom DM3000':
@@ -988,7 +995,7 @@
       });
     }
 
-    // NOVO: versão otimizada usando mapa de switches
+    // ======= SUBSTITUIÇÃO: renderEstadosComPops com filtro por pesquisa =======
     function renderEstadosComPops(){
       const wrap=byId('estadoContainer'); if(!wrap) return;
       if(!pops || pops.length===0){
@@ -996,8 +1003,29 @@
         return;
       }
 
-      const groups=popsByEstado();
-      const ufs=Object.keys(groups).sort((a,b)=>{
+      // Lê valor do campo de pesquisa (se existir) e prepara filtro
+      const searchInput = byId('popSearch');
+      const query = (searchInput && searchInput.value) ? searchInput.value.trim().toLowerCase() : '';
+
+      // Filtra POPs pelo nome (case-insensitive)
+      const popsFiltered = query
+        ? pops.filter(p => (p.nome || '').toLowerCase().includes(query))
+        : pops.slice();
+
+      if(popsFiltered.length === 0){
+        wrap.innerHTML = `<div class="no-pops">Nenhum POP encontrado para "<strong>${escapeHtml(query)}</strong>".</div>`;
+        return;
+      }
+
+      // Agrupa por estado usando somente os POPs filtrados
+      const groups = {};
+      popsFiltered.forEach(p => {
+        const uf = p.estado || '__';
+        (groups[uf] ??= []).push(p);
+      });
+      Object.keys(groups).forEach(uf => groups[uf].sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR')));
+
+      const ufs = Object.keys(groups).sort((a,b)=>{
         if(a==='__') return 1;
         if(b==='__') return -1;
         return a.localeCompare(b);
@@ -1100,6 +1128,40 @@
 
       // ===== CHAMA A FUNÇÃO PARA AJUSTAR DIREÇÕES DOS TOOLTIPS =====
       adjustHoverDirections();
+    }
+
+    // Função de setup: debounce e listeners para campo de pesquisa
+    function setupPopSearch(){
+      const inp = byId('popSearch');
+      const clearBtn = byId('popSearchClear');
+      if(!inp) return;
+
+      let timer = null;
+      const debounceMs = 220;
+
+      inp.addEventListener('input', ()=>{
+        clearTimeout(timer);
+        timer = setTimeout(()=> {
+          renderEstadosComPops();
+        }, debounceMs);
+      });
+
+      // tecla Enter também filtra imediatamente
+      inp.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          clearTimeout(timer);
+          renderEstadosComPops();
+        }
+      });
+
+      if(clearBtn){
+        clearBtn.addEventListener('click', ()=>{
+          inp.value = '';
+          inp.focus();
+          renderEstadosComPops();
+        });
+      }
     }
 
     function renderUFSelect(selectEl){ if(!selectEl) return; selectEl.innerHTML=`<option value="__">Sem Estado</option>`+estados.map(uf=>`<option value="${uf}">${uf}</option>`).join(''); }
@@ -1739,6 +1801,9 @@
 
       startLoadFallbackTimer(8000);
       requestAnimationFrame(()=>{ document.documentElement.classList.add('js-ready'); });
+
+      // Inicializa a busca de POPs (campo + debounce)
+      setupPopSearch();
     });
   </script>
 
