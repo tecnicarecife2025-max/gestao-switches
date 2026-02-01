@@ -144,15 +144,13 @@
     .muted{ color:#7f8c8d; font-size:14px }
     .no-switches,.no-pops{ text-align:center; padding:40px; color:#7f8c8d; font-style:italic }
 
-    .estado-block{ margin-bottom:32px; transition: cursor 0.2s; }
-    .estado-block[data-uf="__"] .h3::after{ content: " (Sem Estado)"; font-weight:400; font-size:12px; margin-left:6px; color:#7f8c8d }
+    .estado-block{ margin-bottom:32px }
     .estado-head{ display:flex; align-items:center; justify-content:space-between }
     .estado-badge{ background:#eef3f7; border:1px solid #e3e8ee; color:#2c3e50; font-weight:700; padding:4px 10px; border-radius:999px; font-size:12px }
 
     .pop-grid{ display:flex; flex-wrap:wrap; gap:20px; margin-top:12px; align-items:flex-start }
-    .pop-card{ flex:1 1 320px; max-width:420px; background:#f8f9fa; border-radius:8px; overflow:visible; box-shadow:0 2px 8px rgba(0,0,0,.1); transition:transform .3s, box-shadow .3s; cursor:grab; }
-    .pop-card:active{ cursor:grabbing; }
-    .pop-card:hover{ transform:translateY(-3px); box-shadow:0 6px 18px rgba(0,0,0,.08) }
+    .pop-card{ flex:1 1 320px; max-width:420px; background:#f8f9fa; border-radius:8px; overflow:visible; box-shadow:0 2px 8px rgba(0,0,0,.1); transition:transform .3s, box-shadow .3s }
+    .pop-card:hover{ transform:translateY(-5px); box-shadow:0 5px 15px rgba(0,0,0,.1) }
     .pop-header{ display:flex; align-items:center; justify-content:space-between; padding:16px }
     .pop-title{ font-size:18px; font-weight:700; color:#2c3e50 }
     .pop-badge{ background:#ecf0f1; padding:4px 10px; border-radius:999px; font-size:12px; color:#2c3e50 }
@@ -368,16 +366,10 @@
       font-size:11px;
       color:#7f8c8d;
     }
-
-    /* ====== DRAG AND DROP ====== */
-    .sortable-ghost {
-      opacity: 0.4;
-      border: 2px dashed #3498db;
-      background: #ebf5fb !important;
-    }
   </style>
 </head>
 
+<!-- Começa colapsado e BLOQUEADO -->
 <body class="sidebar-collapsed locked">
   <!-- VIDEO OCULTO PARA FAVICON ANIMADO -->
   <video id="favVideo" width="256" height="256" preload="auto" muted playsinline loop
@@ -501,6 +493,7 @@
     </div>
   </div>
 
+  <!-- SUGESTÕES DE MODELOS -->
   <datalist id="modelosBase">
     <option value="Datacom DM3000"></option>
     <option value="Datacom DM4100"></option>
@@ -514,14 +507,168 @@
     <option value="Planet GSW"></option>
   </datalist>
 
-  <!-- MODAIS CADASTRO / EDIÇÃO / POPS (mantidos iguais) -->
-  <!-- ... (mantive os mesmos modais do código anterior para economia de espaço) ... -->
+  <!-- MODAIS CADASTRO / EDIÇÃO / POPS -->
+  <div class="modal" id="modalCadastro" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Novo cadastro</div>
+        <button class="close-x" data-close="modalCadastro" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="cadastroForm">
+          <div class="form-group">
+            <label for="tipoCadastro">O que deseja cadastrar?</label>
+            <select id="tipoCadastro" required>
+              <option value="switch">Switch</option>
+              <option value="pop">POP</option>
+            </select>
+          </div>
 
-  <!-- ====== IMPORTAÇÃO DA BIBLIOTECA SORTABLEJS ====== -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+          <div id="camposPOP" class="hide" style="display:none">
+            <div class="form-group">
+              <label for="popNome">Nome/Descrição do POP</label>
+              <input type="text" id="popNome" placeholder="Ex: São Paulo (POP-SP)">
+            </div>
+            <div class="form-group">
+              <label for="popEstado">Estado (UF)</label>
+              <select id="popEstado"></select>
+            </div>
+          </div>
+
+          <div id="camposSW" style="display:block">
+            <div class="form-group">
+              <label for="pop">POP (Ponto de Presença)</label>
+              <select id="pop"></select>
+              <div class="muted" style="margin-top:6px">Se o POP não existir, selecione "POP" acima e cadastre.</div>
+            </div>
+            <div class="form-group">
+              <label for="modelo">Modelo</label>
+              <input type="text" id="modelo" list="modelosBase" placeholder="Ex: DM3000">
+            </div>
+            <div class="form-group">
+              <label for="nome">Nome do Switch</label>
+              <input type="text" id="nome" placeholder="Ex: SWAC01-RCE03">
+            </div>
+            <div class="form-group">
+              <label for="ip">Endereço IP</label>
+              <input type="text" id="ip" placeholder="Ex: 192.168.1.100">
+            </div>
+
+            <!-- NOVO: Campo Descrição -->
+            <div class="form-group">
+              <label for="descricao">Descrição</label>
+              <textarea id="descricao" placeholder="Ex:\nEth 1/1 : UP-LINK-SW01-LFS01-PETRORECONCAVO\nEth 1/2 : UP-LINK-SW01-LFS01-CIRION" rows="4"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="foto">Foto do Switch</label>
+              <div class="file-input-wrapper">
+                <div class="file-input-button">Selecionar imagem</div>
+                <input type="file" id="foto" accept="image/*">
+              </div>
+              <!-- MINI GALERIA DE FOTOS (NOVO CADASTRO) -->
+              <div id="galleryCadastro" class="mini-gallery"></div>
+              <div class="muted" style="margin-top:4px">
+                Ou clique em uma imagem já cadastrada abaixo para reutilizar.
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn ghost" data-close="modalCadastro">Cancelar</button>
+        <button class="btn" id="btnSalvarCadastro">Cadastrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalEditSwitch" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Editar Switch</div>
+        <button class="close-x" data-close="modalEditSwitch" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="formEditSwitch">
+          <input type="hidden" id="editSwitchId">
+          <div class="form-group">
+            <label for="editSwitchNome">Nome do Switch</label>
+            <input type="text" id="editSwitchNome">
+          </div>
+          <div class="form-group">
+            <label for="editSwitchIP">Endereço IP</label>
+            <input type="text" id="editSwitchIP" placeholder="Ex: 192.168.1.100">
+          </div>
+          <div class="form-group">
+            <label for="editSwitchModelo">Modelo</label>
+            <input type="text" id="editSwitchModelo" list="modelosBase" placeholder="Ex: DM4100">
+          </div>
+          <div class="form-group">
+            <label for="editSwitchPop">POP</label>
+            <select id="editSwitchPop"></select>
+          </div>
+
+          <!-- NOVO: Campo Descrição (edição) -->
+          <div class="form-group">
+            <label for="editSwitchDescricao">Descrição</label>
+            <textarea id="editSwitchDescricao" rows="4" placeholder="Ex:\nEth 1/1 : ..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="editSwitchFoto">Foto do Switch</label>
+            <div class="row-actions">
+              <div class="file-input-wrapper" style="flex:1">
+                <div class="file-input-button">Selecionar imagem</div>
+                <input type="file" id="editSwitchFoto" accept="image/*">
+              </div>
+              <button type="button" class="btn ghost small" id="btnRemoverFoto">Remover imagem</button>
+            </div>
+            <div class="muted" id="previewInfo" style="margin-top:8px"></div>
+            <!-- MINI GALERIA DE FOTOS (EDIÇÃO) -->
+            <div id="galleryEdit" class="mini-gallery"></div>
+            <div class="muted" style="margin-top:4px">
+              Ou clique em uma imagem já cadastrada abaixo para reutilizar.
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn ghost" data-close="modalEditSwitch">Cancelar</button>
+        <button class="btn" id="btnSalvarEditSwitch">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalPops" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Gerenciar POPs</div>
+        <button class="close-x" data-close="modalPops" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="muted" style="margin-bottom:10px">Renomeie, ajuste o Estado (UF) ou exclua POPs. Ao renomear, o sistema atualiza o <em>slug</em>/id e realoca os Switches automaticamente.</div>
+        <table id="tabelaPops">
+          <thead>
+            <tr>
+              <th style="width:34%">Nome/Descrição</th>
+              <th style="width:18%">Estado (UF)</th>
+              <th style="width:24%">ID (slug)</th>
+              <th>Switches</th>
+              <th style="width:200px">Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn ghost" data-close="modalPops">Fechar</button>
+        <button class="btn" id="btnSalvarPops">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module">
-    /* ========= Firebase (mesmo config) ========= */
+    /* ========= Firebase ========= */
     const firebaseConfig = {
       apiKey: "AIzaSyCGSDjIf8pRP_IE0xqjLii4Qeuc6_bhE50",
       authDomain: "gestao-switches.firebaseapp.com",
@@ -569,10 +716,79 @@
       { nome:'Brasília (POP-DF)', uf:'DF' }
     ].map(n => ({ id: slugify(n.nome), nome:n.nome, estado:n.uf }));
 
-    /* ===== DESCRIÇÕES POR MODELO (mantidas) ===== */
-    const MODELO_DESCRICOES = { /* ... mantido como no exemplo ... */ };
+    /* ===== DESCRIÇÕES POR MODELO PARA O TOOLTIP ===== */
+    const MODELO_DESCRICOES = {
+      // Datacom
+      'DM4170 24GX+12XS':
+        'Switch L2/L3 e MPLS com 24 interfaces GE óticas SFP e 12 interfaces 10GE óticas SFP+, com dois slots hot swappable para fontes de alimentação redundantes.',
+      'DM3224F2':
+        'Switch DM3000 Layer 2 com 24 portas Fast Ethernet 10/100Base-TX e 4 portas Gigabit Ethernet combo (1000Base-X ou 10/100/1000Base-T).',
+      'HUAWEI S6730-H48X6C':
+        'Switch de agregação/roteamento 10GE de alta densidade, com 48×10GE SFP+ e 6×40/100GE QSFP28, WLAN AC integrado para até 1024 APs, VXLAN e recursos avançados de segurança e automação.',
+      'DM4270 48XS+6CX':
+        'Switch L2/L3 e MPLS com 48 interfaces ópticas SFP+ 10GE, 6 interfaces ópticas QSFP28 100GE/40GE e dois slots para fontes de alimentação hot swap.',
+      'MA5683T':
+        'OLT de acesso óptico de médio porte, chassi 5U com 6 slots de serviço, suportando GPON/10G GPON/EPON/10G EPON e P2P, para oferta de serviços de Internet, voz e vídeo em redes FTTH/FTTx.',
+      'DM4100 ETH24GX+4XX+MPLS':
+        'Switch DM4100 com 24 portas Gigabit elétricas + 4 uplinks SFP, comutação wire‑speed L2/L3, suporte a IP/MPLS e recursos avançados para redes de acesso e agregação Ethernet.',
+      'HUAWEI S6720-54C-EI-48S-DC':
+        'Switch 10GE de alto desempenho para data center/campus, com 48 portas 10GE SFP+ e 2 uplinks 40GE QSFP+, 2,56 Tbit/s de capacidade, 1.080 Mpps, suporte a iStack e SVF para redes simplificadas.',
+      'MA5800-X7':
+        'OLT de acesso óptico de grande porte, chassi MA5800‑X7 com arquitetura distribuída, suportando GPON/XG(S)‑PON/50G PON e interfaces GE/10GE, ideal para oferta de serviços de Internet, voz e vídeo 4K/8K/VR em redes FTTH/FTTx gigabit.',
+      'DM4008':
+        'Chassi modular DM4008 da família DM4000, switch Metro Ethernet de grande porte para núcleo/agregação, com arquitetura de alta capacidade, múltiplos slots de interface GE/10GE e recursos avançados de QoS, VPN e alta disponibilidade para redes Metro Ethernet.',
+      'S12700':
+        'Chassi core Huawei S12708 da família S12700, modular para rack 19\" com múltiplos slots de serviço, altura em torno de 8–10U (dependendo do kit), alta capacidade de comutação em line cards 10GE/40GE/100GE e fontes PSU redundantes hot‑swap, ideal para núcleo de redes de campus de grande porte.',
+      'DM4380 12XS+3CX':
+        'Switch L2/L3 e MPLS com 12 interfaces ópticas 10GE SFP+ e 3 interfaces ópticas QSFP+ 40GE/100GE, equipado com dois slots hot swappable para fontes de alimentação redundantes, projetado para alta densidade de uplinks e agregação em redes corporativas e data centers.',
+      
+      'DM3000':
+        'Família de switches standalone de 1U para racks de 19\", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
+      'Datacom DM3000':
+        'Família de switches standalone de 1U para racks de 19\", com comutação wire speed L2/L3, até 4094 VLANs, QoS avançado (8 filas por porta) e recursos para redes Metro Ethernet e corporativas.',
+      'DM4100':
+        'Switch de agregação Datacom com recursos L2/L3 avançados, uplinks de alta capacidade e suporte a redundância, indicado para borda de provedores e redes corporativas de maior porte.',
+      'Datacom DM4100':
+        'Switch de agregação Datacom com recursos L2/L3 avançados, uplinks de alta capacidade e suporte a redundância, indicado para borda de provedores e redes corporativas de maior porte.',
+      'Datacom EDD 2104':
+        'Equipamento de demarcação Ethernet (EDD) com até 4 portas Gigabit, QoS detalhado e OAM para oferta de serviços Metro Ethernet com garantia de SLA na borda do cliente.',
 
-    /* ===== Helpers de imagem (mantidos) ===== */
+      // Cisco
+      'Cisco Catalyst 2960':
+        'Switch de acesso Layer 2 da família Catalyst com portas Fast Ethernet ou Gigabit, recursos de segurança, QoS e opções com PoE/PoE+, amplamente usado em redes LAN corporativas.',
+      'Catalyst 2960':
+        'Switch de acesso Layer 2 da família Catalyst com portas Fast Ethernet ou Gigabit, recursos de segurança, QoS e opções com PoE/PoE+, amplamente usado em redes LAN corporativas.',
+      'Cisco Catalyst 9200':
+        'Switch de acesso enterprise da família Catalyst 9000, com uplinks modulares, empilhamento, recursos avançados L3, SD-Access, automação e segurança reforçada para redes corporativas.',
+      'Catalyst 9200':
+        'Switch de acesso enterprise da família Catalyst 9000, com uplinks modulares, empilhamento, recursos avançados L3, SD-Access, automação e segurança reforçada para redes corporativas.',
+
+      // Huawei
+      'Huawei S5720':
+        'Série de switches Gigabit de próxima geração com uplinks 10GE, funções L2/L3 avançadas, QoS, segurança aprimorada e recursos adequados para acesso e agregação em redes corporativas.',
+
+      // HPE / Aruba
+      'HP/Aruba 2530':
+        'Switch Layer 2 de acesso com portas Fast Ethernet ou Gigabit, gerenciamento completo, QoS e opções PoE, ideal para redes de campus e filiais com foco em simplicidade e baixo consumo.',
+
+      // MikroTik
+      'MikroTik CRS326':
+        'Switch Cloud Router Switch Gigabit com 24 portas 10/100/1000 e 2 portas SFP+ 10GbE, sistema RouterOS/SwOS, oferecendo switching wire speed e recursos básicos de roteamento.',
+
+      // Juniper
+      'Juniper EX3300':
+        'Switch de acesso 1GbE com uplinks 10GbE e tecnologia Virtual Chassis, permitindo empilhamento de até 10 unidades, com recursos L2/L3 para redes corporativas e campus.',
+
+      // Planet
+      'Planet GSW':
+        'Família de switches Gigabit da Planet, geralmente não-gerenciáveis ou smart, com múltiplas portas 10/100/1000 para agregação simples de tráfego em redes de pequeno e médio porte.',
+      
+      // Adicionando MA5683T
+      'MA5683T':
+        'OLT de acesso óptico de médio porte, chassi 5U com 6 slots de serviço, suportando GPON/10G GPON/EPON/10G EPON e P2P, para oferta de serviços de Internet, voz e vídeo em redes FTTH/FTTx.'
+    };
+
+    /* ===== Helpers de imagem (compactado) ===== */
     async function compressImage(file,{maxWidth=1600,maxHeight=1200,mimeType='image/webp',quality=.82}={}){
       if(!('createImageBitmap' in window)) return await fileToDataURL(file);
       const bitmap=await createImageBitmap(file);
@@ -594,32 +810,15 @@
     let switches=[]; let pops=[]; let pendingPopEdits=[];
     let popsLoaded=false; let switchesLoaded=false; let loadFallbackTimer=null;
 
-    // ====== Gerenciamento das instâncias Sortable para cada .pop-grid =====
-    let popGridSortables = [];
-
     function loadPops(){
       const dbRef=ref(fbDb,'pops');
       onValue(dbRef,(snap)=>{
-        const data=snap.val();
-        // Aceita tanto array quanto objeto (compatibilidade)
-        if(!data){
-          pops=[...POPS_PADRAO];
-          savePops();
-        } else if (Array.isArray(data)) {
-          pops = data.filter(Boolean).map(p => ({ ...p })); // copia
-        } else {
-          // se veio como objeto (antigo), converte pra array preservando algum critério: por nome
-          pops = Object.values(data || {}).map(p => ({ ...p }));
-        }
-        // Se vazio, inicializa com padrão
+        const data=snap.val(); pops=data?Object.values(data):[];
         if(!pops || pops.length===0){ pops=[...POPS_PADRAO]; savePops(); }
         renderPopOptions(); popsLoaded=true; renderWhenReady();
       },(err)=>{ console.error('Erro POPs',err); popsLoaded=true; renderWhenReady(); });
     }
-
-    // Agora salvamos o array pops diretamente, para preservar ordem
-    function savePops(){ const dbRef=ref(fbDb,'pops'); set(dbRef,pops).catch(()=> showAlert({title:'Erro',message:'Falha ao salvar POPs.'})); }
-
+    function savePops(){ const dbRef=ref(fbDb,'pops'); const obj={}; pops.forEach(p=>obj[p.id]=p); set(dbRef,obj).catch(()=> showAlert({title:'Erro',message:'Falha ao salvar POPs.'})); }
     function loadSwitches(){
       const dbRef=ref(fbDb,'switches');
       onValue(dbRef,(snap)=>{ const data=snap.val(); switches=data?Object.values(data):[]; switchesLoaded=true; renderWhenReady(); },
@@ -627,7 +826,7 @@
     }
     function saveSwitches(){ const dbRef=ref(fbDb,'switches'); const obj={}; switches.forEach(s=>obj[s.id]=s); set(dbRef,obj).catch(()=> showAlert({title:'Erro',message:'Falha ao salvar switches.'})); }
 
-    /* ========= Confirm/Alert (mantidos) ========= */
+    /* ========= Confirm/Alert ========= */
     function _openModalById(id){ const el=byId(id); if(!el) return; el.classList.add('open'); el.setAttribute('aria-hidden','false'); }
     function _closeModalById(id){ const el=byId(id); if(!el) return; el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
 
@@ -707,6 +906,7 @@
 
     /* ========= GALERIA LOCAL (por modal) ========= */
 
+    // Retorna lista de fotos únicas de todos os switches
     function getUniqueFotos() {
       return Array.from(
         new Set(
@@ -717,6 +917,7 @@
       );
     }
 
+    // Preenche a mini galeria de um container (cadastro ou edição)
     function fillGallery(containerEl, fotos, currentSelectedDataUrl) {
       if (!containerEl) return;
       containerEl.innerHTML = '';
@@ -739,18 +940,9 @@
     }
 
     /* ========= Render ========= */
+    function popsByEstado(){ const groups={}; pops.forEach(p=>{ const uf=p.estado||'__'; (groups[uf]??=[]).push(p); }); Object.keys(groups).forEach(uf=> groups[uf].sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR'))); return groups; }
 
-    // AGRUPA pops pela ordem do array 'pops' (preserva ordem definida pelo usuário)
-    function popsByEstado(){
-      const groups={};
-      for(const p of pops){
-        const uf = p.estado || '__';
-        if(!groups[uf]) groups[uf]=[];
-        groups[uf].push(p);
-      }
-      return groups;
-    }
-
+    // NOVO: agrupa switches por POP para evitar .filter repetido
     function groupSwitchesByPop() {
       const map = {};
       for (const sw of switches) {
@@ -761,11 +953,13 @@
       return map;
     }
 
+    // ESCAPAR texto simples para evitar injeção (aplicamos antes de inserir como HTML)
     function escapeHtml(text){
       if(!text && text!==0) return '';
       return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
 
+    // ===== NOVA FUNÇÃO: detecta e marca linhas que devem abrir tooltip à esquerda =====
     function adjustHoverDirections() {
       const rows = document.querySelectorAll('.switch-row');
       if (!rows.length) return;
@@ -776,10 +970,12 @@
         const preview = row.querySelector('.hover-preview');
         if (!preview) return;
 
+        // Remove classe antes de recalcular
         row.classList.remove('hover-left');
 
         const rect = row.getBoundingClientRect();
-        const estimatedPreviewWidth = preview.offsetWidth || 340;
+        const estimatedPreviewWidth = preview.offsetWidth || 340; // fallback
+        // Se do lado direito faltar pouco espaço pro tooltip, mostramos à esquerda
         const spaceRight = viewportWidth - rect.right;
 
         if (spaceRight < estimatedPreviewWidth + 20) {
@@ -788,32 +984,7 @@
       });
     }
 
-    // ---- Função que reconstrói 'pops' a partir da ordem atual do DOM e salva ----
-    function savePopOrderFromDOM(){
-      const blocks = document.querySelectorAll('.estado-block');
-      const newPops = [];
-      blocks.forEach(block => {
-        const uf = block.dataset.uf || '__';
-        const cards = block.querySelectorAll('.pop-card');
-        cards.forEach(card => {
-          const pid = card.dataset.popId;
-          const pop = pops.find(p => p.id === pid);
-          if(pop){
-            // atualiza estado caso tenha sido movido para outro bloco
-            pop.estado = uf;
-            newPops.push({...pop});
-          }
-        });
-      });
-
-      // Substitui a lista e salva
-      pops = newPops;
-      savePops();
-      renderPopOptions();
-      // re-render para garantir consistência visual e rebinds
-      renderEstadosComPops();
-    }
-
+    // NOVO: versão otimizada usando mapa de switches
     function renderEstadosComPops(){
       const wrap=byId('estadoContainer'); if(!wrap) return;
       if(!pops || pops.length===0){
@@ -822,7 +993,11 @@
       }
 
       const groups=popsByEstado();
-      const ufs=Object.keys(groups); // mantém ordem de inserção (igual à ordem em pops)
+      const ufs=Object.keys(groups).sort((a,b)=>{
+        if(a==='__') return 1;
+        if(b==='__') return -1;
+        return a.localeCompare(b);
+      });
 
       const switchesByPop = groupSwitchesByPop();
 
@@ -839,7 +1014,6 @@
       wrap.innerHTML='';
       ufs.forEach(uf=>{
         const bloco=document.createElement('div'); bloco.className='estado-block';
-        bloco.dataset.uf = uf; // importante: marca o UF no bloco para salvar movimentações
         const totalSwitchesUF = totalSwitchesPorUF[uf] || 0;
         bloco.innerHTML=`
           <div class="estado-head">
@@ -855,11 +1029,10 @@
 
         groups[uf].forEach(pop=>{
           const card=document.createElement('div'); card.className='pop-card';
-          card.dataset.popId = pop.id; // importante: id do pop no DOM
           const swDoPop = switchesByPop[pop.id] || [];
           card.innerHTML=`
             <div class="pop-header">
-              <div class="pop-title">${escapeHtml(pop.nome)}</div>
+              <div class="pop-title">${pop.nome}</div>
               <div class="pop-badge">${swDoPop.length} switch${swDoPop.length===1?'':'es'}</div>
             </div>
             <button class="pop-toggle" data-toggle-pop="${pop.id}" aria-expanded="false">
@@ -874,6 +1047,7 @@
                       ? MODELO_DESCRICOES[sw.modelo]
                       : 'Sem descrição detalhada para este modelo.';
 
+                    // escapando a descrição antes de inserir como HTML e preservando quebras de linha
                     const descricaoHtml = sw.descricao ? escapeHtml(sw.descricao).replace(/\n/g,'<br>') : '';
 
                     return `
@@ -922,75 +1096,315 @@
 
       // ===== CHAMA A FUNÇÃO PARA AJUSTAR DIREÇÕES DOS TOOLTIPS =====
       adjustHoverDirections();
-
-      // ===== Inicializa Sortable em cada grid (se desbloqueado) =====
-      initializePopGridSortables();
     }
 
-    // render options de select de POP
     function renderUFSelect(selectEl){ if(!selectEl) return; selectEl.innerHTML=`<option value="__">Sem Estado</option>`+estados.map(uf=>`<option value="${uf}">${uf}</option>`).join(''); }
     function renderPopOptions(){
       const sel=byId('pop'); if(!sel) return;
       if(!pops || pops.length===0){ sel.innerHTML='<option value="">Cadastre um POP</option>'; return; }
-      const groups=popsByEstado(); const ufs=Object.keys(groups);
+      const groups=popsByEstado(); const ufs=Object.keys(groups).sort((a,b)=>{ if(a==='__') return 1; if(b==='__') return -1; return a.localeCompare(b); });
       sel.innerHTML=ufs.map(uf=>{ const options=groups[uf].map(p=>`<option value="${p.id}">${p.nome}</option>`).join(''); return `<optgroup label="${estadoLabel(uf)}">${options}</optgroup>`; }).join('');
     }
 
     /* ========= CRUD ========= */
-    function openModal(id){ const el=byId(id); if(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); } } 
+    function openModal(id){ const el=byId(id); if(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); } }
     function closeModal(id){ const el=byId(id); if(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); } }
 
-    // (restante dos CRUDs mantidos — cadastrarPOP, cadastrarSwitch, abrir/editar/remover switch, gerir pops)
-    // Para compactar a resposta, suponho que você já tem essas funções do código anterior. Elas permanecem inalteradas,
-    // exceto que renderEstadosComPops() foi alterada acima para preservar ordem e inserir data-pop-id/data-uf.
+    function openCadastroModal(){ 
+      openModal('modalCadastro'); 
+      renderPopOptions(); 
+      renderUFSelect(byId('popEstado')); 
+      const sel=byId('tipoCadastro'); 
+      sel.value='switch'; 
+      bindTipoCadastroEvents(); 
+      alternarTipo();
+      
+      const galleryCadastro = byId('galleryCadastro');
+      if(galleryCadastro) {
+        const fotos = getUniqueFotos();
+        const form = byId('cadastroForm');
+        const selected = form && form.dataset.galleryFoto ? form.dataset.galleryFoto : null;
+        fillGallery(galleryCadastro, fotos, selected);
+      }
 
-    /* ========= Sidebar & Lock & Modais (mantidos) ========= */
+      const fotoInput = byId('foto');
+      if (fotoInput) fotoInput.value = '';
 
-    // ----- Função para inicializar/destruir Sortable nas pop-grids -----
-    function initializePopGridSortables(){
-      // destrói instâncias anteriores
-      popGridSortables.forEach(s => { try{ s.destroy(); }catch{} });
-      popGridSortables = [];
+      const form = byId('cadastroForm');
+      if (form && form.dataset.galleryFoto) {
+        // mantemos o valor, apenas recarregamos thumbs acima
+      }
+    }
+    
+    function bindTipoCadastroEvents(){ const sel=byId('tipoCadastro'); const clone=sel.cloneNode(true); sel.parentNode.replaceChild(clone,sel); clone.addEventListener('change',alternarTipo); clone.addEventListener('input',alternarTipo); document.addEventListener('change',(e)=>{ if(e.target && e.target.id==='tipoCadastro') alternarTipo(); },{once:true}); }
+    function alternarTipo(){ const tipo=(byId('tipoCadastro')?.value)||'switch'; const popBox=byId('camposPOP'); const swBox=byId('camposSW'); const showPop=(tipo==='pop'); popBox.classList.toggle('hide',!showPop); swBox.classList.toggle('hide',showPop); popBox.style.display=showPop?'block':'none'; swBox.style.display=showPop?'none':'block'; }
 
-      const grids = document.querySelectorAll('.pop-grid');
-      grids.forEach(grid => {
-        // cria sortable para cada grid, conectado pelo grupo 'pops' para permitir mover entre grids
-        const sortable = new Sortable(grid, {
-          group: 'pops',
-          animation: 150,
-          ghostClass: 'sortable-ghost',
-          handle: '.pop-header, .pop-toggle, .pop-card', // permitir arrastar pelo card
-          onEnd: function () {
-            // reconstrói e salva a ordem global
-            savePopOrderFromDOM();
-          }
-        });
-        popGridSortables.push(sortable);
+    async function cadastrarPOP(){
+      const nome=(byId('popNome').value||'').trim(); if(!nome){ await showAlert({title:'Atenção',message:'Informe o Nome/Descrição do POP.'}); return; }
+      const uf=(byId('popEstado').value||'__'); const id=slugify(nome);
+      const exists=pops.some(p=>p.id===id||p.nome.toLowerCase()===nome.toLowerCase());
+      if(exists){ await showAlert({title:'Atenção',message:'Já existe um POP com esse nome.'}); return; }
+      pops.push({ id, nome, estado:uf }); 
+      savePops(); 
+      renderPopOptions(); 
+      renderEstadosComPops(); 
+      byId('cadastroForm').reset(); 
+      closeModal('modalCadastro'); 
+      await showAlert({title:'Sucesso',message:'POP cadastrado com sucesso.'});
+    }
+
+    async function cadastrarSwitch(){
+      const popSel=byId('pop').value; const ip=byId('ip').value.trim(); const nome=byId('nome').value.trim(); const modelo=(byId('modelo').value||'').trim(); const fotoInput=byId('foto');
+      const descricao = (byId('descricao') && byId('descricao').value) ? byId('descricao').value.trim() : '';
+      if(!popSel||!ip||!nome){ await showAlert({title:'Atenção',message:'Preencha POP, IP e Nome do switch.'}); return; }
+      if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
+      const sw={ id:String(Date.now()), pop:popSel, ip, nome, modelo: modelo || null, foto:null, descricao: descricao || null };
+
+      const form = byId('cadastroForm');
+      const galleryFoto = form && form.dataset.galleryFoto ? form.dataset.galleryFoto : null;
+
+      if(fotoInput.files && fotoInput.files[0]){
+        try{
+          sw.foto=await compressAdaptively(fotoInput.files[0]);
+        }catch{
+          await showAlert({title:'Aviso',message:'Não foi possível processar a imagem. O switch será salvo sem foto.'});
+        }
+      } else if (galleryFoto) {
+        sw.foto = galleryFoto;
+      }
+
+      switches.push(sw); 
+      saveSwitches(); 
+      renderPopOptions(); 
+      renderEstadosComPops(); 
+      byId('cadastroForm').reset(); 
+
+      // limpar campo descricao também
+      if (byId('descricao')) byId('descricao').value = '';
+
+      if (form && form.dataset.galleryFoto) {
+        delete form.dataset.galleryFoto;
+      }
+
+      closeModal('modalCadastro'); 
+      await showAlert({title:'Sucesso',message:'Switch cadastrado com sucesso.'});
+    }
+
+    function openEditSwitch(id){
+      const idStr = String(id);
+      const sw = switches.find(s => {
+        if (s.id === idStr) return true;
+        if (s.id != null && String(s.id) === idStr) return true;
+        return false;
       });
 
-      // Se estiver bloqueado, destrói imediatamente (não permite arrastar)
-      if(isLocked){
-        popGridSortables.forEach(s => { try{ s.destroy(); }catch{} });
-        popGridSortables = [];
+      if (!sw) {
+        console.warn('[openEditSwitch] Switch não encontrado para id:', id, 'lista atual:', switches);
+        return;
+      }
+
+      byId('editSwitchId').value = String(sw.id);
+      byId('editSwitchNome').value = sw.nome;
+      byId('editSwitchIP').value = sw.ip;
+
+      const sel = byId('editSwitchPop');
+      sel.innerHTML = pops
+        .map(p => `<option value="${p.id}">${estadoLabel(p.estado)} — ${p.nome}</option>`)
+        .join('');
+      sel.value = sw.pop;
+
+      byId('editSwitchModelo').value = sw.modelo || '';
+
+      // preencher descricao
+      if (byId('editSwitchDescricao')) byId('editSwitchDescricao').value = sw.descricao || '';
+
+      const info = byId('previewInfo');
+      info.dataset.remove = 'false';
+      info.textContent = sw.foto ? 'Imagem atual presente.' : 'Sem imagem.';
+      info.dataset.galleryFoto = '';
+
+      byId('editSwitchFoto').value = '';
+
+      const galleryEdit = byId('galleryEdit');
+      if (galleryEdit) {
+        const fotos = getUniqueFotos();
+        fillGallery(galleryEdit, fotos, sw.foto || null);
+      }
+
+      openModal('modalEditSwitch');
+    }
+
+    async function saveEditSwitch(ev){
+      ev && ev.preventDefault();
+      const id = byId('editSwitchId').value;
+      const nome=(byId('editSwitchNome').value||'').trim();
+      const ip=(byId('editSwitchIP').value||'').trim();
+      const popSel=byId('editSwitchPop').value;
+      const modelo=(byId('editSwitchModelo').value||'').trim();
+      const descricao = (byId('editSwitchDescricao') && byId('editSwitchDescricao').value) ? byId('editSwitchDescricao').value.trim() : '';
+      const fotoInput=byId('editSwitchFoto');
+      const previewInfo = byId('previewInfo');
+      const removeFlag=previewInfo.dataset.remove==='true';
+
+      if(!nome || !ip || !popSel){ await showAlert({title:'Atenção',message:'Preencha Nome, IP e POP.'}); return; }
+      if(!validarIP(ip)){ await showAlert({title:'Atenção',message:'Endereço IP inválido.'}); return; }
+
+      const idx = switches.findIndex(s => String(s.id) === String(id));
+      if(idx === -1){
+        console.warn('[saveEditSwitch] Switch não encontrado para id:', id);
+        return;
+      }
+
+      const original=switches[idx];
+      const origModelo=original.modelo || null;
+      const newModelo=modelo || null;
+      const hasNewFile=fotoInput && fotoInput.files && fotoInput.files[0];
+      const galleryFoto = previewInfo.dataset.galleryFoto || null;
+      const willRemoveFoto=removeFlag && !!original.foto;
+
+      const origDescricao = original.descricao || '';
+      const changed= nome!==original.nome || ip!==original.ip || popSel!==original.pop || newModelo!==origModelo || hasNewFile || willRemoveFoto || galleryFoto || descricao!==origDescricao;
+      if(!changed){ closeModal('modalEditSwitch'); return; }
+
+      const applyAndClose=async (newFoto)=>{
+        switches[idx].nome=nome; 
+        switches[idx].ip=ip; 
+        switches[idx].pop=popSel; 
+        switches[idx].modelo=newModelo;
+        switches[idx].descricao = descricao || null;
+
+        if(removeFlag) switches[idx].foto=null;
+
+        if (newFoto !== undefined) {
+          switches[idx].foto = newFoto;
+        } else if (galleryFoto) {
+          switches[idx].foto = galleryFoto;
+        }
+
+        previewInfo.dataset.galleryFoto = '';
+
+        saveSwitches(); 
+        renderPopOptions(); 
+        renderEstadosComPops(); 
+        closeModal('modalEditSwitch'); 
+        await showAlert({title:'Sucesso',message:'Alterações salvas com sucesso.'});
+      };
+
+      if(hasNewFile){ 
+        try{ 
+          const dataURL=await compressAdaptively(fotoInput.files[0]); 
+          await applyAndClose(dataURL); 
+        }catch{ 
+          await showAlert({title:'Aviso',message:'Não foi possível processar a nova imagem. Os demais dados serão salvos.'}); 
+          await applyAndClose(); 
+        } 
+      }
+      else{ 
+        await applyAndClose(); 
       }
     }
 
-    // Atualiza estado arrastável com base em locked/unlocked
-    function updateDraggableState(){
-      if(isLocked){
-        // destrói instâncias
-        popGridSortables.forEach(s => { try{ s.destroy(); }catch{} });
-        popGridSortables = [];
-        // retira cursor move dos cards
-        document.querySelectorAll('.pop-card').forEach(c => c.style.cursor = 'default');
-      } else {
-        // inicializa (renderEstadosComPops já chama initializePopGridSortables)
-        initializePopGridSortables();
-        document.querySelectorAll('.pop-card').forEach(c => c.style.cursor = 'grab');
-      }
+    async function deleteSwitch(id){
+      const ok=await showConfirm({ title:'Confirmar exclusão', message:'Tem certeza de que deseja remover este switch permanentemente? Esta ação não pode ser desfeita.', okLabel:'Remover', cancelLabel:'Cancelar', okIsDanger:true });
+      if(!ok) return;
+      switches=switches.filter(s=>s.id!==id);
+      saveSwitches(); 
+      renderPopOptions(); 
+      renderEstadosComPops();
+      await showAlert({ title:'Removido', message:'O switch foi removido.' });
     }
 
-    // ====== Modal de Senha (mantida) ======
+    function openModalPops(){ buildPopsTable(); openModal('modalPops'); }
+    function buildPopsTable(){
+      const tbody=byId('tabelaPops').querySelector('tbody'); tbody.innerHTML='';
+      pendingPopEdits=pops.map(p=>({ oldId:p.id, id:p.id, nome:p.nome, estado:p.estado||'__', _delete:false }));
+      pendingPopEdits.forEach((row,i)=>{
+        const vinculados=switches.filter(s=>s.pop===row.id).length;
+        const tr=document.createElement('tr'); tr.dataset.index=i;
+        const ufSelect=`<select data-field="estado">${['__',...estados].map(uf=>`<option value="${uf}" ${uf===row.estado?'selected':''}>${estadoLabel(uf)}</option>`).join('')}</select>`;
+        tr.innerHTML=`
+          <td><input type="text" value="${row.nome.replace(/"/g,'&quot;')}" data-field="nome"></td>
+          <td>${ufSelect}</td>
+          <td><input type="text" value="${row.id.replace(/"/g,'&quot;')}" data-field="id" disabled></td>
+          <td>${vinculados}</td>
+          <td class="row-actions">
+            <button class="btn small" data-act="renomear">Gerar ID</button>
+            <button class="btn danger small" data-act="excluir">Excluir</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+      tbody.onclick=(ev)=>{
+        const tr=ev.target.closest('tr'); if(!tr) return; const idx=Number(tr.dataset.index);
+        if(ev.target.matches('[data-act="renomear"]')){
+          const nomeInput=tr.querySelector('input[data-field="nome"]');
+          const idInput=tr.querySelector('input[data-field="id"]');
+          const novoId=slugify(nomeInput.value.trim());
+          idInput.value=novoId; pendingPopEdits[idx].id=novoId; pendingPopEdits[idx].nome=nomeInput.value.trim();
+        }
+        if(ev.target.matches('[data-act="excluir"]')){
+          const idAtual=pendingPopEdits[idx].id;
+          const vinculados=switches.filter(s=>s.pop===idAtual).length;
+          if(vinculados>0){ showAlert({title:'Atenção',message:'Não é possível excluir: existem switches vinculados.'}); return; }
+          (async ()=>{
+            const ok=await showConfirm({ title:'Confirmar exclusão', message:'Deseja realmente excluir este POP?', okLabel:'Excluir', cancelLabel:'Cancelar', okIsDanger:true });
+            if(!ok) return; pendingPopEdits[idx]._delete=true; tr.style.opacity=.5;
+          })();
+        }
+      };
+      tbody.oninput=(ev)=>{ const tr=ev.target.closest('tr'); if(!tr) return; const idx=Number(tr.dataset.index); if(ev.target.dataset.field==='nome') pendingPopEdits[idx].nome=ev.target.value; if(ev.target.dataset.field==='estado') pendingPopEdits[idx].estado=ev.target.value; };
+      tbody.onchange=tbody.oninput;
+    }
+
+    async function applyPopEdits(){
+      const deletions=pendingPopEdits.filter(r=>r._delete);
+      const effective=pendingPopEdits.filter(r=>!r._delete);
+      let anyChange=deletions.length>0;
+
+      for(const row of effective){
+        const orig=pops.find(p=>p.id===row.oldId); if(!orig){ anyChange=true; break; }
+        const origNome=(orig.nome||'').trim(); const newNome=(row.nome||'').trim();
+        const origEstado=(orig.estado||'__'); const newEstado=(row.estado||'__');
+        const origId=orig.id; const newId=row.id;
+        if(origNome!==newNome || origEstado!==newEstado || origId!==newId){ anyChange=true; break; }
+      }
+
+      if(!anyChange){ closeModal('modalPops'); return; }
+
+      const effectiveIds=effective.map(r=>r.id);
+      const effectiveNamesLower=effective.map(r=>(r.nome||'').trim().toLowerCase());
+      if(effectiveIds.length!==new Set(effectiveIds).size){ await showAlert({title:'Atenção',message:'IDs duplicados após edição.'}); return; }
+      if(effectiveNamesLower.length!==new Set(effectiveNamesLower).size){ await showAlert({title:'Atenção',message:'Nomes duplicados após edição.'}); return; }
+
+      pendingPopEdits.filter(r=>r._delete).forEach(rem=>{ pops=pops.filter(p=>p.id!==rem.oldId); });
+      pendingPopEdits.filter(r=>!r._delete).forEach(edit=>{
+        const pIdx=pops.findIndex(p=>p.id===edit.oldId);
+        if(pIdx===-1){ pops.push({ id:edit.id, nome:(edit.nome||'').trim(), estado:edit.estado||'__' }); return; }
+        const idChanged=edit.oldId!==edit.id;
+        pops[pIdx].id=edit.id; pops[pIdx].nome=(edit.nome||'').trim(); pops[pIdx].estado=edit.estado||'__';
+        if(idChanged) switches.forEach(s=>{ if(s.pop===edit.oldId) s.pop=edit.id; });
+      });
+
+      savePops(); 
+      saveSwitches(); 
+      renderPopOptions(); 
+      renderEstadosComPops();
+      closeModal('modalPops'); 
+      await showAlert({title:'Sucesso',message:'POPs atualizados.'});
+    }
+
+    /* ========= Sidebar ========= */
+    function setCollapsed(collapsed){
+      document.body.classList.toggle('sidebar-collapsed',collapsed);
+      try{ localStorage.setItem(LS_SIDEBAR_STATE, collapsed?'1':'0'); }catch{}
+      const btn=byId('btnCollapse'); if(btn){ btn.setAttribute('aria-expanded', String(!collapsed)); btn.title=collapsed?'Mostrar menu':'Ocultar menu'; }
+    }
+    function isSidebarOpen(){ return isMobile() ? document.body.classList.contains('sidebar-open') : !document.body.classList.contains('sidebar-collapsed'); }
+    function closeSidebar(){ if(isMobile()) document.body.classList.remove('sidebar-open'); else setCollapsed(true); }
+    let autoHideTimer=null, isSidebarHovered=false;
+    function scheduleAutoHide(){ clearTimeout(autoHideTimer); if(!isSidebarOpen()) return; autoHideTimer=setTimeout(()=>{ if(!isSidebarHovered && isSidebarOpen()) closeSidebar(); },5000); }
+    function cancelAutoHide(){ clearTimeout(autoHideTimer); }
+
+    /* ====== Modal de Senha (bonito) ====== */
     function requestUnlockWithModal(){
       return new Promise(resolve=>{
         const modal=byId('passwordModal');
@@ -1016,6 +1430,7 @@
       });
     }
 
+    /* ====== LOCK STATE ====== */
     let isLocked=true;
     const ICON_LOCKED="https://cdn-icons-png.flaticon.com/512/7615/7615902.png";
     const ICON_UNLOCK="https://cdn-icons-png.flaticon.com/512/7615/7615905.png";
@@ -1033,34 +1448,43 @@
         if(txt)  txt.textContent = 'Desbloqueado';
         if(badge) badge.textContent = 'OPEN';
       }
-
-      updateDraggableState();
     }
 
-    /* ========= Listeners globais e inicialização ========= */
+    /* ========= Listeners globais ========= */
     document.addEventListener('DOMContentLoaded', ()=>{
       if(!isMobile()) setCollapsed(true); else document.body.classList.remove('sidebar-open');
       setLocked(true);
 
-      // binding básico (mantive referências semelhantes ao código anterior; adapte se desejar)
       document.querySelectorAll('[data-close]').forEach(btn =>
         btn.addEventListener('click', (e)=> closeModal(e.currentTarget.getAttribute('data-close')))
       );
 
-      // botões do menu
-      const menuNovo = byId('menuNovoCadastro');
-      if(menuNovo) menuNovo.addEventListener('click', async ()=>{
+      byId('btnCollapse').addEventListener('click', ()=>{
+        if(isMobile()) document.body.classList.toggle('sidebar-open');
+        else setCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+        setTimeout(scheduleAutoHide,0);
+      });
+
+      document.querySelector('.sidebar-overlay').addEventListener('click', ()=>{ document.body.classList.remove('sidebar-open'); cancelAutoHide(); });
+
+      const edge=byId('edgeHitbox');
+      if(edge){
+        let startX=null;
+        edge.addEventListener('touchstart',(e)=>{ if(!isMobile()) return; startX=e.touches[0].clientX; });
+        edge.addEventListener('touchmove',(e)=>{ if(!isMobile()||startX===null) return; const dx=e.touches[0].clientX-startX; if(dx>12){ document.body.classList.add('sidebar-open'); startX=null; scheduleAutoHide(); } });
+        edge.addEventListener('click',()=>{ if(isMobile()){ document.body.classList.add('sidebar-open'); scheduleAutoHide(); } });
+      }
+
+      byId('menuNovoCadastro').addEventListener('click', async ()=>{
         if(isLocked){ const ok=await requestUnlockWithModal(); if(!ok) return; setLocked(false); }
         closeSidebar(); cancelAutoHide(); openCadastroModal();
       });
-      const menuPops = byId('menuGerenciarPops');
-      if(menuPops) menuPops.addEventListener('click', async ()=>{
+      byId('menuGerenciarPops').addEventListener('click', async ()=>{
         if(isLocked){ const ok=await requestUnlockWithModal(); if(!ok) return; setLocked(false); }
         closeSidebar(); cancelAutoHide(); openModalPops();
       });
 
-      const lockBtn = byId('lockBtn');
-      if(lockBtn) lockBtn.addEventListener('click', async ()=>{
+      byId('lockBtn').addEventListener('click', async ()=>{
         if(isLocked){
           const ok=await requestUnlockWithModal();
           if(ok){ setLocked(false); await showAlert({ title:'Desbloqueado', message:'Funções liberadas.' }); }
@@ -1070,144 +1494,314 @@
         }
       });
 
-      // listener de clicks na area de estados para expandir POP, copiar, editar/excluir switches
-      const estadoContainer = byId('estadoContainer');
-      if(estadoContainer){
-        estadoContainer.addEventListener('click', async (ev)=>{
-          const toggleBtn = ev.target.closest('[data-toggle-pop]');
-          if (toggleBtn) {
-            const card = toggleBtn.closest('.pop-card');
-            const list = card.querySelector('.switch-list');
-            const isOpen = list.style.display === 'block';
-            if (isOpen) {
-              toggleBtn.classList.remove('open');
-              toggleBtn.setAttribute('aria-expanded','false');
-              list.style.display='none';
-            } else {
-              document.querySelectorAll('.pop-card .pop-toggle.open').forEach(b=>{
-                b.classList.remove('open');
-                b.setAttribute('aria-expanded','false');
-                b.closest('.pop-card').querySelector('.switch-list').style.display='none';
-              });
-              toggleBtn.classList.add('open');
-              toggleBtn.setAttribute('aria-expanded','true');
-              list.style.display='block';
-              setTimeout(() => adjustHoverDirections(), 50);
-            }
+      byId('btnSalvarCadastro').addEventListener('click', async (e)=>{ e.preventDefault(); const tipo=byId('tipoCadastro').value; if(tipo==='pop') await cadastrarPOP(); else await cadastrarSwitch(); });
+      byId('btnSalvarEditSwitch').addEventListener('click', saveEditSwitch);
+      
+      byId('btnRemoverFoto').addEventListener('click', ()=>{ 
+        byId('editSwitchFoto').value=''; 
+        const info = byId('previewInfo');
+        info.textContent='Imagem será removida ao salvar.'; 
+        info.dataset.remove='true';
+        info.dataset.galleryFoto = '';
+
+        const galleryEdit = byId('galleryEdit');
+        if (galleryEdit) {
+          galleryEdit.innerHTML = '';
+          const placeholder = document.createElement('div');
+          placeholder.className = 'mini-thumb';
+          placeholder.innerHTML = `<span>Sem imagem</span>`;
+          galleryEdit.appendChild(placeholder);
+        }
+      });
+      
+      byId('btnSalvarPops').addEventListener('click', applyPopEdits);
+
+      byId('estadoContainer').addEventListener('click', async (ev)=>{
+        const toggleBtn = ev.target.closest('[data-toggle-pop]');
+        if (toggleBtn) {
+          const card = toggleBtn.closest('.pop-card');
+          const list = card.querySelector('.switch-list');
+          const isOpen = list.style.display === 'block';
+          if (isOpen) {
+            toggleBtn.classList.remove('open');
+            toggleBtn.setAttribute('aria-expanded','false');
+            list.style.display='none';
+          } else {
+            document.querySelectorAll('.pop-card .pop-toggle.open').forEach(b=>{
+              b.classList.remove('open');
+              b.setAttribute('aria-expanded','false');
+              b.closest('.pop-card').querySelector('.switch-list').style.display='none';
+            });
+            toggleBtn.classList.add('open');
+            toggleBtn.setAttribute('aria-expanded','true');
+            list.style.display='block';
+
+            // ===== RECALCULA DIREÇÕES DOS TOOLTIPS APÓS ABRIR =====
+            setTimeout(() => adjustHoverDirections(), 50);
+          }
+          return;
+        }
+
+        // Copiar botão dentro do tooltip
+        const copyBtn = ev.target.closest('.copy-btn');
+        if (copyBtn) {
+          const row = copyBtn.closest('.switch-row');
+          if (!row) return;
+
+          const nome = row.dataset.switchNome || '';
+          const ip   = row.dataset.switchIp   || '';
+          const texto = `${nome} IP: ${ip}`;
+
+          try{
+            await navigator.clipboard.writeText(texto);
+            await showAlert({
+              title: 'Copiado',
+              message: `\n${texto}`
+            });
+          }catch(e){
+            console.warn('[copy] erro ao copiar', e);
+            await showAlert({
+              title: 'Erro',
+              message: 'Não foi possível copiar automaticamente. Copie manualmente: ' + texto
+            });
+          }
+          return;
+        }
+
+        // Toggle descrição ao clicar na linha do switch (exceto se clicou em botão/acao/tooltip)
+        const switchRowClick = ev.target.closest('.switch-row');
+        if (switchRowClick && 
+            !ev.target.closest('button') && 
+            !ev.target.closest('.row-actions') && 
+            !ev.target.closest('.hover-preview') && 
+            !ev.target.closest('[data-action]')) {
+          switchRowClick.classList.toggle('show-description');
+          return;
+        }
+
+        const swBtn = ev.target.closest('[data-action]');
+        if (swBtn) {
+          const action = swBtn.dataset.action;
+          const swRow = swBtn.closest('[data-switch-id]');
+          const swId = swRow ? swRow.dataset.switchId : null;
+
+          if (!swId) {
+            console.warn('[EDIT/DELETE] switch sem data-switch-id');
             return;
           }
 
-          const copyBtn = ev.target.closest('.copy-btn');
-          if (copyBtn) {
-            const row = copyBtn.closest('.switch-row');
-            if (!row) return;
-            const nome = row.dataset.switchNome || '';
-            const ip   = row.dataset.switchIp   || '';
-            const texto = `${nome} IP: ${ip}`;
-            try{
-              await navigator.clipboard.writeText(texto);
-              await showAlert({ title: 'Copiado', message: `\n${texto}` });
-            }catch(e){
-              await showAlert({ title: 'Erro', message: 'Não foi possível copiar automaticamente. Copie manualmente: ' + texto });
-            }
-            return;
+          if (isLocked) {
+            const ok = await requestUnlockWithModal();
+            if (!ok) return;
+            setLocked(false);
           }
 
-          const switchRowClick = ev.target.closest('.switch-row');
-          if (switchRowClick && 
-              !ev.target.closest('button') && 
-              !ev.target.closest('.row-actions') && 
-              !ev.target.closest('.hover-preview') && 
-              !ev.target.closest('[data-action]')) {
-            switchRowClick.classList.toggle('show-description');
-            return;
+          if (action === 'edit') {
+            openEditSwitch(swId);
+          }
+          if (action === 'delete') {
+            deleteSwitch(swId);
+          }
+        }
+      });
+
+      // ------- Preview da imagem em NOVO CADASTRO -------
+      const fotoCadastroInput = byId('foto');
+      const galleryCadastro   = byId('galleryCadastro');
+
+      if (fotoCadastroInput && galleryCadastro) {
+        fotoCadastroInput.addEventListener('change', () => {
+          const file = fotoCadastroInput.files && fotoCadastroInput.files[0];
+
+          const form = byId('cadastroForm');
+          if (form && form.dataset.galleryFoto) {
+            delete form.dataset.galleryFoto;
           }
 
-          const swBtn = ev.target.closest('[data-action]');
-          if (swBtn) {
-            const action = swBtn.dataset.action;
-            const swRow = swBtn.closest('[data-switch-id]');
-            const swId = swRow ? swRow.dataset.switchId : null;
-            if (!swId) return;
-            if (isLocked) {
-              const ok = await requestUnlockWithModal();
-              if (!ok) return;
-              setLocked(false);
-            }
-            if (action === 'edit') openEditSwitch(swId);
-            if (action === 'delete') deleteSwitch(swId);
+          galleryCadastro.innerHTML = '';
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const url = e.target.result;
+            const thumb = document.createElement('div');
+            thumb.className = 'mini-thumb selected';
+            thumb.innerHTML = `<img src="${url}" alt="Preview do switch">`;
+            galleryCadastro.appendChild(thumb);
+          };
+          reader.readAsDataURL(file);
+        });
+
+        galleryCadastro.addEventListener('click', (e) => {
+          const thumb = e.target.closest('.mini-thumb');
+          if (!thumb || !thumb.dataset.source) return;
+
+          galleryCadastro.querySelectorAll('.mini-thumb').forEach(t => t.classList.remove('selected'));
+          thumb.classList.add('selected');
+
+          const form = byId('cadastroForm');
+          if (form) {
+            form.dataset.galleryFoto = thumb.dataset.source;
           }
+
+          if (fotoCadastroInput) fotoCadastroInput.value = '';
         });
       }
 
-      // demais binds (previews de imagem, remoção de foto etc) permanecem iguais ao código original...
-      // Para manter a resposta focada, não repito todas essas funções aqui — elas continuam funcionando.
-      // Se quiser eu coloco o arquivo completo com todos os modais e handlers idênticos ao anterior.
+      // ------- Preview da imagem em EDITAR SWITCH -------
+      const editFotoInput = byId('editSwitchFoto');
+      const galleryEdit   = byId('galleryEdit');
 
-      // Helpers de sidebar/auto-hide (mantidos)
-      const edge=byId('edgeHitbox');
-      if(edge){
-        let startX=null;
-        edge.addEventListener('touchstart',(e)=>{ if(!isMobile()) return; startX=e.touches[0].clientX; });
-        edge.addEventListener('touchmove',(e)=>{ if(!isMobile()||startX===null) return; const dx=e.touches[0].clientX-startX; if(dx>12){ document.body.classList.add('sidebar-open'); startX=null; scheduleAutoHide(); } });
-        edge.addEventListener('click',()=>{ if(isMobile()){ document.body.classList.add('sidebar-open'); scheduleAutoHide(); } });
+      if (editFotoInput && galleryEdit) {
+        editFotoInput.addEventListener('change', () => {
+          const file = editFotoInput.files && editFotoInput.files[0];
+          const info = byId('previewInfo');
+
+          if (info) {
+            info.dataset.galleryFoto = '';
+            info.dataset.remove = 'false';
+          }
+
+          galleryEdit.innerHTML = '';
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const url = e.target.result;
+
+            const thumbNova = document.createElement('div');
+            thumbNova.className = 'mini-thumb selected';
+            thumbNova.innerHTML = `<img src="${url}" alt="Nova imagem do switch">`;
+            galleryEdit.appendChild(thumbNova);
+
+            if (info) {
+              info.textContent = 'Nova imagem selecionada. Será aplicada ao salvar.';
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+
+        galleryEdit.addEventListener('click', (e) => {
+          const thumb = e.target.closest('.mini-thumb');
+          if (!thumb || !thumb.dataset.source) return;
+
+          galleryEdit.querySelectorAll('.mini-thumb').forEach(t => t.classList.remove('selected'));
+          thumb.classList.add('selected');
+
+          const info = byId('previewInfo');
+          if (info) {
+            info.dataset.galleryFoto = thumb.dataset.source;
+            info.dataset.remove = 'false';
+            info.textContent = 'Imagem selecionada da galeria. Será aplicada ao salvar.';
+          }
+
+          if (editFotoInput) editFotoInput.value = '';
+        });
       }
+
+      const sidebarEl=document.querySelector('.sidebar');
+      if(sidebarEl){ sidebarEl.addEventListener('mouseenter',()=>{ isSidebarHovered=true; cancelAutoHide(); }); sidebarEl.addEventListener('mouseleave',()=>{ isSidebarHovered=false; scheduleAutoHide(); }); }
+
+      const bodyObserver=new MutationObserver(()=>{ if(isSidebarOpen()) scheduleAutoHide(); else cancelAutoHide(); });
+      bodyObserver.observe(document.body,{ attributes:true, attributeFilter:['class'] });
+
+      // NOVO: debounce de resize para reduzir trabalho + recalcula tooltips
+      let resizeTimer=null;
+      window.addEventListener('resize', ()=>{
+        clearTimeout(resizeTimer);
+        resizeTimer=setTimeout(()=>{
+          document.documentElement.classList.remove('js-ready');
+          if(!isMobile()){
+            document.body.classList.remove('sidebar-open');
+            setCollapsed(true);
+          }
+          requestAnimationFrame(()=>{ 
+            document.documentElement.classList.add('js-ready'); 
+            if(isSidebarOpen()) scheduleAutoHide(); 
+            else cancelAutoHide(); 
+
+            // ===== RECALCULA DIREÇÕES DOS TOOLTIPS NO RESIZE =====
+            adjustHoverDirections();
+          });
+        },150);
+      });
+
+      document.addEventListener('keydown',(e)=>{
+        if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='b' && !isMobile()){
+          e.preventDefault(); setCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+          setTimeout(scheduleAutoHide,0);
+        }
+      });
 
       startLoadFallbackTimer(8000);
       requestAnimationFrame(()=>{ document.documentElement.classList.add('js-ready'); });
     });
+  </script>
 
-    /* ===== FAVICON ANIMADO (mantido) ===== */
-    (function(){
-      const link=document.querySelector('#dynamic-favicon');
-      const video=document.querySelector('#favVideo');
-      if(!link||!video) return;
-      const canvas=document.createElement('canvas');
-      const ctx=canvas.getContext('2d',{ willReadFrequently:true });
-      const FAV_W=32,FAV_H=32; canvas.width=FAV_W; canvas.height=FAV_H;
-      let running=false, rafId=null, lastUpdate=0;
-      const FPS=4, FRAME_MS=1000/FPS;
-      const MAX_DURATION_MS=15000;
-      let startTime=null;
-      function drawFrame(ts){
-        if(!running) return;
-        if(document.hidden){ rafId=requestAnimationFrame(drawFrame); return; }
-        if(startTime===null) startTime=ts;
-        if(ts - startTime > MAX_DURATION_MS){ stop(); return; }
-        if(ts-lastUpdate>=FRAME_MS){
-          lastUpdate=ts;
-          try{
-            ctx.clearRect(0,0,FAV_W,FAV_H);
-            const vW=video.videoWidth||256, vH=video.videoHeight||256;
-            if(vW&&vH){
-              const s=Math.min(vW,vH);
-              const sx=(vW-s)/2, sy=(vH-s)/2;
-              ctx.drawImage(video,sx,sy,s,s,0,0,FAV_W,FAV_H);
-            } else{
-              ctx.fillStyle='#111923';
-              ctx.fillRect(0,0,FAV_W,FAV_H);
-            }
-            const url=canvas.toDataURL('image/png');
-            if(url && url.startsWith('data:image/png')) link.href=url;
-          }catch(e){
-            console.warn('[favicon] Falha ao animar (CORS?)',e);
-            stop();
-            return;
+  <!-- ===== FAVICON ANIMADO VIA CANVAS (otimizado) ===== -->
+  <script>
+  (function(){
+    const link=document.querySelector('#dynamic-favicon');
+    const video=document.querySelector('#favVideo');
+    if(!link||!video) return;
+    const canvas=document.createElement('canvas');
+    const ctx=canvas.getContext('2d',{ willReadFrequently:true });
+    const FAV_W=32,FAV_H=32; canvas.width=FAV_W; canvas.height=FAV_H;
+    let running=false, rafId=null, lastUpdate=0;
+    const FPS=4, FRAME_MS=1000/FPS;
+    const MAX_DURATION_MS=15000;
+    let startTime=null;
+
+    function drawFrame(ts){
+      if(!running) return;
+      if(document.hidden){ rafId=requestAnimationFrame(drawFrame); return; }
+
+      if(startTime===null) startTime=ts;
+      if(ts - startTime > MAX_DURATION_MS){
+        stop();
+        return;
+      }
+
+      if(ts-lastUpdate>=FRAME_MS){
+        lastUpdate=ts;
+        try{
+          ctx.clearRect(0,0,FAV_W,FAV_H);
+          const vW=video.videoWidth||256, vH=video.videoHeight||256;
+          if(vW&&vH){
+            const s=Math.min(vW,vH);
+            const sx=(vW-s)/2, sy=(vH-s)/2;
+            ctx.drawImage(video,sx,sy,s,s,0,0,FAV_W,FAV_H);
+          } else{
+            ctx.fillStyle='#111923';
+            ctx.fillRect(0,0,FAV_W,FAV_H);
           }
+          const url=canvas.toDataURL('image/png');
+          if(url && url.startsWith('data:image/png')) link.href=url;
+        }catch(e){
+          console.warn('[favicon] Falha ao animar (CORS?)',e);
+          stop();
+          return;
         }
-        rafId=requestAnimationFrame(drawFrame);
       }
-      function start(){
-        if(running) return; running=true; startTime=null;
-        const p=video.play(); if(p&&typeof p.then==='function'){ p.catch(()=>{}); }
-        rafId=requestAnimationFrame(drawFrame);
-      }
-      function stop(){ running=false; if(rafId) cancelAnimationFrame(rafId), rafId=null; }
-      if(video.readyState>=1) start(); else video.addEventListener('loadedmetadata', start, { once:true });
-      document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stop(); else start(); });
-      video.addEventListener('error', (e)=>{ console.warn('[favicon] Erro no vídeo:', e); stop(); });
-      window.addEventListener('pointerdown', ()=>{ if(!running) start(); }, { once:true });
-    })();
+      rafId=requestAnimationFrame(drawFrame);
+    }
+    function start(){
+      if(running) return;
+      running=true;
+      startTime=null;
+      const p=video.play();
+      if(p&&typeof p.then==='function'){ p.catch(()=>{}); }
+      rafId=requestAnimationFrame(drawFrame);
+    }
+    function stop(){
+      running=false;
+      if(rafId) cancelAnimationFrame(rafId), rafId=null;
+    }
+    if(video.readyState>=1) start(); else video.addEventListener('loadedmetadata', start, { once:true });
+    document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stop(); else start(); });
+    video.addEventListener('error', (e)=>{ console.warn('[favicon] Erro no vídeo:', e); stop(); });
+    window.addEventListener('pointerdown', ()=>{ if(!running) start(); }, { once:true });
+  })();
   </script>
 </body>
 </html>
